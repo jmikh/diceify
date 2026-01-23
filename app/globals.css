@@ -2,47 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables for Theming */
+/* =============================================================================
+   DESIGN SYSTEM TOKENS
+   Core design tokens that define the visual language of Diceify.
+   All colors, spacing, and effects are defined here as the single source of truth.
+   ============================================================================= */
+
 :root {
-  /* Default theme (glassmorphism) */
+  /* ---------------------------------------------------------------------------
+     COLOR PALETTE
+     --------------------------------------------------------------------------- */
+
+  /* Background Colors */
   --bg-primary: #0a0014;
   --bg-secondary: #1a0826;
-  --bg-dark: #000000;
+  --bg-deep: #050505;
 
+  /* Glass/Frosted Effects */
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  --bg-glass-hover: rgba(255, 255, 255, 0.06);
   --glass-light: rgba(255, 255, 255, 0.05);
   --glass-medium: rgba(255, 255, 255, 0.1);
-  --glass-heavy: rgba(255, 255, 255, 0.2);
-  --glass-border: rgba(255, 255, 255, 0.1);
 
+  /* Border Colors */
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-light: rgba(255, 255, 255, 0.12);
+
+  /* Text Colors */
   --text-primary: rgba(255, 255, 255, 0.9);
   --text-secondary: rgba(255, 255, 255, 0.7);
   --text-muted: rgba(255, 255, 255, 0.5);
-
-  --accent-blue: #6495ff;
-  --accent-purple: #9333ea;
-  --accent-pink: #ec4899;
-  --accent-green: #22c55e;
-  --accent-red: #ef4444;
-
-  --glow-blue: rgba(100, 149, 255, 0.2);
-  --glow-purple: rgba(147, 51, 234, 0.2);
-  --glow-pink: rgba(236, 72, 153, 0.2);
-  --glow-green: rgba(34, 197, 94, 0.2);
-
-  /* New Glass Template Vars */
-  --bg-deep: #050505;
-  --bg-glass: rgba(255, 255, 255, 0.03);
-  --bg-glass-hover: rgba(255, 255, 255, 0.06);
+  --text-dim: #555555;
   --white: #FFFFFF;
   --white-soft: #E0E0E0;
-  /* text-muted already exists but checking value: #888888 vs rgba(255,255,255,0.5). Keeping existing or using specific new ones */
-  --text-dim: #555555;
+
+  /* Brand Colors */
   --pink: #FF2D92;
   --pink-light: #FF5CAD;
   --pink-glow: rgba(255, 45, 146, 0.25);
   --pink-glow-soft: rgba(255, 45, 146, 0.08);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-glass-light: rgba(255, 255, 255, 0.12);
+
+  /* Accent Colors */
+  --accent-purple: #9333ea;
+  --accent-green: #22c55e;
+
+  /* Glow Effects */
+  --glow-purple: rgba(147, 51, 234, 0.2);
+  --glow-green: rgba(34, 197, 94, 0.2);
+
+  /* ---------------------------------------------------------------------------
+     SEMANTIC TOKENS
+     Use these for consistent component styling
+     --------------------------------------------------------------------------- */
+  --color-primary: var(--pink);
+  --color-primary-hover: var(--pink-light);
+  --color-primary-glow: var(--pink-glow);
+  --color-surface: var(--bg-glass);
+  --color-surface-hover: var(--bg-glass-hover);
+  --color-border: var(--border-glass);
+  --color-border-hover: var(--border-glass-light);
+}
+
+/* =============================================================================
+   BASE STYLES
+   Global element styles
+   ============================================================================= */
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -52,14 +79,174 @@ body {
   font-family: var(--font-outfit), -apple-system, sans-serif;
 }
 
-html {
-  scroll-behavior: smooth;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
 
-/* Glass Template Styles */
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded;
+}
 
-/* Background gradient orbs */
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+
+/* =============================================================================
+   COMPONENT LAYER
+   Reusable component classes
+   ============================================================================= */
+
+@layer components {
+
+  /* Glass Card - Frosted glass effect for cards and containers */
+  .glass {
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glass);
+    border-radius: 1.25rem;
+  }
+
+  .glass:hover {
+    background: var(--bg-glass-hover);
+    border-color: var(--border-glass-light);
+  }
+
+  /* Primary Button */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--pink);
+    color: var(--white);
+    padding: 1rem 1.75rem;
+    border-radius: 100px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 40px var(--pink-glow);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 60px var(--pink-glow), 0 20px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Secondary Button */
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    padding: 1rem 1.5rem;
+    border-radius: 100px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glass);
+  }
+
+  .btn-secondary:hover {
+    color: var(--white);
+    background: var(--bg-glass-hover);
+    border-color: var(--border-glass-light);
+  }
+
+  /* Section Label - Small uppercase label above headings */
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--pink);
+    margin-bottom: 1rem;
+    padding: 0.5rem 1rem;
+    background: var(--pink-glow-soft);
+    border-radius: 100px;
+  }
+}
+
+/* =============================================================================
+   ANIMATIONS
+   Keyframe definitions for micro-interactions
+   ============================================================================= */
+
+@keyframes pulse-dot {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes scroll-right {
+  0% {
+    transform: translateX(-50%);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes saveFlash {
+  0% {
+    color: var(--accent-green);
+    filter: drop-shadow(0 0 8px var(--accent-green));
+  }
+
+  25% {
+    color: var(--text-secondary);
+    filter: none;
+  }
+
+  50% {
+    color: var(--accent-green);
+    filter: drop-shadow(0 0 8px var(--accent-green));
+  }
+
+  100% {
+    color: var(--text-secondary);
+    filter: none;
+  }
+}
+
+.save-flash {
+  animation: saveFlash 0.6s ease-in-out;
+}
+
+/* =============================================================================
+   BACKGROUND EFFECTS
+   Decorative gradient orbs and grid overlay for landing page
+   ============================================================================= */
+
 .bg-gradient {
   position: fixed;
   top: 0;
@@ -101,7 +288,6 @@ html {
   right: 20%;
 }
 
-/* Grid pattern overlay */
 .grid-overlay {
   position: fixed;
   top: 0;
@@ -116,68 +302,23 @@ html {
   z-index: 1;
 }
 
-/* Glass card mixin-style */
-.glass {
-  background: var(--bg-glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-  border-radius: 1.25rem;
+/* =============================================================================
+   LANDING PAGE - HERO SECTION
+   ============================================================================= */
+
+.hero {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  padding: 10rem 6rem 6rem;
+  align-items: center;
 }
 
-.glass:hover {
-  background: var(--bg-glass-hover);
-  border-color: var(--border-glass-light);
+.hero-content {
+  max-width: 560px;
 }
 
-/* Animations */
-@keyframes pulse-dot {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@keyframes arrow-move {
-
-  0%,
-  100% {
-    transform: translateX(-3px);
-    opacity: 0.5;
-  }
-
-  50% {
-    transform: translateX(3px);
-    opacity: 1;
-  }
-}
-
-@keyframes scroll-left {
-  0% {
-    transform: translateX(0);
-  }
-
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-@keyframes scroll-right {
-  0% {
-    transform: translateX(-50%);
-  }
-
-  100% {
-    transform: translateX(0);
-  }
-}
-
-/* Helper Utilities */
 .hero-badge {
   display: inline-flex;
   align-items: center;
@@ -200,156 +341,6 @@ html {
   border-radius: 50%;
   box-shadow: 0 0 10px var(--pink);
   animation: pulse-dot 2s infinite;
-}
-
-.visual-card {
-  position: absolute;
-  border-radius: 1.5rem;
-  overflow: hidden;
-  transition: all 0.4s ease;
-}
-
-.visual-card:hover {
-  transform: translateY(-8px);
-}
-
-.dice-cell {
-  background: var(--white);
-  border-radius: 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.dice-cell.dark {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.dice-cell.mid {
-  background: rgba(255, 255, 255, 0.4);
-}
-
-.dice-cell.pink {
-  background: var(--pink);
-  box-shadow: 0 0 10px var(--pink-glow);
-}
-
-.nav-cta {
-  background: var(--pink);
-  color: var(--white);
-  padding: 0.6rem 1.25rem;
-  border-radius: 100px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 30px var(--pink-glow);
-}
-
-.nav-cta:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 40px var(--pink-glow), 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: var(--pink);
-  color: var(--white);
-  padding: 1rem 1.75rem;
-  border-radius: 100px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 40px var(--pink-glow);
-}
-
-.btn-primary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 0 60px var(--pink-glow), 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-muted);
-  padding: 1rem 1.5rem;
-  border-radius: 100px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  background: var(--bg-glass);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-}
-
-.btn-secondary:hover {
-  color: var(--white);
-  background: var(--bg-glass-hover);
-  border-color: var(--border-glass-light);
-}
-
-.section-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--pink);
-  margin-bottom: 1rem;
-  padding: 0.5rem 1rem;
-  background: var(--pink-glow-soft);
-  border-radius: 100px;
-}
-
-/* Save success animation - green double flash */
-@keyframes saveFlash {
-  0% {
-    color: var(--accent-green);
-    filter: drop-shadow(0 0 8px var(--accent-green));
-  }
-
-  25% {
-    color: var(--text-secondary);
-    filter: none;
-  }
-
-  50% {
-    color: var(--accent-green);
-    filter: drop-shadow(0 0 8px var(--accent-green));
-  }
-
-  100% {
-    color: var(--text-secondary);
-    filter: none;
-  }
-}
-
-.save-flash {
-  animation: saveFlash 0.6s ease-in-out;
-}
-
-/* Main Layout Sections */
-
-/* Hero Section */
-.hero {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4rem;
-  padding: 10rem 6rem 6rem;
-  align-items: center;
-}
-
-.hero-content {
-  max-width: 560px;
 }
 
 .hero h1 {
@@ -397,7 +388,10 @@ html {
   height: 550px;
 }
 
-/* How It Works */
+/* =============================================================================
+   LANDING PAGE - HOW IT WORKS SECTION
+   ============================================================================= */
+
 .how-it-works {
   padding: 8rem 6rem;
   position: relative;
@@ -487,7 +481,10 @@ html {
   font-weight: 400;
 }
 
-/* Gallery */
+/* =============================================================================
+   LANDING PAGE - GALLERY SECTION
+   ============================================================================= */
+
 .gallery {
   padding: 6rem 0 8rem;
   overflow: hidden;
@@ -575,169 +572,10 @@ html {
   background: linear-gradient(135deg, rgba(120, 40, 160, 0.15) 0%, transparent 60%);
 }
 
-/* Craft Section */
-.craft {
-  padding: 6rem 6rem 8rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6rem;
-  align-items: center;
-}
+/* =============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================= */
 
-.craft-content h2 {
-  font-family: var(--font-syne), sans-serif;
-  font-size: 2.75rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  line-height: 1.1;
-}
-
-.craft-content p {
-  color: var(--text-muted);
-  line-height: 1.8;
-  font-size: 1.05rem;
-  margin-bottom: 1rem;
-  font-weight: 400;
-}
-
-.craft-content p strong {
-  color: var(--white);
-  font-weight: 500;
-}
-
-.craft-visual {
-  position: relative;
-  height: 400px;
-}
-
-.craft-card {
-  position: absolute;
-  border-radius: 1.25rem;
-  background: var(--bg-glass);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-  overflow: hidden;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.craft-card:hover {
-  border-color: var(--pink);
-  box-shadow: 0 0 30px var(--pink-glow);
-  z-index: 10;
-}
-
-.craft-card.one {
-  width: 240px;
-  height: 240px;
-  top: 0;
-  left: 0;
-  transform: rotate(-3deg);
-}
-
-.craft-card.one:hover {
-  transform: rotate(-3deg) scale(1.05);
-}
-
-.craft-card.one::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 1.25rem;
-  background: radial-gradient(circle at 30% 30%, var(--pink-glow-soft) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.craft-card.two {
-  width: 220px;
-  height: 280px;
-  bottom: 0;
-  right: 40px;
-  transform: rotate(3deg);
-  border-color: rgba(255, 45, 146, 0.2);
-}
-
-.craft-card.two:hover {
-  transform: rotate(3deg) scale(1.05);
-  border-color: var(--pink);
-}
-
-.craft-card.two::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 1.25rem;
-  background: radial-gradient(circle at 70% 70%, var(--pink-glow-soft) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* CTA Section */
-.cta-section {
-  padding: 8rem 6rem;
-  text-align: center;
-  position: relative;
-}
-
-.cta-card {
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 4rem;
-  border-radius: 2rem;
-  background: var(--bg-glass);
-  backdrop-filter: blur(30px);
-  border: 1px solid var(--border-glass);
-  position: relative;
-  overflow: hidden;
-}
-
-.cta-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--pink), transparent);
-}
-
-.cta-card::after {
-  content: '';
-  position: absolute;
-  top: -100px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 300px;
-  height: 300px;
-  background: var(--pink-glow);
-  filter: blur(100px);
-  pointer-events: none;
-}
-
-.cta-section h2 {
-  font-family: var(--font-syne), sans-serif;
-  font-size: 3rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  position: relative;
-  z-index: 1;
-}
-
-.cta-section p {
-  color: var(--text-muted);
-  font-size: 1.1rem;
-  margin-bottom: 2rem;
-  position: relative;
-  z-index: 1;
-}
-
-.cta-section .btn-primary {
-  position: relative;
-  z-index: 1;
-}
-
-/* Responsive */
 @media (max-width: 1024px) {
   .hero {
     grid-template-columns: 1fr;
@@ -748,7 +586,6 @@ html {
     display: block;
     margin-top: 4rem;
     height: 400px;
-    /* Reduced height for mobile */
   }
 
   .hero h1 {
@@ -768,36 +605,8 @@ html {
     padding: 0 2rem;
   }
 
-  .craft {
-    grid-template-columns: 1fr;
-    padding: 4rem 2rem;
-  }
-
-  .craft-visual {
-    display: none;
-  }
-
-  .how-it-works,
-  .cta-section {
+  .how-it-works {
     padding-left: 2rem;
     padding-right: 2rem;
   }
-}
-
-/* Previous Footer Helper Utilities Ends Here */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-gray-100;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 rounded;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-500;
 }

@@ -10,53 +10,62 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Map CSS variables to Tailwind colors
+        // Design System: Map CSS variables to Tailwind colors
+        // These reference the tokens defined in globals.css :root
         theme: {
+          // Backgrounds
           bg: {
             primary: 'var(--bg-primary)',
             secondary: 'var(--bg-secondary)',
-            dark: 'var(--bg-dark)',
             deep: 'var(--bg-deep)',
             glass: {
               DEFAULT: 'var(--bg-glass)',
               hover: 'var(--bg-glass-hover)',
             }
           },
+          // Glass effects
           glass: {
             light: 'var(--glass-light)',
             medium: 'var(--glass-medium)',
-            heavy: 'var(--glass-heavy)',
-            border: 'var(--glass-border)',
             DEFAULT: 'var(--bg-glass)',
             hover: 'var(--bg-glass-hover)',
           },
+          // Text
           text: {
             primary: 'var(--text-primary)',
             secondary: 'var(--text-secondary)',
             muted: 'var(--text-muted)',
             dim: 'var(--text-dim)',
           },
+          // Accents
           accent: {
-            blue: 'var(--accent-blue)',
             purple: 'var(--accent-purple)',
-            pink: 'var(--accent-pink)',
             green: 'var(--accent-green)',
-            red: 'var(--accent-red)',
-            'pink-light': 'var(--pink-light)',
-            'pink-glow': 'var(--pink-glow)',
-            'pink-glow-soft': 'var(--pink-glow-soft)',
           },
+          // Glows
           glow: {
-            blue: 'var(--glow-blue)',
             purple: 'var(--glow-purple)',
-            pink: 'var(--glow-pink)',
             green: 'var(--glow-green)',
           },
+          // Borders
           border: {
             glass: 'var(--border-glass)',
             'glass-light': 'var(--border-glass-light)',
-          }
-        }
+          },
+          // Semantic
+          primary: {
+            DEFAULT: 'var(--color-primary)',
+            hover: 'var(--color-primary-hover)',
+            glow: 'var(--color-primary-glow)',
+          },
+        },
+        // Direct pink access (frequently used)
+        pink: {
+          DEFAULT: 'var(--pink)',
+          light: 'var(--pink-light)',
+          glow: 'var(--pink-glow)',
+          'glow-soft': 'var(--pink-glow-soft)',
+        },
       },
       fontFamily: {
         syne: ['var(--font-syne)', 'sans-serif'],
@@ -77,12 +86,6 @@ const config: Config = {
           '100%': { opacity: '1' },
         }
       },
-      animationDelay: {
-        '75': '75ms',
-        '150': '150ms',
-        '500': '500ms',
-        '1000': '1000ms',
-      }
     },
   },
   plugins: [],
