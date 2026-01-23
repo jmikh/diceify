@@ -12,7 +12,7 @@ import UploaderPanel from '@/components/Editor/Uploader/UploaderPanel'
 import UploadMain from '@/components/Editor/Uploader/UploadMain'
 import CropperPanel from '@/components/Editor/Cropper/CropperPanel'
 import CropperMain from '@/components/Editor/Cropper/CropperMain'
-import { DiceCanvasRef } from '@/components/Editor/DiceCanvas'
+import { DiceCanvasRef } from '@/components/Editor/Tuner/DiceCanvas'
 import TunerPanel from '@/components/Editor/Tuner/TunerPanel'
 import TunerMain from '@/components/Editor/Tuner/TunerMain'
 
@@ -244,24 +244,24 @@ function EditorContent() {
   }, [status, session?.user?.id, fetchUserProjects])
 
   // Save state to localStorage whenever it changes (for recovery on refresh)
+  // HEAVY SAVE: Only triggers on image/params changes, NOT on buildProgress
   useEffect(() => {
     // Only save if NOT logged in and we have meaningful state
     if (!session?.user?.id && (originalImage || (cropParams && Object.keys(cropParams).length > 0))) {
       try {
         // Only store what the database stores - no generated images
+        // Note: buildProgress is saved separately in a lightweight effect
         const stateToSave = {
           originalImage,  // Keep this as it's the source image
           // Don't save croppedImage or processedImageUrl - they're regenerated
           cropParams,     // Used to regenerate cropped image
           diceParams,     // Used to regenerate dice grid
           step,
-
           projectName,
-          buildProgress,
           diceStats
         }
         localStorage.setItem('editorState', JSON.stringify(stateToSave))
-        devLog('[LOCAL STORAGE] Saved editor state (params only, not logged in)')
+        devLog('[LOCAL STORAGE] Saved editor state (heavy save - params only, not logged in)')
       } catch (error) {
         if (error instanceof DOMException && error.name === 'QuotaExceededError') {
           devError('[LOCAL STORAGE] Quota exceeded - clearing and retrying without image')
@@ -272,9 +272,7 @@ function EditorContent() {
               cropParams,
               diceParams,
               step,
-
               projectName,
-              buildProgress,
               diceStats
             }
             localStorage.setItem('editorState', JSON.stringify(minimalState))
@@ -289,8 +287,23 @@ function EditorContent() {
     } else if (session?.user?.id) {
       // Clear localStorage when logged in (using database instead)
       localStorage.removeItem('editorState')
+      localStorage.removeItem('editorBuildProgress')
     }
-  }, [session?.user?.id, originalImage, cropParams, diceParams, step, projectName, buildProgress, diceStats])
+  }, [session?.user?.id, originalImage, cropParams, diceParams, step, projectName, diceStats])
+  // Note: buildProgress intentionally excluded - saved in separate lightweight effect
+
+  // LIGHT SAVE: Only saves buildProgress to a separate key (fast, no image serialization)
+  useEffect(() => {
+    // Only save if NOT logged in and we have build progress
+    if (!session?.user?.id && (buildProgress.x > 0 || buildProgress.y > 0)) {
+      try {
+        localStorage.setItem('editorBuildProgress', JSON.stringify(buildProgress))
+        // Don't log every build progress save to avoid console spam
+      } catch (error) {
+        // Silently fail - this is non-critical
+      }
+    }
+  }, [session?.user?.id, buildProgress])
 
   // Restore state from localStorage on mount (if no project is loaded)
   useEffect(() => {
@@ -313,10 +326,24 @@ function EditorContent() {
             if (state.cropParams) setCropParams(state.cropParams)
             if (state.diceParams) setDiceParams(state.diceParams)
             if (state.projectName) setProjectName(state.projectName)
-            if (state.buildProgress) setBuildProgress(state.buildProgress)
             if (state.diceStats) setDiceStats(state.diceStats)
             if (state.step) setStep(state.step)
-            if (state.step) setStep(state.step)
+
+            // Restore buildProgress from separate key (lightweight storage)
+            const savedBuildProgress = localStorage.getItem('editorBuildProgress')
+            if (savedBuildProgress) {
+              try {
+                const progress = JSON.parse(savedBuildProgress)
+                setBuildProgress(progress)
+                devLog('[LOCAL STORAGE] Restored buildProgress from separate key')
+              } catch (e) {
+                // Fallback to state.buildProgress if separate key fails
+                if (state.buildProgress) setBuildProgress(state.buildProgress)
+              }
+            } else if (state.buildProgress) {
+              // Legacy support: restore from main state if no separate key
+              setBuildProgress(state.buildProgress)
+            }
 
             // If we have crop params and original image, regenerate the cropped image
             // This is needed for the tune and build steps

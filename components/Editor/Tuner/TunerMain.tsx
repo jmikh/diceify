@@ -1,7 +1,7 @@
 'use client'
 
 import { RefObject } from 'react'
-import DiceCanvas, { DiceCanvasRef } from '@/components/Editor/DiceCanvas'
+import DiceCanvas, { DiceCanvasRef } from './DiceCanvas'
 
 interface TunerMainProps {
     diceCanvasRef: RefObject<DiceCanvasRef>

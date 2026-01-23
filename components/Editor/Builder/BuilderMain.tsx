@@ -47,6 +47,15 @@ const BuildViewer = memo(function BuildViewer() {
     const animationRef = useRef<any>(null)
     const [containerDimensions, setContainerDimensions] = useState({ width: 600, height: 600 })
 
+    // Cleanup animation on unmount
+    useEffect(() => {
+        return () => {
+            if (animationRef.current) {
+                animationRef.current.stop()
+            }
+        }
+    }, [])
+
     // Calculate and animate viewBox transition
     const buildZoom = useCallback(() => {
         // Calculate container aspect ratio

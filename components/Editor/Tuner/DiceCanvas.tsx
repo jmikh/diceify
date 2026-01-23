@@ -1,0 +1,319 @@
+/**
+ * DiceCanvas Component
+ * 
+ * SVG-based rendering engine for the dice art generation step.
+ * Uses vector graphics for clean scaling, then rasterizes in the background.
+ * 
+ * Rendering Pipeline:
+ * 1. Image → DiceGenerator → DiceGrid (data)
+ * 2. DiceGrid → DiceSVGRenderer → SVG string
+ * 3. SVG → Background rasterization → PNG data URL
+ * 4. Display with loading overlay during processing
+ */
+
+'use client'
+
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
+import { DiceGenerator } from '@/lib/dice/generator'
+import { DiceSVGRenderer } from '@/lib/dice/svg-renderer'
+import { Loader2 } from 'lucide-react'
+
+import { DiceGrid } from '@/lib/dice/types'
+import { devError } from '@/lib/utils/debug'
+import { useEditorStore } from '@/lib/store/useEditorStore'
+
+interface DiceCanvasProps {
+  maxWidth?: number
+  maxHeight?: number
+}
+
+export interface DiceCanvasRef {
+  download: () => void;
+}
+
+const MAX_RASTER_SIZE = 1080 // Max pixels on longest side
+
+const DiceCanvas = forwardRef<DiceCanvasRef, DiceCanvasProps>(({ maxWidth = 1080, maxHeight = 1080 }, ref) => {
+  const imageUrl = useEditorStore(state => state.croppedImage)
+  const params = useEditorStore(state => state.diceParams)
+  const cropArea = useEditorStore(state => state.cropParams)
+
+  const setDiceStats = useEditorStore(state => state.setDiceStats)
+  const setDiceGrid = useEditorStore(state => state.setDiceGrid)
+  const setProcessedImageUrl = useEditorStore(state => state.setProcessedImageUrl)
+
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [rasterizedImage, setRasterizedImage] = useState<string | null>(null)
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null)
+
+  const generatorRef = useRef<DiceGenerator>()
+  const svgRendererRef = useRef<DiceSVGRenderer>()
+  const currentGridRef = useRef<DiceGrid | null>(null)
+  const timeoutRef = useRef<NodeJS.Timeout>()
+  const isInitializedRef = useRef(false)
+  const rasterAbortRef = useRef<boolean>(false)
+
+  // Initialize once on mount
+  useEffect(() => {
+    if (isInitializedRef.current) return
+
+    generatorRef.current = new DiceGenerator()
+    svgRendererRef.current = new DiceSVGRenderer()
+    isInitializedRef.current = true
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+      rasterAbortRef.current = true
+    }
+  }, [])
+
+  // Rasterize SVG to PNG in background
+  const rasterizeSvg = useCallback((grid: DiceGrid): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!svgRendererRef.current) {
+        reject(new Error('SVG renderer not initialized'))
+        return
+      }
+
+      const cols = grid.width
+      const rows = grid.height
+
+      // Calculate raster dimensions maintaining aspect ratio
+      // Always use MAX_RASTER_SIZE for the longer side
+      let rasterWidth: number
+      let rasterHeight: number
+
+      if (cols >= rows) {
+        rasterWidth = MAX_RASTER_SIZE
+        rasterHeight = Math.round(MAX_RASTER_SIZE * (rows / cols))
+      } else {
+        rasterHeight = MAX_RASTER_SIZE
+        rasterWidth = Math.round(MAX_RASTER_SIZE * (cols / rows))
+      }
+
+      // Generate SVG using the renderer
+      const svgString = svgRendererRef.current.render(grid)
+
+      // Modify the SVG to have proper dimensions for rasterization
+      // Replace the opening svg tag with one that has explicit width/height
+      // Use [\s\S]*? to match across newlines (since [^>]* doesn't match newlines)
+      const fullSvg = svgString.replace(
+        /<svg[\s\S]*?>/,
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${cols} ${rows}" width="${rasterWidth}" height="${rasterHeight}">`
+      )
+
+      // Convert SVG to image in background
+      const img = new Image()
+      const blob = new Blob([fullSvg], { type: 'image/svg+xml' })
+      const url = URL.createObjectURL(blob)
+
+      img.onload = () => {
+        if (rasterAbortRef.current) {
+          URL.revokeObjectURL(url)
+          reject(new Error('Aborted'))
+          return
+        }
+
+        // Use requestIdleCallback or setTimeout to keep UI responsive
+        const doRasterize = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width = rasterWidth
+          canvas.height = rasterHeight
+          const ctx = canvas.getContext('2d')
+
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, rasterWidth, rasterHeight)
+            const dataUrl = canvas.toDataURL('image/png')
+            URL.revokeObjectURL(url)
+            resolve(dataUrl)
+          } else {
+            URL.revokeObjectURL(url)
+            reject(new Error('Failed to get canvas context'))
+          }
+        }
+
+        // Use requestIdleCallback if available, otherwise setTimeout
+        if ('requestIdleCallback' in window) {
+          (window as any).requestIdleCallback(doRasterize, { timeout: 100 })
+        } else {
+          setTimeout(doRasterize, 0)
+        }
+      }
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url)
+        reject(new Error('Failed to load SVG'))
+      }
+
+      img.src = url
+    })
+  }, [])
+
+  const generateDiceArt = useCallback(async () => {
+    if (!generatorRef.current || !imageUrl) return
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+
+    rasterAbortRef.current = false
+    setIsGenerating(true)
+
+    try {
+      // Generate the dice grid
+      const grid = await generatorRef.current.generateDiceGrid(
+        imageUrl,
+        params.numRows,
+        params.colorMode,
+        params.contrast,
+        params.gamma,
+        params.edgeSharpening,
+        params.rotate6,
+        params.rotate3,
+        params.rotate2,
+        null
+      )
+
+      currentGridRef.current = grid
+
+      const stats = generatorRef.current.calculateStats(grid)
+      setDiceStats(stats)
+      setDiceGrid(grid)
+
+      // Rasterize SVG in background
+      const dataUrl = await rasterizeSvg(grid)
+
+      if (!rasterAbortRef.current) {
+        setRasterizedImage(dataUrl)
+        setProcessedImageUrl(dataUrl)
+
+        // Calculate display dimensions
+        const cols = grid.width
+        const rows = grid.height
+        let displayWidth: number
+        let displayHeight: number
+
+        if (cols >= rows) {
+          displayWidth = MAX_RASTER_SIZE
+          displayHeight = Math.round(MAX_RASTER_SIZE * (rows / cols))
+        } else {
+          displayHeight = MAX_RASTER_SIZE
+          displayWidth = Math.round(MAX_RASTER_SIZE * (cols / rows))
+        }
+
+        setImageDimensions({ width: displayWidth, height: displayHeight })
+      }
+    } catch (error) {
+      if ((error as Error).message !== 'Aborted') {
+        devError('Error generating dice art:', error)
+      }
+    } finally {
+      setIsGenerating(false)
+    }
+  }, [imageUrl, params.numRows, params.colorMode, params.contrast, params.gamma, params.edgeSharpening, params.rotate6, params.rotate3, params.rotate2, setDiceStats, setDiceGrid, setProcessedImageUrl, rasterizeSvg])
+
+  // Generate on image change
+  useEffect(() => {
+    if (isInitializedRef.current && imageUrl) {
+      generateDiceArt()
+    }
+  }, [imageUrl])
+
+  // Debounced regeneration on param changes
+  useEffect(() => {
+    if (!isInitializedRef.current) return
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+    rasterAbortRef.current = true // Abort any in-progress rasterization
+
+    timeoutRef.current = setTimeout(() => {
+      generateDiceArt()
+    }, 300)
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [params.numRows, params.colorMode, params.contrast, params.gamma, params.edgeSharpening, params.rotate6, params.rotate3, params.rotate2])
+
+  const handleDownload = async () => {
+    if (!rasterizedImage) return
+
+    try {
+      // Convert data URL to blob for download
+      const response = await fetch(rasterizedImage)
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `dice-art-${Date.now()}.png`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      devError('Error downloading image:', error)
+    }
+  }
+
+  useImperativeHandle(ref, () => ({
+    download: handleDownload
+  }));
+
+  if (!imageUrl) return null
+
+  return (
+    <div className="flex-1 w-full lg:w-auto flex items-start justify-center" ref={containerRef}>
+      <div className="relative inline-block">
+        {/* Rasterized image */}
+        {rasterizedImage && (
+          <img
+            src={rasterizedImage}
+            alt="Dice art preview"
+            style={{
+              display: 'block',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              imageRendering: 'pixelated',
+              opacity: isGenerating ? 0.5 : 1,
+              transition: 'opacity 0.2s ease'
+            }}
+          />
+        )}
+
+        {/* Loading overlay */}
+        {isGenerating && (
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.3)',
+              borderRadius: '4px'
+            }}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="w-8 h-8 text-white animate-spin" />
+              <span className="text-white text-sm font-medium">Processing...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Placeholder when no image yet */}
+        {!rasterizedImage && !isGenerating && (
+          <div
+            className="flex items-center justify-center bg-gray-800"
+            style={{ width: 400, height: 300 }}
+          >
+            <span className="text-gray-400">Loading...</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+})
+
+DiceCanvas.displayName = 'DiceCanvas'
+
+export default DiceCanvas
