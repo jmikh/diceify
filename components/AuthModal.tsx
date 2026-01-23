@@ -7,25 +7,17 @@ import { devLog } from '@/lib/utils/debug'
 import { sendGAEvent } from '@next/third-parties/google'
 import Image from 'next/image'
 import Logo from '@/components/Logo'
+import { useEditorStore } from '@/lib/store/useEditorStore'
 
 interface AuthModalProps {
   isOpen: boolean
   onClose?: () => void
   onSuccess?: () => void
   message?: string
-  editorState?: {
-    originalImage?: string | null
-    croppedImage?: string | null
-    processedImageUrl?: string | null
-    cropParams?: any
-    diceParams?: any
-    step?: string
-
-  }
 }
 
 export default function AuthModal({
-  isOpen, onClose, onSuccess, message, editorState }: AuthModalProps) {
+  isOpen, onClose, onSuccess, message }: AuthModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<React.ReactNode | null>(null)
   const [showOtherMethods, setShowOtherMethods] = useState(false)
@@ -40,7 +32,17 @@ export default function AuthModal({
     try {
       // OAuth providers require redirect, so save state to sessionStorage first
       // The editor will restore this state after redirect
-      if (editorState) {
+      // Get latest state directly from Zustand instead of stale props
+      const state = useEditorStore.getState()
+      const editorState = {
+        originalImage: state.originalImage,
+        croppedImage: state.croppedImage,
+        processedImageUrl: state.processedImageUrl,
+        cropParams: state.cropParams,
+        diceParams: state.diceParams,
+        step: state.step,
+      }
+      if (editorState.originalImage || editorState.cropParams) {
         devLog('[DEBUG] Saving editor state before OAuth redirect')
         sessionStorage.setItem('editorStateBeforeAuth', JSON.stringify(editorState))
       }

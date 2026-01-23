@@ -49,7 +49,7 @@ export interface DiceCanvasRef {
   download: () => void;
 }
 
-const DiceCanvas = forwardRef<DiceCanvasRef, DiceCanvasProps>(({ maxWidth = 700, maxHeight = 500 }, ref) => {
+const DiceCanvas = forwardRef<DiceCanvasRef, DiceCanvasProps>(({ maxWidth = 1440, maxHeight = 1440 }, ref) => {
   const imageUrl = useEditorStore(state => state.croppedImage)
   const params = useEditorStore(state => state.diceParams)
   const currentStep = useEditorStore(state => state.step)

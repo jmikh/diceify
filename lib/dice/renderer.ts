@@ -18,52 +18,51 @@ export class DiceRenderer {
     this.offscreenCtx = this.offscreenCanvas.getContext('2d')!
   }
 
-  async initialize(diceSize: number = 50) {
+  async initialize(diceSize: number = 100) {
     await this.cache.initialize(diceSize)
   }
 
-  render(grid: DiceGrid, scale: number = 1, maxWidth: number = 700, maxHeight: number = 500) {
-    // Get dice count (grid.dice is now [x][y] where x=cols, y=rows)
-    const diceCountX = grid.width  // Number of columns
-    const diceCountY = grid.height // Number of rows
+  render(grid: DiceGrid, scale: number = 1, maxWidth: number = 1080, maxHeight: number = 1080) {
+    const diceCountX = grid.width
+    const diceCountY = grid.height
 
-    // Use fixed 24x24 pixel size per dice as base
-    const baseDiceSize = 24 * scale
-
-    // Calculate required dimensions at base size
+    // Calculate what dice size we need to fit within max dimensions
+    // Start with a reasonable base size, then scale down if needed
+    const baseDiceSize = 48 * scale
     const requiredWidth = diceCountX * baseDiceSize
     const requiredHeight = diceCountY * baseDiceSize
 
-    // Calculate scaling factor to fit within max dimensions
-    // We only scale down, not up (hence Math.min(1, ...))
     const scaleFactor = Math.min(
       1,
       maxWidth / requiredWidth,
       maxHeight / requiredHeight
     )
 
-    // Final dice size
-    const diceSize = baseDiceSize * scaleFactor
+    // Final dice size - must be integer for clean pixel alignment
+    const diceSize = Math.max(1, Math.floor(baseDiceSize * scaleFactor))
 
-    // Set canvas size to exactly fit the dice grid at calculated size
+    // Set canvas to exact final size
     this.canvas.width = diceCountX * diceSize
     this.canvas.height = diceCountY * diceSize
 
-    // Clear canvas (transparent background)
+    // Clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
-    // Render all dice - iterate through x,y coordinates
-    // Remember: (0,0) is bottom-left, so we need to flip Y when drawing
+    // Enable high-quality smoothing for scaling cached sprites to target size
+    this.ctx.imageSmoothingEnabled = true
+    this.ctx.imageSmoothingQuality = 'high'
+
+    // Draw each dice directly at target size (cache sprites are 100px)
     for (let x = 0; x < grid.width; x++) {
       for (let y = 0; y < grid.height; y++) {
         const dice = grid.dice[x][y]
-        // Canvas Y coordinate needs to be flipped (canvas 0 is top, our 0 is bottom)
+        // Canvas Y needs to be flipped (canvas 0 is top, our 0 is bottom)
         const canvasX = x * diceSize
-        const canvasY = (grid.height - 1 - y) * diceSize  // Flip Y axis for canvas
+        const canvasY = (grid.height - 1 - y) * diceSize
 
-        // Get cached dice face (with rotation if needed)
         const diceFace = this.cache.getDiceFace(dice.face, dice.color, dice.rotate90 || false)
         if (diceFace) {
+          // Draw cached sprite scaled to target dice size
           this.ctx.drawImage(diceFace, canvasX, canvasY, diceSize, diceSize)
         }
       }

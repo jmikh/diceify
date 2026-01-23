@@ -117,7 +117,7 @@ export default function TunerPanel() {
 
   return (
     <>
-      <div className="space-y-6 flex-grow lg:overflow-y-auto lg:overflow-x-hidden pr-2 custom-scrollbar">
+      <div className={`space-y-6 flex-grow ${styles.scrollContainer} pr-2`}>
         {/* Stats Section - MOVED HERE */}
         <div className="bg-white/5 rounded-xl p-4 border border-white/10">
           {/* Total dice count - at the very top */}
@@ -397,12 +397,12 @@ export default function TunerPanel() {
         </div>
 
         {/* Grid Size - THIRD (Start of sliders) */}
-        <div className="group flex items-center gap-4 lg:[@media(min-height:800px)]:block">
-          <div className="flex items-center gap-2 mb-0 w-24 flex-shrink-0 lg:[@media(min-height:800px)]:mb-3 lg:[@media(min-height:800px)]:w-auto">
+        <div className="group flex items-center gap-4">
+          <div className="flex items-center gap-2 w-24 flex-shrink-0">
             <Grid3x3 size={16} style={{ color: theme.colors.text.secondary, flexShrink: 0 }} />
             <span className="text-[10px] font-medium text-gray-300 uppercase tracking-wider">Rows</span>
           </div>
-          <div className="relative mx-0 flex-grow lg:[@media(min-height:800px)]:mx-4">
+          <div className="relative flex-grow">
             <div className="flex items-center">
               <input
                 type="range"
@@ -437,12 +437,12 @@ export default function TunerPanel() {
         </div>
 
         {/* Contrast */}
-        <div className="group flex items-center gap-4 lg:[@media(min-height:800px)]:block">
-          <div className="flex items-center gap-2 mb-0 w-24 flex-shrink-0 lg:[@media(min-height:800px)]:mb-3 lg:[@media(min-height:800px)]:w-auto">
+        <div className="group flex items-center gap-4">
+          <div className="flex items-center gap-2 w-24 flex-shrink-0">
             <Contrast size={16} style={{ color: theme.colors.text.secondary, flexShrink: 0 }} />
             <span className="text-[10px] font-medium text-gray-300 uppercase tracking-wider">Contrast</span>
           </div>
-          <div className="relative mx-0 flex-grow lg:[@media(min-height:800px)]:mx-4">
+          <div className="relative flex-grow">
             <div className="flex items-center">
               <input
                 type="range"
@@ -477,12 +477,12 @@ export default function TunerPanel() {
         </div>
 
         {/* Brightness (Gamma) */}
-        <div className="group flex items-center gap-4 lg:[@media(min-height:800px)]:block">
-          <div className="flex items-center gap-2 mb-0 w-24 flex-shrink-0 lg:[@media(min-height:800px)]:mb-3 lg:[@media(min-height:800px)]:w-auto">
+        <div className="group flex items-center gap-4">
+          <div className="flex items-center gap-2 w-24 flex-shrink-0">
             <Sun size={16} style={{ color: theme.colors.text.secondary, flexShrink: 0 }} />
             <span className="text-[10px] font-medium text-gray-300 uppercase tracking-wider">Brightness</span>
           </div>
-          <div className="relative mx-0 flex-grow lg:[@media(min-height:800px)]:mx-4">
+          <div className="relative flex-grow">
             <div className="flex items-center">
               <input
                 type="range"
@@ -518,12 +518,12 @@ export default function TunerPanel() {
         </div>
 
         {/* Edge Sharpening */}
-        <div className="group flex items-center gap-4 lg:[@media(min-height:800px)]:block">
-          <div className="flex items-center gap-2 mb-0 w-24 flex-shrink-0 lg:[@media(min-height:800px)]:mb-3 lg:[@media(min-height:800px)]:w-auto">
+        <div className="group flex items-center gap-4">
+          <div className="flex items-center gap-2 w-24 flex-shrink-0">
             <Sparkles size={16} style={{ color: theme.colors.text.secondary, flexShrink: 0 }} />
             <span className="text-[10px] font-medium text-gray-300 uppercase tracking-wider">Sharpening</span>
           </div>
-          <div className="relative mx-0 flex-grow lg:[@media(min-height:800px)]:mx-4">
+          <div className="relative flex-grow">
             <div className="flex items-center">
               <input
                 type="range"

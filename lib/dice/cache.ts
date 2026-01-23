@@ -17,30 +17,30 @@ export class DiceFaceCache {
   }
   private initialized = false
 
-  async initialize(size: number = 50) {
+  async initialize(diceSize: number = 32) {
     if (this.initialized) return
 
     // Create canvases for each dice face
     const faces: DiceFace[] = [1, 2, 3, 4, 5, 6]
-    
+
     for (const face of faces) {
       // Black dice - normal
-      const blackCanvas = this.createDiceFace(face, 'black', size, false)
+      const blackCanvas = this.createDiceFace(face, 'black', diceSize, false)
       const blackBitmap = await createImageBitmap(blackCanvas)
       this.cache.black.set(face, blackBitmap)
 
       // Black dice - rotated
-      const blackRotatedCanvas = this.createDiceFace(face, 'black', size, true)
+      const blackRotatedCanvas = this.createDiceFace(face, 'black', diceSize, true)
       const blackRotatedBitmap = await createImageBitmap(blackRotatedCanvas)
       this.cache.blackRotated.set(face, blackRotatedBitmap)
 
       // White dice - normal
-      const whiteCanvas = this.createDiceFace(face, 'white', size, false)
+      const whiteCanvas = this.createDiceFace(face, 'white', diceSize, false)
       const whiteBitmap = await createImageBitmap(whiteCanvas)
       this.cache.white.set(face, whiteBitmap)
 
       // White dice - rotated
-      const whiteRotatedCanvas = this.createDiceFace(face, 'white', size, true)
+      const whiteRotatedCanvas = this.createDiceFace(face, 'white', diceSize, true)
       const whiteRotatedBitmap = await createImageBitmap(whiteRotatedCanvas)
       this.cache.whiteRotated.set(face, whiteRotatedBitmap)
     }
@@ -56,19 +56,19 @@ export class DiceFaceCache {
 
     // Get colors from shared constants
     const colors = DICE_RENDERING.COLORS[color]
-    
+
     // Apply rotation if needed
     if (rotate90) {
       ctx.translate(size / 2, size / 2)
       ctx.rotate(Math.PI / 2)
       ctx.translate(-size / 2, -size / 2)
     }
-    
+
     // Draw rounded square
     ctx.fillStyle = colors.background
-    ctx.strokeStyle = colors.border
-    ctx.lineWidth = 1
-    
+    ctx.strokeStyle = DICE_RENDERING.COLORS.stroke  // Use unified stroke color like SVG
+    ctx.lineWidth = size * DICE_RENDERING.BORDER_WIDTH_FACTOR  // Scale border with size like SVG
+
     const radius = size * DICE_RENDERING.CORNER_RADIUS_FACTOR
     ctx.beginPath()
     ctx.moveTo(radius, 0)
@@ -84,7 +84,7 @@ export class DiceFaceCache {
     ctx.fillStyle = colors.dot
     const dotRadius = size * DICE_RENDERING.DOT_RADIUS_FACTOR
     const positions = getDotPositions(face, size)
-    
+
     positions.forEach(([x, y]) => {
       ctx.beginPath()
       ctx.arc(x, y, dotRadius, 0, Math.PI * 2)

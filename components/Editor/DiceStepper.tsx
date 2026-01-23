@@ -32,7 +32,7 @@ const DiceStepper = memo(function DiceStepper({ vertical = false }: DiceStepperP
               {/* Step Element */}
               <div
                 className={`
-                flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full transition-all
+                flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full
                 ${isActive
                     ? 'bg-pink-500/10 border border-pink-500/50 text-white'
                     : isCompleted

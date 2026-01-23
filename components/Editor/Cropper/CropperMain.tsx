@@ -33,8 +33,6 @@ export default function CropperMain({
     // Store State
     const cropParams = useEditorStore(state => state.cropParams)
 
-    const buildProgress = useEditorStore(state => state.buildProgress)
-
     // Local State
     const fixedCropperRef = useRef<FixedCropperRef>(null)
     const [imageLoaded, setImageLoaded] = useState(false)
@@ -80,15 +78,16 @@ export default function CropperMain({
             // Allow re-tuning if already built
 
 
-            // Reset build progress
-            if (buildProgress.x !== 0 || buildProgress.y !== 0) {
+            // Reset build progress - use getState to avoid dependency
+            const currentBuildProgress = useEditorStore.getState().buildProgress
+            if (currentBuildProgress.x !== 0 || currentBuildProgress.y !== 0) {
                 setBuildProgress({ x: 0, y: 0, percentage: 0 })
             }
         }
 
         setCropParams(params)
         setCroppedImage(croppedImageUrl)
-    }, [cropParams, buildProgress, setCropParams, setCroppedImage, setHasCropChanged, setBuildProgress])
+    }, [setCropParams, setCroppedImage, setHasCropChanged, setBuildProgress])
 
     const selectedOption = aspectRatioOptions.find(opt => opt.value === selectedRatio) || aspectRatioOptions[2]
 
@@ -152,12 +151,13 @@ export default function CropperMain({
                 const state = cropper.getState()
                 const croppedImage = canvas.toDataURL('image/jpeg', 0.95)
 
+                // Round to 2 decimal places to prevent floating point precision differences
                 const cropData = {
-                    x: coordinates?.left || 0,
-                    y: coordinates?.top || 0,
-                    width: coordinates?.width || 0,
-                    height: coordinates?.height || 0,
-                    rotation: state?.transforms?.rotate || 0
+                    x: Math.round((coordinates?.left || 0) * 100) / 100,
+                    y: Math.round((coordinates?.top || 0) * 100) / 100,
+                    width: Math.round((coordinates?.width || 0) * 100) / 100,
+                    height: Math.round((coordinates?.height || 0) * 100) / 100,
+                    rotation: Math.round((state?.transforms?.rotate || 0) * 100) / 100
                 }
 
                 if (isComplete) {
@@ -219,6 +219,9 @@ export default function CropperMain({
             defaultTransforms={{ rotate: cropRotation }}
             defaultCoordinates={defaultCoordinates}
             imageRestriction={ImageRestriction.stencil}
+            backgroundWrapperProps={{
+                scaleImage: { wheel: { ratio: 0.1 } }
+            }}
             onReady={() => {
                 devLog('Cropper onReady fired')
                 setImageLoaded(true)

@@ -3,14 +3,14 @@
 export const DICE_RENDERING = {
   // Dot sizing
   DOT_RADIUS_FACTOR: 0.12,  // 12% of dice size
-  
+
   // Dice padding and layout
   PADDING_FACTOR: 0.25,  // Controls dot spacing (0 = furthest apart)
-  
+
   // Dice appearance
   CORNER_RADIUS_FACTOR: 0.10,  // 10% corner radius for rounded dice
   BORDER_WIDTH_FACTOR: 0.05,   // 5% border width
-  
+
   // Colors
   COLORS: {
     black: {
@@ -19,7 +19,7 @@ export const DICE_RENDERING = {
       border: '#333'
     },
     white: {
-      background: '#fafafa', 
+      background: '#fafafa',
       dot: '#1a1a1a',
       border: '#ddd'
     },
@@ -32,9 +32,9 @@ export function getDotPositions(face: number, size: number): [number, number][] 
   const lower = size * (1 + DICE_RENDERING.PADDING_FACTOR) / 6
   const middle = size * 3 / 6
   const upper = size * (5 - DICE_RENDERING.PADDING_FACTOR) / 6
-  
+
   const positions: [number, number][] = []
-  
+
   if (face >= 2) { // top left
     positions.push([lower, lower])
   }
@@ -56,6 +56,6 @@ export function getDotPositions(face: number, size: number): [number, number][] 
   if (face >= 2) { // bottom right
     positions.push([upper, upper])
   }
-  
+
   return positions
 }

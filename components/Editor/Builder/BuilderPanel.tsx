@@ -4,12 +4,13 @@ import { useRef, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import CountUp from 'react-countup'
 import { theme } from '@/lib/theme'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink, Download } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink, Download, Eye } from 'lucide-react'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 import { useBuildNavigation } from './useBuildNavigation'
 import { sendGAEvent } from '@next/third-parties/google'
 import { DiceSVGRenderer } from '@/lib/dice/svg-renderer'
 import ResetProgressModal from '@/components/ResetProgressModal'
+import ProgressPreviewModal from '@/components/ProgressPreviewModal'
 
 // --- ProgressBar Component (Exported for reuse) ---
 
@@ -64,6 +65,8 @@ export default function BuilderPanel() {
 
     // Modal state for reset progress warning
     const [showResetModal, setShowResetModal] = useState(false)
+    // Modal state for progress preview
+    const [showProgressModal, setShowProgressModal] = useState(false)
 
     // Track previous values for smooth transitions
     const prevCountRef = useRef(totalCount)
@@ -320,6 +323,17 @@ export default function BuilderPanel() {
                         <div className="pt-2">
                             <ProgressBar percentage={totalDice > 0 ? (currentIndex / totalDice) * 100 : 0} />
                         </div>
+
+                        {/* View Progress Button */}
+                        <div className="pt-2">
+                            <button
+                                onClick={() => setShowProgressModal(true)}
+                                className="w-full py-3 rounded-lg border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
+                            >
+                                <Eye size={16} className="group-hover:scale-110 transition-transform" />
+                                <span>View Progress</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -371,6 +385,12 @@ export default function BuilderPanel() {
                 onClose={() => setShowResetModal(false)}
                 onConfirm={handleConfirmReset}
                 currentProgress={buildProgress}
+            />
+
+            {/* Progress Preview Modal */}
+            <ProgressPreviewModal
+                isOpen={showProgressModal}
+                onClose={() => setShowProgressModal(false)}
             />
         </>
     )

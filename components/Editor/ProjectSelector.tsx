@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { theme } from '@/lib/theme'
 import { Cloud, ChevronDown, Plus, X, Check } from 'lucide-react'
 import { devError } from '@/lib/utils/debug'
+import { useEditorStore } from '@/lib/store/useEditorStore'
 
 interface Project {
   id: string
@@ -13,11 +14,6 @@ interface Project {
 }
 
 interface ProjectSelectorProps {
-  currentProject: string
-  currentProjectId?: string | null
-  onProjectChange: (name: string) => void
-  lastSaved?: Date | null
-  isSaving?: boolean
   projects?: Project[]
   onSelectProject?: (projectId: string) => void
   onCreateNew?: (name: string) => void
@@ -26,17 +22,18 @@ interface ProjectSelectorProps {
 }
 
 export default function ProjectSelector({
-  currentProject,
-  currentProjectId,
-  onProjectChange,
-  lastSaved,
-  isSaving = false,
   projects = [],
   onSelectProject,
   onCreateNew,
   onDeleteProject,
   maxProjects = 3
 }: ProjectSelectorProps) {
+  // Get state directly from Zustand instead of props
+  const currentProject = useEditorStore(state => state.projectName)
+  const currentProjectId = useEditorStore(state => state.currentProjectId)
+  const lastSaved = useEditorStore(state => state.lastSaved)
+  const isSaving = useEditorStore(state => state.isSaving)
+  const setProjectName = useEditorStore(state => state.setProjectName)
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(currentProject)
   const [isCloudHovering, setIsCloudHovering] = useState(false)
@@ -171,7 +168,7 @@ export default function ProjectSelector({
       })
 
       if (response.ok) {
-        onProjectChange(trimmedValue)
+        setProjectName(trimmedValue)
       }
     } catch (error) {
       devError('Failed to rename project:', error)

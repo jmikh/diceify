@@ -1,3 +1,36 @@
+/* Scrollable container with stable gutter to prevent flash */
+.scrollContainer {
+    scrollbar-gutter: stable;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom scrollbar styling - subtle on-theme appearance */
+.scrollContainer::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scrollContainer::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 3px;
+}
+
+.scrollContainer::-webkit-scrollbar-thumb {
+    background: rgba(236, 72, 153, 0.25);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+.scrollContainer::-webkit-scrollbar-thumb:hover {
+    background: rgba(236, 72, 153, 0.4);
+}
+
+/* Firefox scrollbar */
+.scrollContainer {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(236, 72, 153, 0.25) rgba(255, 255, 255, 0.03);
+}
+
 .slider {
     -webkit-appearance: none;
     /* Override default CSS styles */

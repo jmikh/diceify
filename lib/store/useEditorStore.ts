@@ -160,14 +160,25 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setCroppedImage: (url) => set({ croppedImage: url }),
   setProcessedImageUrl: (url) => set({ processedImageUrl: url }),
 
-  setCropParams: (params) => set({ cropParams: params }),
+  setCropParams: (params) => set((state) => {
+    // Only update if values actually changed
+    if (JSON.stringify(state.cropParams) === JSON.stringify(params)) return state
+    return { cropParams: params }
+  }),
   setHasCropChanged: (changed) => set({ hasCropChanged: changed }),
 
-  setDiceParams: (params) => set((state) => ({
-    diceParams: { ...state.diceParams, ...params }
-  })),
+  setDiceParams: (params) => set((state) => {
+    const newParams = { ...state.diceParams, ...params }
+    // Only update if values actually changed
+    if (JSON.stringify(state.diceParams) === JSON.stringify(newParams)) return state
+    return { diceParams: newParams }
+  }),
 
-  setDiceStats: (stats) => set({ diceStats: stats }),
+  setDiceStats: (stats) => set((state) => {
+    // Only update if values actually changed
+    if (JSON.stringify(state.diceStats) === JSON.stringify(stats)) return state
+    return { diceStats: stats }
+  }),
   setDiceGrid: (grid) => set({ diceGrid: grid }),
 
   setSavedTuneState: (params) => set({
@@ -191,9 +202,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setShowLimitModal: (show) => set({ showLimitModal: show }),
   setShowProFeatureModal: (show) => set({ showProFeatureModal: show }),
 
-  setBuildProgress: (progress) => set((state) => ({
-    buildProgress: typeof progress === 'function' ? progress(state.buildProgress) : progress
-  })),
+  setBuildProgress: (progress) => set((state) => {
+    const newProgress = typeof progress === 'function' ? progress(state.buildProgress) : progress
+    // Only update if values actually changed
+    if (JSON.stringify(state.buildProgress) === JSON.stringify(newProgress)) return state
+    return { buildProgress: newProgress }
+  }),
 
   setSelectedRatio: (ratio) => set({ selectedRatio: ratio }),
   setCropRotation: (rotation) => set({ cropRotation: rotation }),
@@ -212,23 +226,26 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     })
   },
 
-  updateCrop: (croppedImageUrl: string, crop: CropParams) => {
-    set({
+  updateCrop: (croppedImageUrl: string, crop: CropParams) => set((state) => {
+    // Only update if cropParams actually changed
+    if (JSON.stringify(state.cropParams) === JSON.stringify(crop)) return state
+    return {
       croppedImage: croppedImageUrl,
       cropParams: crop,
       // Don't change step here
-    })
-  },
+    }
+  }),
 
-  completeCrop: (croppedImageUrl: string, crop: CropParams) => {
-    set({
+  completeCrop: (croppedImageUrl: string, crop: CropParams) => set((state) => {
+    // Only update if cropParams actually changed
+    if (JSON.stringify(state.cropParams) === JSON.stringify(crop) && state.step === 'tune') return state
+    return {
       croppedImage: croppedImageUrl,
       cropParams: crop,
       step: 'tune',
-
       diceGrid: null
-    })
-  },
+    }
+  }),
 
   resetWorkflow: () => {
     devLog('[STORE] Resetting workflow')

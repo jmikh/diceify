@@ -578,7 +578,6 @@ function EditorContent() {
       return (
         <TunerMain
           diceCanvasRef={diceCanvasRef}
-          cropParams={cropParams}
         />
       )
     }
@@ -699,17 +698,7 @@ function EditorContent() {
           <div className="sm:absolute sm:left-1/2 sm:top-4 sm:transform sm:-translate-x-1/2 mt-3 sm:mt-0 flex justify-center py-2">
             {session?.user && (
               <ProjectSelector
-                currentProject={projectName}
-                currentProjectId={currentProjectId}
-                lastSaved={lastSaved}
-                isSaving={isSaving}
                 projects={userProjects}
-                onProjectChange={(name: string) => {
-                  // Just update the local state - ProjectSelector handles the API call
-                  setProjectName(name)
-                  // Update the local projects list to reflect the change
-                  fetchUserProjects()
-                }}
                 onSelectProject={async (projectId) => {
                   // Find the target project first
                   const project = userProjects.find(p => p.id === projectId)
@@ -798,15 +787,6 @@ function EditorContent() {
           // Everything else is handled automatically by the login useEffect
         }}
         message={authModalMessage || "To continue using the builder you must be signed in"}
-        editorState={{
-          originalImage,
-          croppedImage,
-          processedImageUrl,
-          cropParams,
-          diceParams,
-          step,
-
-        }}
       />
 
       {/* Project Capacity Modal - only shown when at capacity */}
