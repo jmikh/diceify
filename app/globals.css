@@ -118,6 +118,24 @@ body {
     border-color: var(--border-glass-light);
   }
 
+  /* Nav CTA Button - Compact primary button for navigation */
+  .nav-cta {
+    background: var(--pink);
+    color: var(--white);
+    padding: 0.6rem 1.25rem;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 30px var(--pink-glow);
+  }
+
+  .nav-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 40px var(--pink-glow), 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+
   /* Primary Button */
   .btn-primary {
     display: inline-flex;

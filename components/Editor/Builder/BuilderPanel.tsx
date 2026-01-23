@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import CountUp from 'react-countup'
 import { theme } from '@/lib/theme'
@@ -9,6 +9,7 @@ import { useEditorStore } from '@/lib/store/useEditorStore'
 import { useBuildNavigation } from './useBuildNavigation'
 import { sendGAEvent } from '@next/third-parties/google'
 import { DiceSVGRenderer } from '@/lib/dice/svg-renderer'
+import ResetProgressModal from '@/components/ResetProgressModal'
 
 // --- ProgressBar Component (Exported for reuse) ---
 
@@ -58,7 +59,11 @@ export default function BuilderPanel() {
 
     const setStep = useEditorStore(state => state.setStep)
     const diceStats = useEditorStore(state => state.diceStats)
+    const buildProgress = useEditorStore(state => state.buildProgress)
     const { blackCount, whiteCount, totalCount } = diceStats
+
+    // Modal state for reset progress warning
+    const [showResetModal, setShowResetModal] = useState(false)
 
     // Track previous values for smooth transitions
     const prevCountRef = useRef(totalCount)
@@ -77,6 +82,16 @@ export default function BuilderPanel() {
     }
 
     const handleBack = () => {
+        // Check if user has made progress
+        if (buildProgress.x !== 0 || buildProgress.y !== 0) {
+            setShowResetModal(true)
+            return
+        }
+        setStep('tune')
+    }
+
+    const handleConfirmReset = () => {
+        setShowResetModal(false)
         setStep('tune')
     }
 
@@ -349,6 +364,14 @@ export default function BuilderPanel() {
                     ← Back
                 </button>
             </div>
+
+            {/* Reset Progress Modal */}
+            <ResetProgressModal
+                isOpen={showResetModal}
+                onClose={() => setShowResetModal(false)}
+                onConfirm={handleConfirmReset}
+                currentProgress={buildProgress}
+            />
         </>
     )
 }
