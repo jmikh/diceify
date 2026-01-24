@@ -16,7 +16,6 @@
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { DiceGenerator } from '@/lib/dice/generator'
 import { DiceSVGRenderer } from '@/lib/dice/svg-renderer'
-import { Loader2 } from 'lucide-react'
 
 import { DiceGrid } from '@/lib/dice/types'
 import { devError } from '@/lib/utils/debug'
@@ -266,10 +265,10 @@ const DiceCanvas = forwardRef<DiceCanvasRef, DiceCanvasProps>(({ maxWidth = 1080
   if (!imageUrl) return null
 
   return (
-    <div className="flex-1 w-full lg:w-auto flex items-start justify-center" ref={containerRef}>
-      <div className="relative inline-block">
-        {/* Rasterized image */}
-        {rasterizedImage && (
+    <div className="flex-1 w-full h-full relative flex items-center justify-center" ref={containerRef}>
+      {/* Rasterized image */}
+      {rasterizedImage && (
+        <div className="relative inline-block">
           <img
             src={rasterizedImage}
             alt="Dice art preview"
@@ -277,39 +276,11 @@ const DiceCanvas = forwardRef<DiceCanvasRef, DiceCanvasProps>(({ maxWidth = 1080
               display: 'block',
               maxWidth: '100%',
               maxHeight: '100%',
-              imageRendering: 'pixelated',
-              opacity: isGenerating ? 0.5 : 1,
-              transition: 'opacity 0.2s ease'
+              imageRendering: 'pixelated'
             }}
           />
-        )}
-
-        {/* Loading overlay */}
-        {isGenerating && (
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              borderRadius: '4px'
-            }}
-          >
-            <div className="flex flex-col items-center gap-2">
-              <Loader2 className="w-8 h-8 text-white animate-spin" />
-              <span className="text-white text-sm font-medium">Processing...</span>
-            </div>
-          </div>
-        )}
-
-        {/* Placeholder when no image yet */}
-        {!rasterizedImage && !isGenerating && (
-          <div
-            className="flex items-center justify-center bg-gray-800"
-            style={{ width: 400, height: 300 }}
-          >
-            <span className="text-gray-400">Loading...</span>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 })

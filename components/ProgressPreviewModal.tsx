@@ -2,7 +2,8 @@
 
 import { useRef, useMemo, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Eye, Sparkles } from 'lucide-react'
+import { X } from 'lucide-react'
+import { RiProgress5Line, RiProgress8Line } from 'react-icons/ri'
 import { useSession } from 'next-auth/react'
 import { theme } from '@/lib/theme'
 import { useEditorStore } from '@/lib/store/useEditorStore'
@@ -185,7 +186,7 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
                                 : 'text-white/60 hover:text-white/80'
                                 }`}
                         >
-                            <Eye size={16} />
+                            <RiProgress5Line size={16} />
                             Progress
                         </button>
                         <button
@@ -195,7 +196,7 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
                                 : 'text-white/60 hover:text-white/80'
                                 }`}
                         >
-                            <Sparkles size={16} />
+                            <RiProgress8Line size={16} />
                             Full
                         </button>
                     </div>

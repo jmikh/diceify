@@ -78,9 +78,9 @@ const BuildViewer = memo(function BuildViewer() {
         // Convert our coordinate system to SVG coordinates
         const svgY = totalRows - 1 - currentY
 
-        // Calculate position to center on current dice
-        let viewX = currentX - viewWidth / 2
-        let viewY = svgY - viewHeight / 2
+        // Calculate position to show current dice at bottom-left (25% X, 75% Y)
+        let viewX = currentX - viewWidth * 0.25
+        let viewY = svgY - viewHeight * 0.6
 
         // Clamp to grid boundaries with extra padding for highlights
         const edgePadding = 0.1 // Extra space so highlights aren't cut off
@@ -197,8 +197,8 @@ const BuildViewer = memo(function BuildViewer() {
         viewHeight = Math.max(3, viewHeight)
 
         const svgY = totalRows - 1 - currentY
-        let viewX = currentX - viewWidth / 2
-        let viewY = svgY - viewHeight / 2
+        let viewX = currentX - viewWidth * 0.25
+        let viewY = svgY - viewHeight * 0.75
 
         const edgePadding = 0.1
         if (viewX < -edgePadding) viewX = -edgePadding

@@ -4,7 +4,8 @@ import { useRef, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import CountUp from 'react-countup'
 import { theme } from '@/lib/theme'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink, Download, Eye } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download } from 'lucide-react'
+import { RiProgress5Line, RiShoppingCart2Line } from 'react-icons/ri'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 import { useBuildNavigation } from './useBuildNavigation'
 import { sendGAEvent } from '@next/third-parties/google'
@@ -136,7 +137,7 @@ export default function BuilderPanel() {
     return (
         <>
             {/* Build Progress Controls */}
-            <div className="mb-6">
+            <div>
                 <div className="space-y-6">
                     {/* Stats Section */}
                     <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-4">
@@ -325,12 +326,12 @@ export default function BuilderPanel() {
                         </div>
 
                         {/* View Progress Button */}
-                        <div className="pt-2">
+                        <div className="pt-4">
                             <button
                                 onClick={() => setShowProgressModal(true)}
                                 className="w-full py-3 rounded-lg border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
                             >
-                                <Eye size={16} className="group-hover:scale-110 transition-transform" />
+                                <RiProgress5Line size={16} className="group-hover:scale-110 transition-transform" />
                                 <span>View Progress</span>
                             </button>
                         </div>
@@ -339,28 +340,28 @@ export default function BuilderPanel() {
             </div>
 
             {/* Purchase Dice Button */}
-            <div className="mt-6 mb-2">
+            <div className="mt-4">
                 <a
                     href="https://amzn.to/4rTDYAh"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => sendGAEvent('event', 'purchase_dice_click', { label: 'amazon_affiliate' })}
-                    className="w-full py-3 rounded-lg text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
-                    style={{
-                        backgroundColor: theme.colors.accent.pink, // Use theme pink
-                        boxShadow: `0 0 15px ${theme.colors.accent.pink}40` // Subtle glow
-                    }}
+                    className="w-full py-3 rounded-lg border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
                 >
+                    <RiShoppingCart2Line size={16} className="group-hover:scale-110 transition-transform" />
                     <span>Purchase Dice</span>
-                    <ExternalLink size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                 </a>
             </div>
 
             {/* Download SVG Button */}
-            <div className="mb-6">
+            <div className="mt-4">
                 <button
                     onClick={handleDownloadSvg}
-                    className="w-full py-3 rounded-lg border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
+                    className="w-full py-3 rounded-lg text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
+                    style={{
+                        backgroundColor: theme.colors.accent.pink,
+                        boxShadow: `0 0 15px ${theme.colors.accent.pink}40`
+                    }}
                 >
                     <Download size={16} className="group-hover:scale-110 transition-transform" />
                     <span>Download SVG</span>

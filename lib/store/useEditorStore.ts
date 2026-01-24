@@ -45,6 +45,7 @@ interface EditorState {
 
   // UI State
   isInitializing: boolean
+  isCropping: boolean
   showAuthModal: boolean
   authModalMessage: string | null
   showProjectModal: boolean
@@ -80,6 +81,7 @@ interface EditorState {
   setLastSaved: (date: Date | null) => void
   setIsSaving: (isSaving: boolean) => void
   setIsInitializing: (isInitializing: boolean) => void
+  setIsCropping: (isCropping: boolean) => void
   setShowAuthModal: (show: boolean) => void
   setAuthModalMessage: (message: string | null) => void
   setShowProjectModal: (show: boolean) => void
@@ -140,6 +142,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isSaving: false,
 
   isInitializing: true,
+  isCropping: false,
   showAuthModal: false,
   authModalMessage: null,
   showProjectModal: false,
@@ -195,6 +198,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setIsSaving: (isSaving) => set({ isSaving }),
 
   setIsInitializing: (isInitializing) => set({ isInitializing }),
+  setIsCropping: (isCropping) => set({ isCropping }),
   setShowAuthModal: (show) => set({ showAuthModal: show }),
   setAuthModalMessage: (message) => set({ authModalMessage: message }),
   setShowProjectModal: (show) => set({ showProjectModal: show }),
