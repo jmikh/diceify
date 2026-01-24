@@ -186,7 +186,7 @@ export default function TermsPage() {
                                 11. Limitation of Liability
                             </h2>
                             <p>
-                                TO THE MAXIMUM EXTENT PERMITTED BY LAW, DICEIFY SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR USE OF THE SERVICE. OUR TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT YOU PAID US IN THE TWELVE MONTHS PRECEDING THE CLAIM.
+                                TO THE MAXIMUM EXTENT PERMITTED BY LAW, DICEIFY SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR USE OF THE SERVICE. OUR TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT YOU PAID FOR PRO ACCESS.
                             </p>
                         </section>
 
@@ -195,7 +195,7 @@ export default function TermsPage() {
                                 12. Indemnification
                             </h2>
                             <p>
-                                You agree to indemnify and hold harmless Diceify, its officers, directors, employees, and agents from any claims, damages, losses, or expenses (including reasonable attorney fees) arising from your use of the Service, violation of these Terms, or infringement of any third-party rights.
+                                You agree to indemnify and hold harmless Diceify from any claims, damages, losses, or expenses arising from your use of the Service, violation of these Terms, or infringement of any third-party rights.
                             </p>
                         </section>
 

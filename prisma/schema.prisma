@@ -21,6 +21,7 @@ model User {
   stripeCustomerId String? @unique
   isPro            Boolean @default(false)
   proSince         DateTime?
+  birthday         DateTime?
 }
 
 model Account {

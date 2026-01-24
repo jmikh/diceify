@@ -87,7 +87,7 @@ export default function PrivacyPage() {
                                 2.3 Payment Information
                             </h3>
                             <p>
-                                If you purchase a Pro subscription, payment processing is handled securely by Stripe. We do not store your full credit card number. We only store a Stripe customer ID to manage your subscription status.
+                                If you purchase Pro access, payment processing is handled securely by Stripe. We do not store your credit card details. We only store a Stripe customer ID to manage your purchase status.
                             </p>
 
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
@@ -107,7 +107,7 @@ export default function PrivacyPage() {
                                 <li>Provide, operate, and maintain our Service</li>
                                 <li>Create and manage your user account</li>
                                 <li>Save and sync your projects across devices</li>
-                                <li>Process payments and manage subscriptions</li>
+                                <li>Process payments</li>
                                 <li>Send you service-related communications</li>
                                 <li>Improve and optimize our Service</li>
                                 <li>Detect and prevent fraud or abuse</li>
