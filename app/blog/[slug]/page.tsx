@@ -31,11 +31,11 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     }
 
     return {
-        title: `${post.title} | Diceify Blog`,
+        title: `${post.title} Blog`,
         description: post.description,
         authors: [{ name: post.author, url: post.authorUrl }],
         openGraph: {
-            title: post.title,
+            title: `Diceify | ${post.title}`,
             description: post.description,
             type: 'article',
             publishedTime: post.date,

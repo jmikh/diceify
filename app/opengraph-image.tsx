@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
 
-export const alt = 'Diceify - Transform Photos into Dice Art'
+export const alt = 'Diceify - Free Dice Art Generator'
 export const size = {
   width: 1200,
   height: 630,

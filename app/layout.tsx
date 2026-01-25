@@ -14,17 +14,20 @@ const syne = Syne({ subsets: ['latin'], variable: '--font-syne', display: 'swap'
 export const metadata: Metadata = {
   metadataBase: new URL('https://diceify.art'),
   title: {
-    default: 'Diceify - Dice Mosaic Art Builder',
-    template: '%s | Diceify'
+    default: 'Diceify | Free Dice Art Generator',
+    template: 'Diceify | %s'
   },
-  description: 'The #1 free tool to create dice mosaic art. Convert your photos into buildable dice pixel art patterns. Calculate dice needed, view blueprints, and build your own masterpiece.',
+  description: 'Free dice art generator to create portraits and mosaics from photos. Convert any picture into buildable dice patterns with our step-by-step guide.',
   keywords: [
+    'dice art generator',
+    'dice portrait generator',
+    'dice picture generator',
+    'dice mosaic generator',
     'dice',
     'dice art',
     'dice mosaic maker',
     'photo to dice',
     'dice pixel art',
-    'dice portrait generator',
     'rubiks cube art alternative',
     'mosaic blueprints',
     'diy art project'
@@ -38,8 +41,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: 'Diceify - Free Photo to Dice Art Generator',
-    description: 'Turn any photo into a stunning dice mosaic. Get free blueprints, calculate dice requirements, and start building your physical pixel art today.',
+    title: 'Diceify - Free Dice Art Generator',
+    description: 'Free dice art generator to create portraits and mosaics from photos. Convert any picture into buildable dice patterns.',
     url: 'https://diceify.art',
     siteName: 'Diceify',
     locale: 'en_US',
@@ -49,14 +52,14 @@ export const metadata: Metadata = {
         url: '/opengraph-image',
         width: 1200,
         height: 630,
-        alt: 'Diceify - Transform Photos into Dice Art Examples',
+        alt: 'Diceify - Free Dice Art Generator',
       }
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Diceify - Transform Photos into Dice Mosaic Art',
-    description: 'Create stunning physical dice mosaics from your digital photos.',
+    title: 'Diceify - Free Dice Art Generator',
+    description: 'Free dice art generator to create portraits and mosaics from photos. Convert any picture into buildable dice patterns.',
     images: ['/twitter-image'],
     creator: '@diceify',
   },

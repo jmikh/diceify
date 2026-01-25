@@ -4,8 +4,8 @@ import { blogPosts } from '@/lib/blogs/data'
 import BlogCard from '@/components/BlogCard'
 
 export const metadata: Metadata = {
-    title: 'Blog | Diceify',
-    description: 'Stories, tutorials, and inspiration from the Diceify community. Learn how creators around the world are using dice mosaic art.',
+    title: 'Blog',
+    description: 'Stories, tutorials, and inspiration from the Diceify community. Learn how creators around the world are using dice art.',
 }
 
 export default function BlogPage() {

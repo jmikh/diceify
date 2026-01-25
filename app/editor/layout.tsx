@@ -1,16 +1,16 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Diceify | Create Dice Mosaic',
-  description: 'Helps build real dice mosaic art from your digital photos.',
+  title: 'Editor',
+  description: 'Turn any picture into dice art. Free online generator with step-by-step build instructions for stunning dice portraits.',
   openGraph: {
-    title: 'Diceify | Create Dice Mosaic',
-    description: 'Helps build real dice mosaic art from your digital photos.',
-    url: 'https://diceify.art',
+    title: 'Diceify | Editor',
+    description: 'Turn any picture into dice art. Free online generator with step-by-step build instructions for stunning dice portraits.',
+    url: 'https://diceify.art/editor',
   },
   twitter: {
-    title: 'Diceify | Create Dice Mosaic',
-    description: 'Helps build real dice mosaic art from your digital photos.',
+    title: 'Diceify | Editor',
+    description: 'Turn any picture into dice art. Free online generator with step-by-step build instructions for stunning dice portraits.',
   },
 }
 
