@@ -2,6 +2,9 @@ import { useCallback, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 
+// Dice limit for free (explorer) users
+const EXPLORER_DICE_LIMIT = 100
+
 export function useBuildNavigation() {
     const { data: session } = useSession()
     const diceGrid = useEditorStore(state => state.diceGrid)
@@ -16,6 +19,14 @@ export function useBuildNavigation() {
     const totalRows = diceGrid?.height || 0
     const totalDice = totalCols * totalRows
     const currentIndex = currentY * totalCols + currentX
+
+    // Check if user has unlimited dice access (any paid plan)
+    const hasUnlimitedDice = useMemo(() => {
+        if (!session?.user) return false
+        const planType = session.user.planType || 'explorer'
+        // Creator, Studio, and Lifetime all have unlimited dice
+        return planType !== 'explorer'
+    }, [session])
 
     // Helper to update position
     const setPosition = useCallback((x: number, y: number) => {
@@ -39,8 +50,8 @@ export function useBuildNavigation() {
             return
         }
 
-        // Enforce limit for free users (1000 dice)
-        if (session?.user && !session.user.isPro && currentIndex >= 1000) {
+        // Enforce limit for free (explorer) users
+        if (session?.user && !hasUnlimitedDice && currentIndex >= EXPLORER_DICE_LIMIT) {
             setShowLimitModal(true)
             return
         }
@@ -50,7 +61,7 @@ export function useBuildNavigation() {
         } else if (currentY < totalRows - 1) {
             setPosition(0, currentY + 1)
         }
-    }, [currentX, currentY, totalCols, totalRows, setPosition, session, currentIndex, setShowAuthModal, setShowLimitModal])
+    }, [currentX, currentY, totalCols, totalRows, setPosition, session, currentIndex, setShowAuthModal, setShowLimitModal, hasUnlimitedDice])
 
     const currentDice = useMemo(() => diceGrid?.dice[currentX]?.[currentY] || null, [diceGrid, currentX, currentY])
 
@@ -84,8 +95,8 @@ export function useBuildNavigation() {
             return
         }
 
-        // Enforce limit for free users (1000 dice)
-        if (session?.user && !session.user.isPro && currentIndex >= 1000) {
+        // Enforce limit for free (explorer) users
+        if (session?.user && !hasUnlimitedDice && currentIndex >= EXPLORER_DICE_LIMIT) {
             setShowLimitModal(true)
             return
         }
@@ -106,7 +117,7 @@ export function useBuildNavigation() {
         if (currentY < totalRows - 1) {
             setPosition(0, currentY + 1)
         }
-    }, [currentX, currentY, currentDice, totalCols, totalRows, diceGrid, setPosition, session, currentIndex, setShowAuthModal])
+    }, [currentX, currentY, currentDice, totalCols, totalRows, diceGrid, setPosition, session, currentIndex, setShowAuthModal, setShowLimitModal, hasUnlimitedDice])
 
     const canNavigate = useMemo(() => {
         if (!diceGrid) return { prev: false, next: false, prevDiff: false, nextDiff: false }
@@ -158,6 +169,8 @@ export function useBuildNavigation() {
         totalCols,
         totalRows,
         totalDice,
-        currentIndex
+        currentIndex,
+        hasUnlimitedDice, // Expose for UI
+        diceLimit: hasUnlimitedDice ? Infinity : EXPLORER_DICE_LIMIT, // Expose for UI
     }
 }

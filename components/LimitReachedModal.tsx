@@ -2,7 +2,6 @@
 
 import { X } from 'lucide-react'
 import Image from 'next/image'
-import Logo from '@/components/Logo'
 import { UpgradeButton } from '@/components/UpgradeButton'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 
@@ -48,26 +47,26 @@ export default function LimitReachedModal() {
                     <h2 className="text-2xl font-bold text-white mb-2">Build Limit Reached</h2>
 
                     <p className="text-[var(--text-muted)] text-sm mb-6">
-                        You've reached the end of the free tier builder limit (1,000 dice).
-                        Upgrade to Pro to unlock unlimited building and create massive masterpieces!
+                        You've reached the Explorer plan limit of 100 dice.
+                        Upgrade to unlock unlimited building and create massive masterpieces!
                     </p>
 
                     <div className="w-full bg-gradient-to-br from-pink-500/10 to-purple-600/10 border border-pink-500/20 rounded-xl p-4 mb-6">
-                        <h3 className="text-pink-400 font-semibold mb-2 text-sm uppercase tracking-wide">Pro Benefits</h3>
+                        <h3 className="text-pink-400 font-semibold mb-2 text-sm uppercase tracking-wide">Upgrade Benefits</h3>
                         <ul className="text-left text-sm text-gray-300 space-y-2">
                             <li className="flex items-center gap-2">
-                                <span className="text-pink-500">✓</span> Unlimited dice count
+                                <span className="text-pink-500">✓</span> Unlimited dice in Builder
                             </li>
                             <li className="flex items-center gap-2">
-                                <span className="text-pink-500">✓</span> Save up to 3 active projects
+                                <span className="text-pink-500">✓</span> Full resolution SVG blueprints
                             </li>
                             <li className="flex items-center gap-2">
-                                <span className="text-pink-500">✓</span> High-resolution export
+                                <span className="text-pink-500">✓</span> More cloud project slots
                             </li>
                         </ul>
                     </div>
 
-                    <UpgradeButton source="limit_reached_1000k" className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 shadow-lg shadow-pink-500/20 text-white font-semibold transition-all hover:scale-[1.02]" />
+                    <UpgradeButton source="limit_reached_100" className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 shadow-lg shadow-pink-500/20 text-white font-semibold transition-all hover:scale-[1.02]" />
 
                     <button
                         onClick={() => setShowLimitModal(false)}

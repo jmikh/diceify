@@ -25,6 +25,11 @@ export default function Navbar() {
                         Plans
                     </Link>
                 </li>
+                <li>
+                    <Link href="/blog" className="text-[var(--text-muted)] text-sm font-medium px-4 py-2 rounded-full transition-all hover:text-white hover:bg-white/5 no-underline">
+                        Blog
+                    </Link>
+                </li>
             </ul>
             <Link
                 href="/editor"

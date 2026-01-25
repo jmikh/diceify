@@ -33,6 +33,7 @@ import { devLog, devError } from '@/lib/utils/debug'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 import { useProjectManager } from './hooks/useProjectManager'
 import { usePersistence } from './hooks/usePersistence'
+import { PLAN_LIMITS, PlanType } from '@/lib/subscription'
 
 function EditorContent() {
   const { data: session, status } = useSession()
@@ -59,9 +60,9 @@ function EditorContent() {
     saveTuneStep
   } = usePersistence()
 
-  // Calculate limits based on subscription
-  const isPro = !!session?.user?.isPro
-  const maxProjects = isPro ? 3 : 1
+  // Calculate limits based on subscription plan
+  const planType = (session?.user?.planType as PlanType) || 'explorer'
+  const maxProjects = PLAN_LIMITS[planType].projectLimit
 
 
   // Store state
@@ -521,10 +522,22 @@ function EditorContent() {
         // Check if there is a project in the URL - if so, don't show modal
         const projectIdParam = searchParams.get('project')
         if (!projectIdParam) {
-          // Always show the modal on login - giving user choice to create named project or load
-          // Even if they have work in progress, we let them "Save & Create" via the modal
-          devLog('[LOGIN EFFECT] Showing project dashboard')
-          setShowProjectModal(true)
+          // Decide whether to show project modal or auto-load most recent project
+          if (hasWorkInProgress) {
+            // User has local work in progress - show modal so they can save it
+            devLog('[LOGIN EFFECT] Has work in progress, showing project dashboard')
+            setShowProjectModal(true)
+          } else if (projectCount > 0) {
+            // No local work, but has existing projects - auto-load the most recent one
+            // Projects are already sorted by updatedAt desc, so first one is most recent
+            const mostRecentProject = projects[0]
+            devLog('[LOGIN EFFECT] No local work, auto-loading most recent project:', mostRecentProject.name)
+            loadProject(mostRecentProject)
+          } else {
+            // No local work AND no existing projects - show modal to create first project
+            devLog('[LOGIN EFFECT] No projects found, showing project dashboard to create first project')
+            setShowProjectModal(true)
+          }
         } else {
           devLog('[LOGIN EFFECT] Skipping project dashboard - project ID in URL')
         }
@@ -548,7 +561,7 @@ function EditorContent() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id, currentProjectId, isRestoringOAuthState, originalImage, processedImageUrl, croppedImage, searchParams])
+  }, [session?.user?.id, currentProjectId, isRestoringOAuthState, originalImage, processedImageUrl, croppedImage, searchParams, loadProject])
 
 
   // Clear localStorage when a project is loaded or workflow is reset
@@ -673,41 +686,100 @@ function EditorContent() {
                     </div>
 
                     {/* Dropdown menu */}
-                    {showUserMenu && (
-                      <div className="absolute top-full right-0 mt-2 bg-[#0a0014]/90 backdrop-blur-xl rounded-lg shadow-2xl border border-white/10 overflow-hidden z-50" style={{ minWidth: '250px' }}>
-                        <div className="px-4 py-3 border-b border-gray-700">
-                          <div className="text-sm font-medium text-white">
-                            {session.user?.name || 'User'}
-                          </div>
-                          <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
-                            {session.user?.email}
-                            {session.user?.isPro && (
-                              <span className="px-1.5 py-0.5 rounded-full bg-pink-500/20 text-pink-400 text-[10px] font-bold border border-pink-500/30">
-                                PRO
-                              </span>
+                    {showUserMenu && (() => {
+                      const planType = session.user?.planType || 'explorer'
+                      const subStatus = session.user?.subscriptionStatus
+                      const expiresAt = session.user?.subscriptionExpiresAt
+
+                      // Calculate expiration text
+                      let expirationText = ''
+                      if (expiresAt) {
+                        const expiresDate = new Date(expiresAt)
+                        const now = new Date()
+                        const isExpired = expiresDate.getTime() < now.getTime()
+                        const formattedDate = expiresDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+                        if (planType === 'creator') {
+                          // Creator shows expiration date only
+                          expirationText = isExpired ? 'Expired' : `Expires on ${formattedDate}`
+                        } else if (planType === 'studio' && subStatus === 'canceled') {
+                          // Canceled Studio shows expiration date
+                          expirationText = isExpired ? 'Expired' : `Expires on ${formattedDate}`
+                        }
+                      }
+
+                      const handleManageSubscription = async () => {
+                        try {
+                          const response = await fetch('/api/stripe/portal', { method: 'POST' })
+                          const data = await response.json()
+                          if (data.url) {
+                            window.location.href = data.url
+                          }
+                        } catch (error) {
+                          console.error('Failed to open billing portal:', error)
+                        }
+                      }
+
+                      const getPlanBadge = () => {
+                        switch (planType) {
+                          case 'lifetime':
+                            return <span className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/30">LIFETIME</span>
+                          case 'studio':
+                            return <span className="px-1.5 py-0.5 rounded-full bg-pink-500/20 text-pink-400 text-[10px] font-bold border border-pink-500/30">STUDIO</span>
+                          case 'creator':
+                            return <span className="px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30">CREATOR PASS</span>
+                          default:
+                            return null
+                        }
+                      }
+
+                      return (
+                        <div className="absolute top-full right-0 mt-2 bg-[#0a0014]/90 backdrop-blur-xl rounded-lg shadow-2xl border border-white/10 overflow-hidden z-50" style={{ minWidth: '280px' }}>
+                          <div className="px-4 py-3 border-b border-gray-700">
+                            <div className="text-sm font-medium text-white">
+                              {session.user?.name || 'User'}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
+                              {session.user?.email}
+                              {getPlanBadge()}
+                            </div>
+                            {expirationText && (
+                              <div className={`text-xs mt-1.5 ${subStatus === 'canceled' ? 'text-orange-400' : 'text-gray-500'}`}>
+                                {subStatus === 'canceled' && <span className="text-orange-400">Canceled • </span>}
+                                {expirationText}
+                              </div>
                             )}
                           </div>
+
+                          {planType === 'explorer' && (
+                            <div className="p-3 border-b border-white/10">
+                              <UpgradeButton source="user_menu" className="w-full text-sm py-2 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 shadow-lg shadow-pink-500/20 text-white border border-white/10" />
+                            </div>
+                          )}
+
+                          {/* Manage subscription for Studio users */}
+                          {planType === 'studio' && subStatus !== 'canceled' && (
+                            <button
+                              onClick={handleManageSubscription}
+                              className="w-full px-4 py-2 text-sm text-left text-white/90 hover:text-white hover:bg-white/10 transition-colors border-b border-white/5"
+                            >
+                              Manage subscription
+                            </button>
+                          )}
+
+                          {/* Sign Out */}
+                          <button
+                            onClick={() => {
+                              setShowUserMenu(false)
+                              signOut()
+                            }}
+                            className="w-full px-4 py-2 text-sm text-left text-white/90 hover:text-white hover:bg-white/10 transition-colors hover:rounded-b-lg"
+                          >
+                            Sign out
+                          </button>
                         </div>
-
-                        {!session.user?.isPro && (
-                          <div className="p-3 border-b border-white/10 bg-gradient-to-r from-pink-500/10 to-purple-600/10">
-                            <UpgradeButton source="user_menu" className="w-full text-sm py-2 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 shadow-lg shadow-pink-500/20 text-white border border-white/10" />
-                          </div>
-                        )}
-
-                        {/* Sign Out */}
-                        <button
-                          onClick={() => {
-                            setShowUserMenu(false)
-
-                            signOut()
-                          }}
-                          className="w-full px-4 py-2 text-sm text-left text-white/90 hover:text-white hover:bg-white/10 transition-colors hover:rounded-b-lg"
-                        >
-                          Sign out
-                        </button>
-                      </div>
-                    )}
+                      )
+                    })()}
                   </div>
                 </div>
               ) : (

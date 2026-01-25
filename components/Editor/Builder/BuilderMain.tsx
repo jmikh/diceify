@@ -42,6 +42,7 @@ const BuildViewer = memo(function BuildViewer() {
 
     // Track viewBox with ref only - no React state to avoid re-renders
     const viewBoxRef = useRef(`0 0 ${totalCols} ${totalRows}`) // Initial fallback
+    const lastViewXRef = useRef<number | null>(null) // Track last viewX to enable free movement
     const containerRef = useRef<HTMLDivElement>(null)
     const svgRef = useRef<SVGSVGElement>(null)
     const animationRef = useRef<any>(null)
@@ -58,6 +59,12 @@ const BuildViewer = memo(function BuildViewer() {
 
     // Calculate and animate viewBox transition
     const buildZoom = useCallback(() => {
+        // Panning threshold configuration
+        // SELECTOR_RESET_POSITION: Where the selector snaps to after panning (0.25 = 25% from left)
+        // SELECTOR_PAN_THRESHOLD: When the selector triggers a pan (0.75 = 75% from left)
+        const SELECTOR_RESET_POSITION = 0.15
+        const SELECTOR_PAN_THRESHOLD = 0.85
+
         // Calculate container aspect ratio
         const containerAspect = containerDimensions.width / containerDimensions.height
 
@@ -78,16 +85,40 @@ const BuildViewer = memo(function BuildViewer() {
         // Convert our coordinate system to SVG coordinates
         const svgY = totalRows - 1 - currentY
 
-        // Calculate position to show current dice at bottom-left (25% X, 75% Y)
-        let viewX = currentX - viewWidth * 0.25
+        // Calculate position to show current dice
+        // Only pan when selector reaches threshold or goes past left edge (0%)
+        const edgePadding = 0.1 // Extra space so highlights aren't cut off
+        let viewX: number
+
+        if (lastViewXRef.current === null) {
+            // First time: position dice at reset position
+            viewX = currentX - viewWidth * SELECTOR_RESET_POSITION
+        } else {
+            // Calculate where the selector is relative to current view
+            const relativeX = (currentX - lastViewXRef.current) / viewWidth
+
+            if (relativeX >= SELECTOR_PAN_THRESHOLD) {
+                // Selector reached right edge threshold, pan so it's back at reset position
+                viewX = currentX - viewWidth * SELECTOR_RESET_POSITION
+            } else if (relativeX < 0) {
+                // Selector went past left edge, pan so it's at reset position
+                viewX = currentX - viewWidth * SELECTOR_RESET_POSITION
+            } else {
+                // Selector is within bounds, keep grid in place
+                viewX = lastViewXRef.current
+            }
+        }
+
         let viewY = svgY - viewHeight * 0.6
 
         // Clamp to grid boundaries with extra padding for highlights
-        const edgePadding = 0.1 // Extra space so highlights aren't cut off
         if (viewX < -edgePadding) viewX = -edgePadding
         if (viewX + viewWidth > totalCols + edgePadding) viewX = totalCols + edgePadding - viewWidth
         if (viewY < -edgePadding) viewY = -edgePadding
         if (viewY + viewHeight > totalRows + edgePadding) viewY = totalRows + edgePadding - viewHeight
+
+        // Remember this viewX for next time
+        lastViewXRef.current = viewX
 
         // Ensure current dice is visible with some padding
         const padding = 0.5

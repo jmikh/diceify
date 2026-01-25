@@ -64,17 +64,54 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session?.user && token?.sub) {
         session.user.id = token.sub
 
-        // Always fetch fresh Pro status from DB to ensure accuracy
+        // Always fetch fresh status from DB to ensure accuracy
         try {
           const user = await prisma.user.findUnique({
             where: { id: token.sub },
-            select: { isPro: true }
+            select: {
+              planType: true,
+              subscriptionExpiresAt: true,
+              subscriptionStatus: true,
+            }
           })
-          session.user.isPro = user?.isPro ?? false
+
+          const now = new Date()
+          const planType = (user?.planType as 'explorer' | 'creator' | 'studio' | 'lifetime') || 'explorer'
+          const expiresAt = user?.subscriptionExpiresAt || null
+          const isExpired = expiresAt && expiresAt <= now
+          const subStatus = user?.subscriptionStatus || null
+
+          // Determine if user has pro access based on planType (not isPro column)
+          if (planType === 'lifetime') {
+            // Lifetime users always have access
+            session.user.isPro = true
+            session.user.planType = 'lifetime'
+          } else if (planType === 'creator' || planType === 'studio') {
+            // Creator and Studio need valid subscription (not expired)
+            if (isExpired) {
+              session.user.isPro = false
+              session.user.planType = 'explorer'
+            } else {
+              session.user.isPro = true
+              session.user.planType = planType
+            }
+          } else {
+            // Explorer (free tier)
+            session.user.isPro = false
+            session.user.planType = 'explorer'
+          }
+
+          // Include subscription details for UI display
+          session.user.subscriptionStatus = subStatus
+          session.user.subscriptionExpiresAt = expiresAt?.toISOString() || null
+
         } catch (e) {
-          console.error("Failed to fetch user pro status", e)
+          console.error("Failed to fetch user status", e)
           // Fallback to token if DB fails
           session.user.isPro = token.isPro as boolean
+          session.user.planType = (token.planType as 'explorer' | 'creator' | 'studio' | 'lifetime') || 'explorer'
+          session.user.subscriptionStatus = null
+          session.user.subscriptionExpiresAt = null
         }
 
         // Pass through the image and name from the token

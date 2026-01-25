@@ -18,10 +18,15 @@ model User {
   accounts      Account[]
   projects      Project[]
   sessions      Session[]
-  stripeCustomerId String? @unique
-  isPro            Boolean @default(false)
-  proSince         DateTime?
-  birthday         DateTime?
+  stripeCustomerId        String?   @unique
+  isPro                   Boolean   @default(false)
+  proSince                DateTime?
+  birthday                DateTime?
+  // Subscription fields
+  stripeSubscriptionId    String?   @unique
+  subscriptionStatus      String?   // 'active', 'canceled', 'past_due', 'trialing', 'creator_pass'
+  subscriptionExpiresAt   DateTime? // When the current period ends (null = lifetime)
+  planType                String    @default("explorer") // 'explorer', 'creator', 'studio', 'lifetime'
 }
 
 model Account {

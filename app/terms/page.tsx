@@ -34,7 +34,7 @@ export default function TermsPage() {
                         Terms of Service
                     </h1>
                     <p className="text-[var(--text-dim)] mb-8">
-                        Last updated: January 23, 2025
+                        Last updated: January 24, 2026
                     </p>
 
                     <div className="space-y-8 text-[var(--text-secondary)]">
@@ -76,21 +76,45 @@ export default function TermsPage() {
 
                         <section>
                             <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-3">
-                                4. Free and Pro Services
+                                4. Subscription Plans
                             </h2>
 
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
-                                4.1 Free Tier
+                                4.1 Explorer (Free Tier)
                             </h3>
+                            <p className="mb-3">
+                                Explorer users have access to basic features with certain limitations, such as the number of projects they can save and access to advanced customization options.
+                            </p>
                             <p>
-                                Free users have access to basic features with certain limitations, such as the number of projects they can save and access to advanced customization options.
+                                <strong>Data Retention:</strong> For Explorer accounts, we reserve the right to delete project data stored on our cloud servers for projects that have not been opened or accessed for 90 consecutive days. We recommend regularly backing up your work by exporting your projects.
                             </p>
 
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
-                                4.2 Pro (Lifetime Access)
+                                4.2 Monthly Subscription ($9/month)
                             </h3>
                             <p>
-                                Pro is available as a one-time purchase that grants lifetime access to all Pro features for as long as the Service remains operational. This is not a subscription—there are no recurring charges. Once you purchase Pro, you retain access to Pro features indefinitely while the Service is available.
+                                The Monthly subscription grants access to all premium features for one calendar month. Subscriptions automatically renew unless cancelled before the end of the billing period.
+                            </p>
+
+                            <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
+                                4.3 Yearly Subscription ($36/year)
+                            </h3>
+                            <p>
+                                The Yearly subscription grants access to all premium features for one full year at a discounted rate. Subscriptions automatically renew unless cancelled before the end of the billing period.
+                            </p>
+
+                            <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
+                                4.4 Creator Pass ($19 one-time)
+                            </h3>
+                            <p>
+                                The Creator Pass is a one-time purchase that grants permanent access to all premium features for the lifetime of the Service.
+                            </p>
+
+                            <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
+                                4.5 Grandfathered Lifetime Access
+                            </h3>
+                            <p>
+                                Users who purchased lifetime access during our Launch Sale (before January 24, 2026) retain permanent access to all premium features as originally offered. This grandfathered status is tied to your account and cannot be transferred. Grandfathered users will continue to enjoy all current and future premium features at no additional cost.
                             </p>
                         </section>
 
@@ -99,14 +123,24 @@ export default function TermsPage() {
                                 5. Payments and Refunds
                             </h2>
                             <p className="mb-3">
-                                All payments are processed securely through Stripe. By purchasing Pro access, you agree to:
+                                All payments are processed securely through Stripe. By purchasing a subscription or Creator Pass, you agree to:
                             </p>
                             <ul className="list-disc list-inside space-y-1 ml-4">
-                                <li>Pay the one-time fee as displayed at the time of purchase</li>
+                                <li>Pay the fee as displayed at the time of purchase (Monthly: $9/month, Yearly: $36/year, or Creator Pass: $19 one-time)</li>
                                 <li>Provide valid payment information</li>
+                                <li>For subscriptions, authorize recurring charges until you cancel</li>
                             </ul>
-                            <p className="mt-3">
-                                Since Pro is a one-time purchase (not a subscription), there are no recurring charges. Refunds may be provided at our discretion within 7 days of purchase if you have not substantially used Pro features. To request a refund, contact us at support@diceify.art.
+                            <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
+                                5.1 Cancellation
+                            </h3>
+                            <p className="mb-3">
+                                You may cancel your subscription at any time through the Stripe Customer Portal. Upon cancellation, you will retain access to premium features until the end of your current billing period. No refunds are provided for partial billing periods. Creator Pass purchases are non-refundable as they provide permanent access.
+                            </p>
+                            <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
+                                5.2 Refunds
+                            </h3>
+                            <p>
+                                Refunds for subscriptions may be provided at our discretion within 7 days of initial purchase if you have not substantially used premium features. To request a refund, contact us at support@diceify.art.
                             </p>
                         </section>
 
@@ -115,18 +149,19 @@ export default function TermsPage() {
                                 6. Service Availability and Discontinuation
                             </h2>
                             <p className="mb-3">
-                                While we intend to operate Diceify indefinitely, we cannot guarantee perpetual availability. Your lifetime Pro access is valid for as long as the Service remains operational.
+                                While we intend to operate Diceify indefinitely, we cannot guarantee perpetual availability.
                             </p>
                             <p className="mb-3">
                                 In the event that we decide to discontinue the Service:
                             </p>
                             <ul className="list-disc list-inside space-y-1 ml-4">
                                 <li>We will provide at least 30 days advance notice via email to all registered users</li>
+                                <li>Active subscriptions will not be renewed after the announcement</li>
                                 <li>During this notice period, you will have full access to export your projects and data</li>
                                 <li>We will make reasonable efforts to provide users with their project data before shutdown</li>
                             </ul>
                             <p className="mt-3">
-                                Service discontinuation does not entitle users to refunds for Pro purchases, as the purchase grants access for the lifetime of the Service, not in perpetuity.
+                                Active subscribers at the time of discontinuation will receive a pro-rated refund for unused subscription time. Creator Pass holders and grandfathered lifetime users are not entitled to refunds as they received access for the lifetime of the Service as originally purchased.
                             </p>
                         </section>
 

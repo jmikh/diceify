@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { devLog, devError } from '@/lib/utils/debug'
+import { canCreateProject } from '@/lib/subscription'
 
 // GET /api/projects - Get all projects for current user
 export async function GET() {
@@ -54,17 +55,15 @@ export async function POST(request: NextRequest) {
 
   devLog(`[DB] POST /api/projects - Creating new project for user ${session.user.id}`)
   try {
-    // Check if user already has 3 projects
-    devLog(`[DB] Checking project count for user`)
-    const projectCount = await prisma.project.count({
-      where: {
-        userId: session.user.id
-      }
-    })
+    // Check if user can create a new project based on their plan
+    devLog(`[DB] Checking project limit for user`)
+    const projectCheck = await canCreateProject(session.user.id)
 
-    if (projectCount >= 3) {
+    if (!projectCheck.allowed) {
       return NextResponse.json({
-        error: 'Project limit reached. Maximum 3 projects allowed. Please delete a project to create a new one.'
+        error: projectCheck.reason,
+        currentCount: projectCheck.currentCount,
+        limit: projectCheck.limit,
       }, { status: 403 })
     }
 
