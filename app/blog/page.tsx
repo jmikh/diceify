@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import Image from 'next/image'
 import { blogPosts } from '@/lib/blogs/data'
+import BlogCard from '@/components/BlogCard'
 
 export const metadata: Metadata = {
     title: 'Blog | Diceify',
@@ -46,48 +46,21 @@ export default function BlogPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {blogPosts.map((post) => (
-                        <Link
-                            key={post.slug}
-                            href={`/blog/${post.slug}`}
-                            className="blog-card group"
-                        >
-                            <div className="blog-card-image">
-                                {post.featuredImage ? (
-                                    <Image
-                                        src={post.featuredImage}
-                                        alt={post.title}
-                                        fill
-                                        className="object-cover"
-                                    />
-                                ) : (
-                                    <div className="blog-card-image-placeholder">
-                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-[var(--pink)] opacity-50">
-                                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                                            <circle cx="8.5" cy="8.5" r="1.5" />
-                                            <path d="M21 15l-5-5L5 21" />
-                                        </svg>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="blog-card-content">
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {post.tags.slice(0, 2).map((tag) => (
-                                        <span key={tag} className="blog-tag">{tag}</span>
-                                    ))}
-                                </div>
-                                <h2 className="text-lg font-semibold text-[var(--text-primary)] group-hover:text-[var(--pink)] transition-colors mb-2 line-clamp-2">
-                                    {post.title}
-                                </h2>
-                                <p className="text-sm text-[var(--text-muted)] line-clamp-3 mb-4">
-                                    {post.description}
-                                </p>
-                                <div className="flex items-center justify-between text-xs text-[var(--text-dim)]">
-                                    <span>{post.author}</span>
-                                    <span>{post.readTime}</span>
-                                </div>
-                            </div>
-                        </Link>
+                        <BlogCard key={post.slug} post={post} source="blog_listing" />
                     ))}
+                </div>
+
+                <div className="blog-feature-cta mt-12">
+                    <p>
+                        <strong>Want to be featured?</strong> We'd love to see what you create with Diceify.
+                    </p>
+                    <a href="mailto:support@diceify.art?subject=Diceify Feature Submission&body=Hi! I'd like to share my dice art project.%0A%0AHere's my story:%0A%0A[Attach your photos and tell us about your process]" className="btn-primary">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                            <polyline points="22,6 12,13 2,6" />
+                        </svg>
+                        Send us your photos
+                    </a>
                 </div>
 
                 {blogPosts.length === 0 && (

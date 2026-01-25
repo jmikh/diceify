@@ -406,6 +406,46 @@ body {
   height: 550px;
 }
 
+/* Centered hero variant */
+.hero--centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rem;
+  position: relative;
+}
+
+.hero--centered .hero-content {
+  max-width: 700px;
+}
+
+.hero--centered .hero-content p {
+  max-width: 560px;
+}
+
+/* Blog section in hero */
+.hero-blogs-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* Blog cards row for hero */
+.hero-blogs-row {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  width: 100%;
+  max-width: 700px;
+}
+
+.hero-blogs-row .blog-card {
+  flex: 1;
+  max-width: 320px;
+}
+
 /* =============================================================================
    LANDING PAGE - HOW IT WORKS SECTION
    ============================================================================= */
@@ -637,6 +677,15 @@ body {
   flex-direction: column;
 }
 
+/* Compact variant for hero section */
+.blog-card-image--compact {
+  aspect-ratio: 16 / 9;
+}
+
+.blog-card-content--compact {
+  padding: 1rem;
+}
+
 .blog-tag {
   display: inline-block;
   font-size: 0.7rem;
@@ -784,6 +833,7 @@ body {
 .blog-feature-cta .btn-primary {
   padding: 0.75rem 1.25rem;
   font-size: 0.875rem;
+  cursor: pointer;
 }
 
 /* Blog Video - Responsive YouTube embed */

@@ -6,6 +6,7 @@ import HowItWorks from '@/components/LandingPage/HowItWorks'
 import Gallery from '@/components/LandingPage/Gallery'
 import Pricing from '@/components/LandingPage/Pricing'
 import Footer from '@/components/Footer'
+import { HashScrollHandler } from '@/components/HashScrollHandler'
 
 export default function Home() {
   const jsonLd = {
@@ -35,6 +36,7 @@ export default function Home() {
 
   return (
     <>
+      <HashScrollHandler />
       <Script
         id="json-ld"
         type="application/ld+json"

@@ -3,19 +3,6 @@ import Link from 'next/link'
 export default function WhyIBuiltDiceify() {
     return (
         <>
-            <div className="blog-feature-cta">
-                <p>
-                    <strong>Want to be featured?</strong> We'd love to see what you create with Diceify.
-                </p>
-                <a href="mailto:support@diceify.art?subject=Diceify Feature Submission&body=Hi! I'd like to share my dice art project.%0A%0AHere's my story:%0A%0A[Attach your photos and tell us about your process]" className="btn-primary">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                        <polyline points="22,6 12,13 2,6" />
-                    </svg>
-                    Send us your photos
-                </a>
-            </div>
-
             <p className="blog-lead">
                 It started during COVID. I wanted to make a dice portrait of Um Kulthum — the most famous
                 Egyptian singer of all time. But when I looked for tools to help, everything I found was... frustrating.
