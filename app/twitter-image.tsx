@@ -35,34 +35,31 @@ export default async function Image() {
           width: '100%',
           height: '100%',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-end',
           justifyContent: 'center',
           position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        {/* Background Image */}
+        {/* Background Image - scaled to cover 1200x600 container */}
+        {/* Original: 1024x574, scaled to width 1200 = 1200x672, centered vertically */}
         <img
           src={base64Image}
-          alt="Diceify dice art"
+          width={1200}
+          height={672}
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
+            top: '-36px',
+            left: '0',
           }}
         />
 
-        {/* Logo container with darkened background */}
+        {/* Logo container */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            borderRadius: '24px',
-            padding: '30px 40px',
             zIndex: 10,
           }}
         >
