@@ -20,6 +20,12 @@ const galleryJsonLd = {
     'name': 'Diceify Gallery - Dice Art Mosaics',
     'description': 'A collection of stunning dice art mosaics and portraits created with Diceify. Transform photos into buildable dice patterns featuring famous figures and artwork.',
     'url': 'https://diceify.art/#gallery',
+    'copyrightYear': 2024,
+    'copyrightHolder': {
+        '@type': 'Organization',
+        'name': 'Diceify',
+        'url': 'https://diceify.art'
+    },
     'image': galleryItems.map((item) => ({
         '@type': 'ImageObject',
         'name': item.name,
@@ -27,6 +33,10 @@ const galleryJsonLd = {
         'contentUrl': `https://diceify.art${item.src}`,
         'url': `https://diceify.art${item.src}`,
         'representativeOfPage': false,
+        'copyrightNotice': '© 2024 Diceify. All rights reserved.',
+        'creditText': 'Created with Diceify (diceify.art)',
+        'license': 'https://diceify.art/terms',
+        'acquireLicensePage': 'https://diceify.art/terms',
         'creator': {
             '@type': 'Organization',
             'name': 'Diceify',
