@@ -30,10 +30,19 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
         return { title: 'Blog Post Not Found' }
     }
 
+    const postUrl = `https://diceify.art/blog/${slug}`
+
     return {
         title: `${post.title} Blog`,
         description: post.description,
         authors: [{ name: post.author, url: post.authorUrl }],
+        alternates: {
+            canonical: postUrl,
+            languages: {
+                'en': postUrl,
+                'x-default': postUrl,
+            },
+        },
         openGraph: {
             title: `Diceify | ${post.title}`,
             description: post.description,

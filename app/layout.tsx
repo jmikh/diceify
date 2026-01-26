@@ -118,6 +118,10 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   alternates: {
     canonical: 'https://diceify.art',
+    languages: {
+      'en': 'https://diceify.art',
+      'x-default': 'https://diceify.art',
+    },
   },
 }
 

@@ -6,6 +6,13 @@ import BlogCard from '@/components/BlogCard'
 export const metadata: Metadata = {
     title: 'Blog',
     description: 'Stories, tutorials, and inspiration from the Diceify community. Learn how creators around the world are using dice art.',
+    alternates: {
+        canonical: 'https://diceify.art/blog',
+        languages: {
+            'en': 'https://diceify.art/blog',
+            'x-default': 'https://diceify.art/blog',
+        },
+    },
 }
 
 export default function BlogPage() {
