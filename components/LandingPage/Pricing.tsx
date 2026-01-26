@@ -270,7 +270,7 @@ export default function Pricing() {
                         <button
                             onClick={() => onUpgrade('creator')}
                             disabled={isLoading !== null}
-                            className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed mt-auto"
+                            className="w-full py-3 px-4 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed mt-auto"
                         >
                             {isLoading === 'creator' ? (
                                 <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -319,9 +319,12 @@ export default function Pricing() {
 
 
                             {studioInterval === 'monthly' ? (
-                                <div className="flex items-baseline gap-1 mb-3">
-                                    <span className="text-3xl font-bold">${STUDIO_MONTHLY_PRICE}</span>
-                                    <span className="text-white/50">/month</span>
+                                <div className="mb-3">
+                                    <div className="flex items-baseline gap-1 mb-1">
+                                        <span className="text-3xl font-bold">${STUDIO_MONTHLY_PRICE}</span>
+                                        <span className="text-white/50">/month</span>
+                                    </div>
+                                    <p className="text-sm text-white/40">Billed monthly</p>
                                 </div>
                             ) : (
                                 <div className="mb-3">
@@ -367,7 +370,7 @@ export default function Pricing() {
                             {isLoading === 'studio_monthly' || isLoading === 'studio_yearly' ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
-                                `Subscribe ${studioInterval === 'yearly' ? 'Yearly' : 'Monthly'}`
+                                "Subscribe"
                             )}
                         </button>
                     </div>
