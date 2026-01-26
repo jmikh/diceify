@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diceify TikTok Recorder</title>
+  <!-- Syne font for Diceify branding -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #0a0a0a;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      color: #fff;
+    }
+
+    /* Left sidebar - Controls */
+    .sidebar {
+      width: 320px;
+      padding: 24px;
+      background: #111;
+      border-right: 1px solid #222;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .sidebar h1 {
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .sidebar p {
+      color: #888;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-group label {
+      font-size: 0.85rem;
+      color: #aaa;
+      font-weight: 500;
+    }
+
+    /* File upload */
+    .upload-zone {
+      border: 2px dashed #333;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #1a1a1a;
+    }
+
+    .upload-zone:hover {
+      border-color: #ff6b6b;
+      background: #1f1f1f;
+    }
+
+    .upload-zone.has-image {
+      border-color: #4ade80;
+      background: #0f1f0f;
+    }
+
+    .upload-zone input {
+      display: none;
+    }
+
+    .upload-icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    /* Sliders */
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #333;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #ff6b6b;
+      cursor: pointer;
+    }
+
+    .slider-value {
+      font-size: 0.8rem;
+      color: #666;
+      text-align: right;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #222;
+      color: #fff;
+      border: 1px solid #333;
+    }
+
+    .btn-secondary:hover {
+      background: #2a2a2a;
+    }
+
+    .btn-zoom {
+      background: linear-gradient(135deg, #4ade80, #22c55e);
+      color: #000;
+      font-size: 1.1rem;
+      padding: 16px 32px;
+    }
+
+    .btn-zoom:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(74, 222, 128, 0.3);
+    }
+
+    /* Main content - Preview */
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    /* TikTok frame (9:16 aspect ratio) - NO rounded corners for recording */
+    .tiktok-frame {
+      width: 100%;
+      max-width: 405px;
+      /* 720 * 9/16 = 405 */
+      aspect-ratio: 9 / 16;
+      background: #000;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    /* SVG container */
+    .dice-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+
+    .dice-container svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Placeholder */
+    .placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #444;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .placeholder-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+
+    /* Status */
+    .status {
+      margin-top: auto;
+      padding: 12px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .status.ready {
+      color: #4ade80;
+      background: #0f1f0f;
+    }
+
+    .status.animating {
+      color: #ffd93d;
+      background: #1f1a0f;
+    }
+
+    /* Duration input */
+    .duration-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .duration-input input {
+      width: 80px;
+      padding: 8px 12px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    .duration-input span {
+      color: #666;
+    }
+
+    /* Easing select dropdown */
+    .easing-select {
+      width: 100%;
+      padding: 10px 12px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.9rem;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    .easing-select:hover {
+      border-color: #ff6b6b;
+    }
+
+    .easing-select:focus {
+      outline: none;
+      border-color: #ff6b6b;
+      box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2);
+    }
+
+    /* Loading overlay */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #333;
+      border-top-color: #ff6b6b;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ===========================================
+       CINEMATIC TEXT OVERLAY - "made with Diceify"
+       =========================================== */
+    .text-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .text-overlay.hidden {
+      display: none;
+    }
+
+    /* Dramatic dark vignette background */
+    .text-backdrop {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.7) 100%);
+      opacity: 0;
+      transition: opacity 1s ease-out;
+    }
+
+    .text-backdrop.visible {
+      opacity: 1;
+    }
+
+    .text-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 10;
+    }
+
+    /* "made with" text */
+    .made-with {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 1.4rem;
+      font-weight: 400;
+      color: #ffffff;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .made-with.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* "Diceify" logo text - Syne font, matching landing page style */
+    .diceify-logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 4rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      opacity: 0;
+      transform: scale(0.8) translateY(40px);
+      transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+      filter: drop-shadow(0 0 40px rgba(255, 45, 146, 0));
+      animation: none;
+    }
+
+    /* "Dice" part in white */
+    .dice-part {
+      color: #ffffff;
+    }
+
+    /* "ify" part in pink */
+    .ify-part {
+      color: #FF2D92;
+    }
+
+    .diceify-logo.visible {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: drop-shadow(0 0 60px rgba(255, 45, 146, 0.5));
+      animation: logoGlow 3s ease-in-out infinite;
+    }
+
+    /* Pink underline accent like landing page */
+    .diceify-underline {
+      width: 0;
+      height: 6px;
+      background: #FF2D92;
+      border-radius: 3px;
+      opacity: 0.4;
+      transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s;
+      box-shadow: 0 0 20px rgba(255, 45, 146, 0.5);
+    }
+
+    .diceify-underline.visible {
+      width: 180px;
+    }
+
+    /* Cinematic glow animation */
+    @keyframes logoGlow {
+
+      0%,
+      100% {
+        filter: drop-shadow(0 0 40px rgba(255, 45, 146, 0.4));
+      }
+
+      50% {
+        filter: drop-shadow(0 0 80px rgba(255, 45, 146, 0.7));
+      }
+    }
+
+    /* Gradient shift animation */
+    @keyframes gradientShift {
+
+      0%,
+      100% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+    }
+
+    /* Particle sparkles around logo */
+    .sparkle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #FF2D92;
+      border-radius: 50%;
+      opacity: 0;
+      box-shadow: 0 0 10px #FF2D92, 0 0 20px #FF5CAD;
+    }
+
+    .sparkle.visible {
+      animation: sparkleFloat 2s ease-out forwards;
+    }
+
+    @keyframes sparkleFloat {
+      0% {
+        opacity: 0;
+        transform: scale(0) translateY(0);
+      }
+
+      20% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(0.5) translateY(-100px);
+      }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <aside class="sidebar">
+    <div>
+      <h1>🎲 TikTok Dice Recorder</h1>
+      <p>Upload an image, generate dice art, then record the zoom-out animation for TikTok.</p>
+    </div>
+
+    <!-- Upload -->
+    <div class="control-group">
+      <label>1. Upload Image</label>
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-icon">📷</div>
+        <div>Click to upload or drag & drop</div>
+        <input type="file" id="imageInput" accept="image/*">
+      </div>
+    </div>
+
+    <!-- Dice Rows -->
+    <div class="control-group">
+      <label>Dice Rows: <span id="rowsValue">50</span></label>
+      <input type="range" id="numRows" min="20" max="100" value="50">
+    </div>
+
+    <!-- Photo Zoom -->
+    <div class="control-group">
+      <label>Photo Zoom: <span id="photoZoomValue">100</span>%</label>
+      <input type="range" id="photoZoom" min="100" max="300" step="5" value="100">
+    </div>
+
+    <!-- X Offset -->
+    <div class="control-group">
+      <label>X Offset: <span id="xOffsetValue">50</span>%</label>
+      <input type="range" id="xOffset" min="0" max="100" step="1" value="50">
+    </div>
+
+    <!-- Y Offset -->
+    <div class="control-group">
+      <label>Y Offset: <span id="yOffsetValue">50</span>%</label>
+      <input type="range" id="yOffset" min="0" max="100" step="1" value="50">
+    </div>
+
+    <!-- Contrast -->
+    <div class="control-group">
+      <label>Contrast: <span id="contrastValue">0</span></label>
+      <input type="range" id="contrast" min="0" max="100" step="1" value="0">
+    </div>
+
+    <!-- Gamma -->
+    <div class="control-group">
+      <label>Gamma: <span id="gammaValue">1.0</span></label>
+      <input type="range" id="gamma" min="0.5" max="2" step="0.1" value="1.0">
+    </div>
+
+    <!-- Brightness -->
+    <div class="control-group">
+      <label>Brightness: <span id="brightnessValue">0</span></label>
+      <input type="range" id="brightness" min="-50" max="50" step="1" value="0">
+    </div>
+
+    <!-- Edge Sharpening -->
+    <div class="control-group">
+      <label>Edge Sharpening: <span id="sharpeningValue">0</span></label>
+      <input type="range" id="sharpening" min="0" max="100" step="5" value="0">
+    </div>
+
+    <!-- Generate Button -->
+    <button class="btn btn-primary" id="generateBtn" disabled>
+      🎲 Generate Dice Art
+    </button>
+
+    <hr style="border-color: #222;">
+
+    <!-- Animation Duration -->
+    <div class="control-group">
+      <label>2. Animation Duration</label>
+      <div class="duration-input">
+        <input type="number" id="duration" value="8" min="2" max="30">
+        <span>seconds</span>
+      </div>
+    </div>
+
+    <!-- Easing Function -->
+    <div class="control-group">
+      <label>Easing Style</label>
+      <select id="easingSelect" class="easing-select">
+        <option value="cinematic" selected>🎬 Cinematic (slow-fast-slow)</option>
+        <option value="dramatic">🎭 Dramatic (very slow start)</option>
+        <option value="easeOut">📤 Ease Out (fast start)</option>
+        <option value="easeIn">📥 Ease In (slow start)</option>
+        <option value="easeInOut">↔️ Ease In-Out</option>
+        <option value="exponential">⚡ Exponential</option>
+        <option value="bounce">🏀 Bounce</option>
+        <option value="linear">📏 Linear (constant speed)</option>
+      </select>
+    </div>
+
+    <!-- Zoom Button -->
+    <button class="btn btn-zoom" id="zoomBtn" disabled>
+      🎬 Start Zoom Out
+    </button>
+
+    <!-- Reset Button -->
+    <button class="btn btn-secondary" id="resetBtn" disabled>
+      ↩️ Reset to Center
+    </button>
+
+    <!-- Status -->
+    <div class="status" id="status">
+      Upload an image to get started
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="tiktok-frame" id="tiktokFrame">
+      <div class="dice-container" id="diceContainer">
+        <div class="placeholder">
+          <div class="placeholder-icon">🎲</div>
+          <div>Your dice art will appear here in 9:16 format</div>
+        </div>
+      </div>
+
+      <!-- Cinematic text overlay -->
+      <div class="text-overlay hidden" id="textOverlay">
+        <div class="text-backdrop" id="textBackdrop"></div>
+        <div class="text-content">
+          <div class="made-with" id="madeWith">made with</div>
+          <div class="diceify-logo" id="diceifyLogo"><span class="dice-part">Dice</span><span
+              class="ify-part">ify</span></div>
+          <div class="diceify-underline" id="diceifyUnderline"></div>
+        </div>
+        <!-- Sparkle particles -->
+        <div class="sparkle" id="sparkle1" style="top: 45%; left: 20%;"></div>
+        <div class="sparkle" id="sparkle2" style="top: 50%; left: 75%;"></div>
+        <div class="sparkle" id="sparkle3" style="top: 55%; left: 30%;"></div>
+        <div class="sparkle" id="sparkle4" style="top: 48%; left: 65%;"></div>
+        <div class="sparkle" id="sparkle5" style="top: 52%; left: 40%;"></div>
+      </div>
+
+      <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div>Generating dice art...</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ============================================
+    // DICE RENDERING CONSTANTS (from lib/dice/constants.ts)
+    // ============================================
+    const DICE_RENDERING = {
+      DOT_RADIUS_FACTOR: 0.12,
+      PADDING_FACTOR: 0.25,
+      CORNER_RADIUS_FACTOR: 0.10,
+      BORDER_WIDTH_FACTOR: 0.05,
+      COLORS: {
+        black: { background: '#1a1a1a', dot: '#ffffff', border: '#333' },
+        white: { background: '#fafafa', dot: '#1a1a1a', border: '#ddd' },
+        stroke: '#6b6b6b'
+      }
+    };
+
+    // ============================================
+    // DICE SVG RENDERER (from lib/dice/svg-renderer.ts)
+    // ============================================
+    class DiceSVGRenderer {
+      getSvgDice(side, color, rotate90 = false) {
+        const radius = 100.0 * DICE_RENDERING.DOT_RADIUS_FACTOR;
+        const lower = 100.0 * (1 + DICE_RENDERING.PADDING_FACTOR) / 6;
+        const middle = 100.0 * 3 / 6;
+        const upper = 100.0 * (5 - DICE_RENDERING.PADDING_FACTOR) / 6;
+
+        const colors = DICE_RENDERING.COLORS[color];
+        const strokeWidth = 100.0 * DICE_RENDERING.BORDER_WIDTH_FACTOR;
+        const cornerRadius = 100.0 * DICE_RENDERING.CORNER_RADIUS_FACTOR;
+
+        const transform = rotate90 ? `transform='rotate(90 50 50)'` : '';
+
+        let svg = `<g ${transform}><rect width='100%' height='100%' fill='${colors.background}' stroke-width='${strokeWidth}%' rx='${cornerRadius}%' stroke='${DICE_RENDERING.COLORS.stroke}' />`;
+
+        if (side >= 2) svg += `<circle cx='${lower}%' cy='${lower}%' r='${radius}%' fill='${colors.dot}' />`;
+        if (side === 6) svg += `<circle cx='${middle}%' cy='${lower}%' r='${radius}%' fill='${colors.dot}' />`;
+        if (side >= 4) svg += `<circle cx='${upper}%' cy='${lower}%' r='${radius}%' fill='${colors.dot}' />`;
+        if (side % 2 === 1) svg += `<circle cx='${middle}%' cy='${middle}%' r='${radius}%' fill='${colors.dot}' />`;
+        if (side >= 4) svg += `<circle cx='${lower}%' cy='${upper}%' r='${radius}%' fill='${colors.dot}' />`;
+        if (side === 6) svg += `<circle cx='${middle}%' cy='${upper}%' r='${radius}%' fill='${colors.dot}' />`;
+        if (side >= 2) svg += `<circle cx='${upper}%' cy='${upper}%' r='${radius}%' fill='${colors.dot}' />`;
+
+        svg += '</g>';
+        return svg;
+      }
+
+      render(grid) {
+        const svgElements = [];
+        const cols = grid.width;
+        const rows = grid.height;
+
+        for (let x = 0; x < cols; x++) {
+          for (let y = 0; y < rows; y++) {
+            const dice = grid.dice[x][y];
+            const svgY = rows - 1 - y;
+            const svg = this.getSvgDice(dice.face, dice.color, dice.rotate90 || false);
+            svgElements.push(`<svg x='${x}' y='${svgY}' width='1' height='1' viewBox='0 0 100 100'>${svg}</svg>`);
+          }
+        }
+
+        return svgElements.join('\n');
+      }
+    }
+
+    // ============================================
+    // DICE GENERATOR (simplified from lib/dice/generator.ts)
+    // ============================================
+    class DiceGenerator {
+      constructor() {
+        this.canvas = document.createElement('canvas');
+        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+      }
+
+      async generateDiceGrid(imageUrl, numRows, contrast = 0, gamma = 1.0, brightness = 0, sharpening = 0, cropArea = null) {
+        const img = await this.loadImage(imageUrl);
+
+        // Calculate grid dimensions maintaining aspect ratio
+        // If cropArea is provided, use its aspect ratio
+        const sourceWidth = cropArea ? cropArea.width : img.width;
+        const sourceHeight = cropArea ? cropArea.height : img.height;
+        const aspectRatio = sourceWidth / sourceHeight;
+        const numCols = Math.round(numRows * aspectRatio);
+
+        // Set canvas to grid dimensions for sampling
+        this.canvas.width = numCols;
+        this.canvas.height = numRows;
+
+        // Draw image scaled to grid size with smoothing
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
+
+        if (cropArea) {
+          // Draw only the cropped area
+          this.ctx.drawImage(
+            img,
+            cropArea.x, cropArea.y, cropArea.width, cropArea.height, // Source rectangle
+            0, 0, numCols, numRows // Destination rectangle
+          );
+        } else {
+          // Draw full image
+          this.ctx.drawImage(img, 0, 0, numCols, numRows);
+        }
+
+        // Get pixel data
+        let imageData = this.ctx.getImageData(0, 0, numCols, numRows);
+
+        // Apply edge sharpening if requested
+        if (sharpening > 0) {
+          imageData = this.applySharpeningFilter(imageData, sharpening);
+        }
+
+        const pixels = imageData.data;
+
+        // Create 2D dice array [x][y]
+        const dice = [];
+        for (let x = 0; x < numCols; x++) {
+          dice[x] = [];
+          for (let y = 0; y < numRows; y++) {
+            // Image data is stored top-to-bottom, we need bottom-to-top
+            const imgY = numRows - 1 - y;
+            const idx = (imgY * numCols + x) * 4;
+
+            // Get grayscale value using perceptual weighted average (same as editor)
+            const r = pixels[idx];
+            const g = pixels[idx + 1];
+            const b = pixels[idx + 2];
+            let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+            // Apply gamma correction first (inverted like editor: 1/gamma)
+            if (gamma !== 1.0) {
+              gray = 255 * Math.pow(gray / 255, 1 / gamma);
+            }
+
+            // Apply contrast (same formula as editor: 0-100 range)
+            if (contrast > 0) {
+              const factor = 1 + contrast / 100;
+              gray = 128 + (gray - 128) * factor;
+            }
+
+            // Apply brightness (additive)
+            gray = gray + brightness;
+
+            gray = Math.max(0, Math.min(255, gray));
+
+            // Map to dice (same thresholds as editor for 'both' color mode)
+            const { face, color } = this.mapToDice(gray);
+            dice[x][y] = { face, color, x, y };
+          }
+        }
+
+        return { dice, width: numCols, height: numRows };
+      }
+
+      mapToDice(brightness) {
+        // Mixed mode mapping - same thresholds as editor for 'both' color mode
+        // Bright values map to white dice, dark values to black dice
+        if (brightness >= 217) return { face: 1, color: 'white' };  // 217-255 -> white 1 (brightest)
+        if (brightness >= 192) return { face: 2, color: 'white' };  // 192-216 -> white 2
+        if (brightness >= 166) return { face: 3, color: 'white' };  // 166-191 -> white 3
+        if (brightness >= 141) return { face: 4, color: 'white' };  // 141-165 -> white 4
+        if (brightness >= 115) return { face: 5, color: 'white' };  // 115-140 -> white 5
+        if (brightness >= 90) return { face: 6, color: 'white' };   // 90-114 -> white 6
+
+        // Dark values map to black dice (more dots = brighter)
+        if (brightness >= 64) return { face: 6, color: 'black' };   // 64-89 -> black 6
+        if (brightness >= 51) return { face: 5, color: 'black' };   // 51-63 -> black 5
+        if (brightness >= 39) return { face: 4, color: 'black' };   // 39-50 -> black 4
+        if (brightness >= 26) return { face: 3, color: 'black' };   // 26-38 -> black 3
+        if (brightness >= 13) return { face: 2, color: 'black' };   // 13-25 -> black 2
+        return { face: 1, color: 'black' };                         // 0-12 -> black 1 (darkest)
+      }
+
+      loadImage(url) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = url;
+        });
+      }
+
+      applySharpeningFilter(imageData, strength) {
+        const width = imageData.width;
+        const height = imageData.height;
+        const data = imageData.data;
+        const output = new Uint8ClampedArray(data);
+
+        // Gentler sharpening for downsampled images (same as editor)
+        // Strength from 0 to 100 maps to 0 to 1 factor
+        const factor = strength / 100;
+
+        // Simple sharpening kernel - subtle effect on small images
+        const kernel = [
+          [0, -1 * factor, 0],
+          [-1 * factor, 4 * factor + 1, -1 * factor],
+          [0, -1 * factor, 0]
+        ];
+
+        // Apply convolution
+        for (let y = 1; y < height - 1; y++) {
+          for (let x = 1; x < width - 1; x++) {
+            const idx = (y * width + x) * 4;
+
+            // Process each color channel
+            for (let c = 0; c < 3; c++) {
+              let sum = 0;
+
+              // Apply kernel
+              for (let ky = -1; ky <= 1; ky++) {
+                for (let kx = -1; kx <= 1; kx++) {
+                  const pixelIdx = ((y + ky) * width + (x + kx)) * 4 + c;
+                  sum += data[pixelIdx] * kernel[ky + 1][kx + 1];
+                }
+              }
+
+              output[idx + c] = Math.max(0, Math.min(255, sum));
+            }
+          }
+        }
+
+        return new ImageData(output, width, height);
+      }
+    }
+
+    // ============================================
+    // APP STATE & LOGIC
+    // ============================================
+    let diceGrid = null;
+    let currentViewBox = null;
+    let isAnimating = false;
+    let animationId = null;
+
+    const renderer = new DiceSVGRenderer();
+    const generator = new DiceGenerator();
+
+    // DOM Elements
+    const uploadZone = document.getElementById('uploadZone');
+    const imageInput = document.getElementById('imageInput');
+    const numRowsInput = document.getElementById('numRows');
+    const photoZoomInput = document.getElementById('photoZoom');
+    const xOffsetInput = document.getElementById('xOffset');
+    const yOffsetInput = document.getElementById('yOffset');
+    const contrastInput = document.getElementById('contrast');
+    const gammaInput = document.getElementById('gamma');
+    const brightnessInput = document.getElementById('brightness');
+    const sharpeningInput = document.getElementById('sharpening');
+    const rowsValue = document.getElementById('rowsValue');
+    const photoZoomValue = document.getElementById('photoZoomValue');
+    const xOffsetValue = document.getElementById('xOffsetValue');
+    const yOffsetValue = document.getElementById('yOffsetValue');
+    const contrastValue = document.getElementById('contrastValue');
+    const gammaValue = document.getElementById('gammaValue');
+    const brightnessValue = document.getElementById('brightnessValue');
+    const sharpeningValue = document.getElementById('sharpeningValue');
+    const generateBtn = document.getElementById('generateBtn');
+    const zoomBtn = document.getElementById('zoomBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const durationInput = document.getElementById('duration');
+    const diceContainer = document.getElementById('diceContainer');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const status = document.getElementById('status');
+    const easingSelect = document.getElementById('easingSelect');
+
+    // Text overlay elements
+    const textOverlay = document.getElementById('textOverlay');
+    const textBackdrop = document.getElementById('textBackdrop');
+    const madeWith = document.getElementById('madeWith');
+    const diceifyLogo = document.getElementById('diceifyLogo');
+    const diceifyUnderline = document.getElementById('diceifyUnderline');
+
+    let uploadedImageUrl = null;
+    let originalImageWidth = 0;
+    let originalImageHeight = 0;
+
+    // Event Listeners
+    uploadZone.addEventListener('click', () => imageInput.click());
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.style.borderColor = '#ff6b6b';
+    });
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.style.borderColor = uploadedImageUrl ? '#4ade80' : '#333';
+    });
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        handleImageUpload(file);
+      }
+    });
+
+    imageInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleImageUpload(file);
+    });
+
+    numRowsInput.addEventListener('input', () => {
+      rowsValue.textContent = numRowsInput.value;
+      autoRegenerate();
+    });
+
+    photoZoomInput.addEventListener('input', () => {
+      photoZoomValue.textContent = photoZoomInput.value;
+      autoRegenerate();
+    });
+
+    xOffsetInput.addEventListener('input', () => {
+      xOffsetValue.textContent = xOffsetInput.value;
+      autoRegenerate();
+    });
+
+    yOffsetInput.addEventListener('input', () => {
+      yOffsetValue.textContent = yOffsetInput.value;
+      autoRegenerate();
+    });
+
+    contrastInput.addEventListener('input', () => {
+      contrastValue.textContent = contrastInput.value;
+      autoRegenerate();
+    });
+
+    gammaInput.addEventListener('input', () => {
+      gammaValue.textContent = gammaInput.value;
+      autoRegenerate();
+    });
+
+    brightnessInput.addEventListener('input', () => {
+      brightnessValue.textContent = brightnessInput.value;
+      autoRegenerate();
+    });
+
+    sharpeningInput.addEventListener('input', () => {
+      sharpeningValue.textContent = sharpeningInput.value;
+      autoRegenerate();
+    });
+
+    // Debounced auto-regeneration
+    let regenerateTimeout = null;
+    function autoRegenerate() {
+      if (!uploadedImageUrl) return;
+
+      // Clear previous timeout
+      if (regenerateTimeout) {
+        clearTimeout(regenerateTimeout);
+      }
+
+      // Debounce: wait 300ms after last change before regenerating
+      regenerateTimeout = setTimeout(() => {
+        generateDiceArt();
+      }, 300);
+    }
+
+    generateBtn.addEventListener('click', generateDiceArt);
+    zoomBtn.addEventListener('click', startZoomAnimation);
+    resetBtn.addEventListener('click', resetToCenter);
+
+    function handleImageUpload(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        uploadedImageUrl = e.target.result;
+
+        // Load image to get dimensions
+        const img = new Image();
+        img.onload = () => {
+          originalImageWidth = img.width;
+          originalImageHeight = img.height;
+        };
+        img.src = uploadedImageUrl;
+
+        uploadZone.classList.add('has-image');
+        uploadZone.innerHTML = `
+          <div class="upload-icon">✅</div>
+          <div>Image loaded! Click to change</div>
+          <input type="file" id="imageInput" accept="image/*">
+        `;
+        document.getElementById('imageInput').addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (file) handleImageUpload(file);
+        });
+        generateBtn.disabled = false;
+        status.textContent = 'Image ready! Click "Generate Dice Art"';
+        status.className = 'status ready';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function generateDiceArt() {
+      if (!uploadedImageUrl) return;
+
+      loadingOverlay.classList.remove('hidden');
+      generateBtn.disabled = true;
+      status.textContent = 'Generating dice art...';
+      status.className = 'status animating';
+
+      // Hide text overlay when regenerating
+      hideTextOverlay();
+
+      try {
+        const numRows = parseInt(numRowsInput.value);
+        const contrast = parseFloat(contrastInput.value);
+        const gamma = parseFloat(gammaInput.value);
+        const brightness = parseFloat(brightnessInput.value);
+        const sharpening = parseFloat(sharpeningInput.value);
+
+        // Calculate crop area based on zoom and offset
+        const photoZoom = parseFloat(photoZoomInput.value) / 100;
+        const xOffsetPercent = parseFloat(xOffsetInput.value) / 100;
+        const yOffsetPercent = parseFloat(yOffsetInput.value) / 100;
+
+        let cropArea = null;
+        if (photoZoom > 1 && originalImageWidth > 0) {
+          const cropWidth = originalImageWidth / photoZoom;
+          const cropHeight = originalImageHeight / photoZoom;
+          const maxOffsetX = originalImageWidth - cropWidth;
+          const maxOffsetY = originalImageHeight - cropHeight;
+          const cropX = maxOffsetX * xOffsetPercent;
+          const cropY = maxOffsetY * yOffsetPercent;
+          cropArea = { x: cropX, y: cropY, width: cropWidth, height: cropHeight };
+        }
+
+        diceGrid = await generator.generateDiceGrid(uploadedImageUrl, numRows, contrast, gamma, brightness, sharpening, cropArea);
+
+        renderDiceArt();
+        // Show full canvas so user can preview settings (zooming happens only on animation start)
+
+        zoomBtn.disabled = false;
+        resetBtn.disabled = false;
+        generateBtn.disabled = false;
+        status.textContent = `Ready! ${diceGrid.width}×${diceGrid.height} dice (${diceGrid.width * diceGrid.height} total)`;
+        status.className = 'status ready';
+      } catch (err) {
+        console.error(err);
+        status.textContent = 'Error generating dice art';
+        status.className = 'status';
+        generateBtn.disabled = false;
+      } finally {
+        loadingOverlay.classList.add('hidden');
+      }
+    }
+
+    function renderDiceArt() {
+      if (!diceGrid) return;
+
+      const cols = diceGrid.width;
+      const rows = diceGrid.height;
+      const svgContent = renderer.render(diceGrid);
+
+      // For 9:16 TikTok aspect ratio
+      const targetAspect = 9 / 16;
+      const gridAspect = cols / rows;
+
+      let vbWidth, vbHeight, vbX, vbY;
+
+      if (gridAspect > targetAspect) {
+        vbHeight = rows;
+        vbWidth = rows * targetAspect;
+        vbX = (cols - vbWidth) / 2;
+        vbY = 0;
+      } else {
+        vbWidth = cols;
+        vbHeight = cols / targetAspect;
+        vbX = 0;
+        vbY = (rows - vbHeight) / 2;
+      }
+
+      window.fullViewBox = { x: vbX, y: vbY, width: vbWidth, height: vbHeight };
+
+      // Set currentViewBox to full view for preview
+      currentViewBox = { ...window.fullViewBox };
+
+      diceContainer.innerHTML = `
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          viewBox="${vbX} ${vbY} ${vbWidth} ${vbHeight}"
+          preserveAspectRatio="xMidYMid slice"
+          style="width: 100%; height: 100%; background: #000;"
+          id="diceSvg"
+        >
+          <rect x="0" y="0" width="${cols}" height="${rows}" fill="#000" />
+          ${svgContent}
+        </svg>
+      `;
+    }
+
+    function resetToCenter() {
+      if (!diceGrid) return;
+
+      // Cancel any ongoing animation
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+
+      // Stop any playing audio
+      if (window.currentAudio) {
+        window.currentAudio.pause();
+        window.currentAudio.currentTime = 0;
+        window.currentAudio = null;
+      }
+
+      // Reset animation state
+      isAnimating = false;
+      zoomBtn.disabled = false;
+      resetBtn.disabled = false;
+
+      // Hide text overlay on reset
+      hideTextOverlay();
+
+      const cols = diceGrid.width;
+      const rows = diceGrid.height;
+
+      // Start zoomed in showing ~3x3 dice in center
+      const startSize = 3;
+      const centerX = cols / 2;
+      const centerY = rows / 2;
+
+      const targetAspect = 9 / 16;
+      const vbWidth = startSize;
+      const vbHeight = startSize / targetAspect;
+
+      currentViewBox = {
+        x: centerX - vbWidth / 2,
+        y: centerY - vbHeight / 2,
+        width: vbWidth,
+        height: vbHeight
+      };
+
+      updateViewBox(false);
+      status.textContent = 'Ready to record! Click "Start Zoom Out"';
+      status.className = 'status ready';
+    }
+
+    function updateViewBox(smooth = true) {
+      const svg = document.getElementById('diceSvg');
+      if (!svg || !currentViewBox) return;
+
+      const { x, y, width, height } = currentViewBox;
+      svg.setAttribute('viewBox', `${x} ${y} ${width} ${height}`);
+    }
+
+    function hideTextOverlay() {
+      textOverlay.classList.add('hidden');
+      textBackdrop.classList.remove('visible');
+      madeWith.classList.remove('visible');
+      diceifyLogo.classList.remove('visible');
+      diceifyUnderline.classList.remove('visible');
+
+      // Reset sparkles
+      for (let i = 1; i <= 5; i++) {
+        document.getElementById(`sparkle${i}`).classList.remove('visible');
+      }
+    }
+
+    function showTextOverlay() {
+      textOverlay.classList.remove('hidden');
+
+      // Use a small delay to ensure the browser has fully rendered the element
+      // before starting the transition (50ms is enough for reliable transitions)
+      setTimeout(() => {
+        // Staggered dramatic reveal - backdrop fades in over 1s
+        textBackdrop.classList.add('visible');
+
+        setTimeout(() => {
+          madeWith.classList.add('visible');
+        }, 400);
+
+        setTimeout(() => {
+          diceifyLogo.classList.add('visible');
+        }, 800);
+
+        setTimeout(() => {
+          diceifyUnderline.classList.add('visible');
+        }, 1100);
+
+        // Sparkle particles with staggered timing
+        const sparkleDelays = [1000, 1200, 1400, 1100, 1300];
+        sparkleDelays.forEach((delay, i) => {
+          setTimeout(() => {
+            document.getElementById(`sparkle${i + 1}`).classList.add('visible');
+          }, delay);
+        });
+      }, 50);
+    }
+
+    function startZoomAnimation() {
+      if (!diceGrid) return;
+
+      // Always reset to center first (this also cancels any ongoing animation)
+      resetToCenter();
+
+      isAnimating = true;
+      zoomBtn.disabled = true;
+      resetBtn.disabled = true;
+      status.textContent = 'Recording... camera shake';
+      status.className = 'status animating';
+
+      // Play drumroll sound starting from second 3
+      const drumroll = new Audio('drumroll.flac');
+      drumroll.currentTime = 3;
+      drumroll.play().catch(err => console.log('Audio play failed:', err));
+      window.currentAudio = drumroll; // Store reference for stopping on reset
+
+      const zoomDuration = parseFloat(durationInput.value) * 1000;
+      const shakeDuration = 2000; // 2 seconds of shake
+      const shakeStartViewBox = { ...currentViewBox };
+      const endViewBox = { ...window.fullViewBox };
+
+      // Easing functions
+      const easingFunctions = {
+        linear: (t) => t,
+        easeIn: (t) => t * t * t,
+        easeOut: (t) => 1 - Math.pow(1 - t, 3),
+        easeInOut: (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+        cinematic: (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+        dramatic: (t) => t < 0.6 ? 0.5 * Math.pow(t / 0.6, 4) : 0.5 + 0.5 * (1 - Math.pow(1 - (t - 0.6) / 0.4, 3)),
+        exponential: (t) => t === 0 ? 0 : t === 1 ? 1 : t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2,
+        bounce: (t) => {
+          const n1 = 7.5625, d1 = 2.75;
+          let t2 = t;
+          if (t2 < 1 / d1) return n1 * t2 * t2;
+          if (t2 < 2 / d1) return n1 * (t2 -= 1.5 / d1) * t2 + 0.75;
+          if (t2 < 2.5 / d1) return n1 * (t2 -= 2.25 / d1) * t2 + 0.9375;
+          return n1 * (t2 -= 2.625 / d1) * t2 + 0.984375;
+        }
+      };
+
+      const selectedEasing = easingSelect.value;
+      const easeFn = easingFunctions[selectedEasing] || easingFunctions.cinematic;
+
+      let overlayStarted = false;
+      const shakeStartTime = performance.now();
+      const overlapDuration = 500; // Start zoom 0.5s before initial shake phase ends
+      let zoomStartTime = null;
+
+      // Combined animation - handles both shake and zoom with smooth blend
+      function combinedAnimation(now) {
+        const elapsed = now - shakeStartTime;
+        const initialShakeProgress = Math.min(elapsed / shakeDuration, 1);
+
+        // Calculate zoom progress (starts during overlap)
+        const timeUntilShakeEnd = shakeDuration - elapsed;
+        let zoomProgress = 0;
+        let zoomEased = 0;
+
+        if (timeUntilShakeEnd <= overlapDuration) {
+          if (zoomStartTime === null) {
+            zoomStartTime = now;
+            status.textContent = 'Recording... zoom out animation in progress';
+          }
+          const zoomElapsed = now - zoomStartTime;
+          zoomProgress = Math.min(zoomElapsed / zoomDuration, 1);
+          zoomEased = easeFn(zoomProgress);
+        }
+
+        // SHAKE: continues throughout most of zoom, fading out gradually
+        // Shake stops at 80% of zoom (last 20% is shake-free for clean ending)
+        let shakeIntensity = 0;
+        const totalElapsed = now - shakeStartTime;
+
+        if (zoomStartTime === null) {
+          // During initial shake phase - full intensity with slight easeout
+          const easeOut = 1 - Math.pow(initialShakeProgress, 3) * 0.3;
+          shakeIntensity = 0.12 * easeOut;
+        } else {
+          // During zoom phase - shake continues but fades out
+          // Fade from 0.08 down to 0 over the first 80% of zoom
+          const zoomElapsed = now - zoomStartTime;
+          const fadeProgress = Math.min(zoomElapsed / (zoomDuration * 0.8), 1);
+          const fadeEaseOut = 1 - Math.pow(fadeProgress, 2);
+          shakeIntensity = 0.08 * fadeEaseOut;
+        }
+
+        // Shake offsets - frequency also decreases over time
+        const freqDecay = zoomStartTime ? (1 - zoomProgress * 0.6) : (1 - initialShakeProgress * 0.3);
+        const shakeX = (Math.sin(totalElapsed * 0.05 * freqDecay) * Math.cos(totalElapsed * 0.03 * freqDecay)) * shakeIntensity;
+        const shakeY = (Math.cos(totalElapsed * 0.04 * freqDecay) * Math.sin(totalElapsed * 0.06 * freqDecay)) * shakeIntensity;
+
+        // Calculate zoom position
+        const baseX = shakeStartViewBox.x + (endViewBox.x - shakeStartViewBox.x) * zoomEased;
+        const baseY = shakeStartViewBox.y + (endViewBox.y - shakeStartViewBox.y) * zoomEased;
+        const baseWidth = shakeStartViewBox.width + (endViewBox.width - shakeStartViewBox.width) * zoomEased;
+        const baseHeight = shakeStartViewBox.height + (endViewBox.height - shakeStartViewBox.height) * zoomEased;
+
+        // Combine zoom position + shake offset
+        currentViewBox = {
+          x: baseX + shakeX,
+          y: baseY + shakeY,
+          width: baseWidth,
+          height: baseHeight
+        };
+
+        updateViewBox(false);
+
+        // Start darkening 1 second before zoom animation ends
+        if (zoomStartTime !== null) {
+          const zoomElapsed = now - zoomStartTime;
+          const timeRemaining = zoomDuration - zoomElapsed;
+          if (!overlayStarted && timeRemaining <= 1000) {
+            overlayStarted = true;
+            showTextOverlay();
+          }
+        }
+
+        // Continue until zoom is complete
+        if (zoomStartTime === null || (now - zoomStartTime) < zoomDuration) {
+          animationId = requestAnimationFrame(combinedAnimation);
+        } else {
+          // Animation complete
+          isAnimating = false;
+          zoomBtn.disabled = false;
+          resetBtn.disabled = false;
+          status.textContent = 'Animation complete! Click Reset to record again';
+          status.className = 'status ready';
+        }
+      }
+
+      // Start the combined animation
+      animationId = requestAnimationFrame(combinedAnimation);
+    }
+  </script>
+</body>
+
+</html>
