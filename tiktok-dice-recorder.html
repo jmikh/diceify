@@ -1229,7 +1229,7 @@
       window.currentAudio = drumroll; // Store reference for stopping on reset
 
       const zoomDuration = parseFloat(durationInput.value) * 1000;
-      const shakeDuration = 2000; // 2 seconds of shake
+      const shakeDuration = 1500; // 1.5 seconds of shake
       const shakeStartViewBox = { ...currentViewBox };
       const endViewBox = { ...window.fullViewBox };
 
@@ -1291,9 +1291,9 @@
           shakeIntensity = 0.12 * easeOut;
         } else {
           // During zoom phase - shake continues but fades out
-          // Fade from 0.08 down to 0 over the first 80% of zoom
+          // Fade from 0.08 down to 0 over the first 80% of zoom + 1 extra second
           const zoomElapsed = now - zoomStartTime;
-          const fadeProgress = Math.min(zoomElapsed / (zoomDuration * 0.8), 1);
+          const fadeProgress = Math.min(zoomElapsed / (zoomDuration * 0.8 + 1000), 1);
           const fadeEaseOut = 1 - Math.pow(fadeProgress, 2);
           shakeIntensity = 0.08 * fadeEaseOut;
         }

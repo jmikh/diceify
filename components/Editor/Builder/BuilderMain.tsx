@@ -8,6 +8,7 @@ import { DiceSVGRenderer } from '@/lib/dice/svg-renderer'
 import { theme } from '@/lib/theme'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 import { useBuildNavigation } from './useBuildNavigation'
+import BuilderLimitToast from './BuilderLimitToast'
 
 // --- BuildViewer Component (Internal) ---
 
@@ -620,6 +621,9 @@ const BuildViewer = memo(function BuildViewer() {
 
 export default function BuilderMain() {
     return (
-        <BuildViewer />
+        <div className="relative w-full h-full">
+            <BuilderLimitToast />
+            <BuildViewer />
+        </div>
     )
 }

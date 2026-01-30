@@ -102,7 +102,7 @@ export default function BuilderPanel() {
     const handleDownloadSvg = () => {
         // Check if logged in
         if (!session?.user) {
-            useEditorStore.getState().setAuthModalMessage("You must be logged in to download SVG.")
+            useEditorStore.getState().setAuthModalMessage("You must be logged in to download blueprint.")
             useEditorStore.getState().setShowAuthModal(true)
             return
         }
@@ -353,8 +353,8 @@ export default function BuilderPanel() {
                 </a>
             </div>
 
-            {/* Download SVG Button */}
-            <div className="mt-4">
+            {/* Download Blueprint Button */}
+            <div className="mt-4 relative">
                 <button
                     onClick={handleDownloadSvg}
                     className="w-full py-3 rounded-lg text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
@@ -364,8 +364,19 @@ export default function BuilderPanel() {
                     }}
                 >
                     <Download size={16} className="group-hover:scale-110 transition-transform" />
-                    <span>Download SVG</span>
+                    <span>Download Blueprint</span>
                 </button>
+                {/* PRO Badge */}
+                <div
+                    className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide"
+                    style={{
+                        background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                        color: '#1a1a2e',
+                        boxShadow: '0 2px 8px rgba(255, 215, 0, 0.4)'
+                    }}
+                >
+                    PRO
+                </div>
             </div>
 
             <div className="flex-grow" />
