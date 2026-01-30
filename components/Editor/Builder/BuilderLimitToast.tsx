@@ -32,7 +32,8 @@ export default function BuilderLimitToast() {
         <div
             className="absolute top-6 left-1/2 -translate-x-1/2 z-20 flex flex-col sm:flex-row items-center gap-2 sm:gap-4 px-5 py-3 rounded-xl backdrop-blur-md border animate-in fade-in slide-in-from-top-2 duration-300"
             style={{
-                maxWidth: 'calc(100% - 100px)',
+                // Leave 80px on each side to avoid zoom buttons (right-6 + w-10 + buffer)
+                maxWidth: 'calc(100% - 250px)',
                 backgroundColor: 'rgba(15, 15, 18, 0.75)',
                 borderColor: theme.colors.glass.border,
                 boxShadow: `0 4px 20px rgba(0, 0, 0, 0.3), 0 0 20px ${theme.colors.glow.pink}`,
@@ -40,7 +41,7 @@ export default function BuilderLimitToast() {
         >
             {/* Message */}
             <span
-                className="text-sm font-medium text-center sm:text-left whitespace-nowrap"
+                className="text-sm font-medium text-center sm:text-left"
                 style={{ color: theme.colors.text.secondary }}
             >
                 Builder limited to 100 dice on Explorer plan

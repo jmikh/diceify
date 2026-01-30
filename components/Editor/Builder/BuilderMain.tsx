@@ -44,10 +44,12 @@ const BuildViewer = memo(function BuildViewer() {
     // Track viewBox with ref only - no React state to avoid re-renders
     const viewBoxRef = useRef(`0 0 ${totalCols} ${totalRows}`) // Initial fallback
     const lastViewXRef = useRef<number | null>(null) // Track last viewX to enable free movement
+    const wrapperRef = useRef<HTMLDivElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const svgRef = useRef<SVGSVGElement>(null)
     const animationRef = useRef<any>(null)
     const [containerDimensions, setContainerDimensions] = useState({ width: 600, height: 600 })
+    const [squareSize, setSquareSize] = useState<number | null>(null)
 
     // Cleanup animation on unmount
     useEffect(() => {
@@ -66,17 +68,14 @@ const BuildViewer = memo(function BuildViewer() {
         const SELECTOR_RESET_POSITION = 0.15
         const SELECTOR_PAN_THRESHOLD = 0.85
 
-        // Calculate container aspect ratio
-        const containerAspect = containerDimensions.width / containerDimensions.height
-
-        // Calculate view dimensions - width based on zoom level, height based on aspect ratio
+        // Calculate view dimensions - always square (1:1 aspect ratio) for consistent display
         let viewWidth = Math.min(zoomLevel, totalCols)
-        let viewHeight = viewWidth / containerAspect
+        let viewHeight = viewWidth // Keep square
 
-        // Adjust if height exceeds grid bounds
+        // Adjust if either dimension exceeds grid bounds
         if (viewHeight > totalRows) {
             viewHeight = totalRows
-            viewWidth = viewHeight * containerAspect
+            viewWidth = viewHeight
         }
 
         // Ensure minimum view size
@@ -216,13 +215,13 @@ const BuildViewer = memo(function BuildViewer() {
         // Let's just manually trigger a calculation without animation for the very first frame if needed, or just let it animate.
         // The original code had a separate effect for initial setup.
 
-        const containerAspect = containerDimensions.width / containerDimensions.height
+        // Calculate initial viewBox without animation - use same square aspect ratio as buildZoom
         let viewWidth = Math.min(zoomLevel, totalCols)
-        let viewHeight = viewWidth / containerAspect
+        let viewHeight = viewWidth // Keep square
 
         if (viewHeight > totalRows) {
             viewHeight = totalRows
-            viewWidth = viewHeight * containerAspect
+            viewWidth = viewHeight
         }
 
         viewWidth = Math.max(3, viewWidth)
@@ -255,18 +254,30 @@ const BuildViewer = memo(function BuildViewer() {
         }, 0)
     }, []) // Run only once on mount
 
-    // Track container dimensions
+    // Track wrapper dimensions and calculate square size
     useEffect(() => {
-        if (!containerRef.current) return
+        if (!wrapperRef.current) return
 
-        const resizeObserver = new ResizeObserver(entries => {
-            for (const entry of entries) {
-                const { width, height } = entry.contentRect
-                setContainerDimensions({ width, height })
-            }
+        const calculateSquareSize = () => {
+            if (!wrapperRef.current) return
+            const rect = wrapperRef.current.getBoundingClientRect()
+            // Account for padding (p-4 = 16px on each side = 32px total)
+            const availableWidth = rect.width - 32
+            const availableHeight = rect.height - 32
+            // Use the smaller dimension to ensure a square that fits
+            const size = Math.max(320, Math.min(availableWidth, availableHeight))
+            setSquareSize(size)
+            setContainerDimensions({ width: size, height: size })
+        }
+
+        // Initial calculation
+        calculateSquareSize()
+
+        const resizeObserver = new ResizeObserver(() => {
+            calculateSquareSize()
         })
 
-        resizeObserver.observe(containerRef.current)
+        resizeObserver.observe(wrapperRef.current)
 
         return () => {
             resizeObserver.disconnect()
@@ -334,7 +345,7 @@ const BuildViewer = memo(function BuildViewer() {
     }, [canNavigate, navigatePrev, navigateNext, navigatePrevDiff, navigateNextDiff])
 
     return (
-        <div className="flex w-full justify-center" data-testid="build-viewer">
+        <div className="flex w-full h-full justify-center items-center" data-testid="build-viewer">
             <style jsx>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;
@@ -344,20 +355,16 @@ const BuildViewer = memo(function BuildViewer() {
           scrollbar-width: none;
         }
       `}</style>
-            <div className="w-full h-full flex items-center justify-center p-4">
+            <div ref={wrapperRef} className="w-full h-full flex items-center justify-center p-4">
                 <div
                     ref={containerRef}
                     className="relative backdrop-blur-xl rounded-2xl border overflow-hidden"
                     style={{
                         backgroundColor: theme.colors.glass.medium,
                         borderColor: theme.colors.glass.border,
-                        width: '100%',
-                        height: '100%',
-                        aspectRatio: '1/1',
-                        maxHeight: '100%',
-                        maxWidth: '100%',
-                        minHeight: '320px',
-                        minWidth: '320px',
+                        // Explicitly set square size calculated by JS
+                        width: squareSize ? `${squareSize}px` : '320px',
+                        height: squareSize ? `${squareSize}px` : '320px',
                     }}
                 >
                     {/* SVG Container - viewBox animates smoothly over 1 second */}
