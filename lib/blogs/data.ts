@@ -8,6 +8,7 @@ export interface BlogPost {
     featuredImage: string
     readTime: string
     tags: string[]
+    hidden?: boolean
 }
 
 export const blogPosts: BlogPost[] = [
@@ -19,7 +20,8 @@ export const blogPosts: BlogPost[] = [
         author: 'John Mikhail',
         featuredImage: '/images/blog/why-i-built-diceify.png',
         readTime: '5 min read',
-        tags: ['Behind the Scenes', 'Story']
+        tags: ['Behind the Scenes', 'Story'],
+        hidden: true
     },
     {
         slug: 'jeremy-dice-portraits-nieces',
@@ -33,6 +35,10 @@ export const blogPosts: BlogPost[] = [
         tags: ['Community', 'Gift Ideas']
     }
 ]
+
+export function getVisibleBlogPosts(): BlogPost[] {
+    return blogPosts.filter(post => !post.hidden)
+}
 
 export function getBlogBySlug(slug: string): BlogPost | undefined {
     return blogPosts.find(post => post.slug === slug)

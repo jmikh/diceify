@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { blogPosts } from '@/lib/blogs/data'
+import { getVisibleBlogPosts } from '@/lib/blogs/data'
 import BlogCard from '@/components/BlogCard'
 
 export const metadata: Metadata = {
@@ -16,6 +16,8 @@ export const metadata: Metadata = {
 }
 
 export default function BlogPage() {
+    const visiblePosts = getVisibleBlogPosts()
+
     return (
         <>
             {/* Background Elements */}
@@ -52,7 +54,7 @@ export default function BlogPage() {
                 </header>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {blogPosts.map((post) => (
+                    {visiblePosts.map((post) => (
                         <BlogCard key={post.slug} post={post} source="blog_listing" />
                     ))}
                 </div>
@@ -70,7 +72,7 @@ export default function BlogPage() {
                     </a>
                 </div>
 
-                {blogPosts.length === 0 && (
+                {visiblePosts.length === 0 && (
                     <div className="text-center py-16">
                         <p className="text-[var(--text-muted)]">No blog posts yet. Check back soon!</p>
                     </div>

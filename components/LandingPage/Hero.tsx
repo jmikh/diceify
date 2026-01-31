@@ -2,14 +2,14 @@
 
 import Link from 'next/link'
 import { sendGAEvent } from '@next/third-parties/google'
-import { blogPosts } from '@/lib/blogs/data'
+import { getVisibleBlogPosts } from '@/lib/blogs/data'
 import BlogCard from '@/components/BlogCard'
 
 import Image from 'next/image'
 
 export default function Hero() {
     // Take up to 2 blog posts for the hero visual
-    const featuredBlogs = blogPosts.slice(0, 2)
+    const featuredBlogs = getVisibleBlogPosts().slice(0, 2)
 
     return (
         <section className="hero hero--centered">
