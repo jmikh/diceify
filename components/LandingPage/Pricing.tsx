@@ -152,302 +152,33 @@ export default function Pricing() {
                         </Link>
                     </div>
 
-                    {/* Creator Plan - Uses shared component with landing page styling */}
+                    {/* Creator Plan - Uses shared component with full variant */}
                     <div className="glass p-6 md:p-8 rounded-[2rem] relative border-blue-500/30 overflow-hidden group flex flex-col">
-                        <CreatorCardLandingPage
+                        <CreatorCard
                             source="landing_page"
                             onAuthRequired={handleAuthRequired}
                             onAlreadyPro={handleAlreadyPro}
                             isLoading={isLoading}
                             setIsLoading={setIsLoading}
+                            variant="full"
+                            contentOnly={true}
                         />
                     </div>
 
-                    {/* Studio Plan - Uses shared component with landing page styling */}
+                    {/* Studio Plan - Uses shared component with full variant */}
                     <div className="glass p-6 md:p-8 rounded-[2rem] relative border-pink-500/30 overflow-hidden group flex flex-col">
-                        <StudioCardLandingPage
+                        <StudioCard
                             source="landing_page"
                             onAuthRequired={handleAuthRequired}
                             onAlreadyPro={handleAlreadyPro}
                             isLoading={isLoading}
                             setIsLoading={setIsLoading}
+                            variant="full"
+                            contentOnly={true}
                         />
                     </div>
                 </div>
             </div>
         </section>
-    )
-}
-
-// Landing page variants with larger styling
-import { Clock, Loader2 } from 'lucide-react'
-import { getSession } from 'next-auth/react'
-
-const CREATOR_PRICE = 19
-const STUDIO_MONTHLY_PRICE = 9
-const STUDIO_YEARLY_PRICE = 36
-const STUDIO_YEARLY_MONTHLY_EFFECTIVE = STUDIO_YEARLY_PRICE / 12
-const STUDIO_YEARLY_SAVINGS_PERCENT = Math.round((1 - (STUDIO_YEARLY_PRICE / (STUDIO_MONTHLY_PRICE * 12))) * 100)
-
-interface LandingCardProps {
-    source: string
-    onAuthRequired: () => void
-    onAlreadyPro: (planType: string) => void
-    isLoading: PlanType | null
-    setIsLoading: (loading: PlanType | null) => void
-}
-
-function CreatorCardLandingPage({ source, onAuthRequired, onAlreadyPro, isLoading, setIsLoading }: LandingCardProps) {
-    const onUpgrade = async () => {
-        sendGAEvent('event', 'click_upgrade', {
-            source,
-            plan_type: 'creator'
-        })
-
-        setIsLoading('creator')
-        const session = await getSession()
-
-        if (!session) {
-            setIsLoading(null)
-            onAuthRequired()
-            return
-        }
-
-        try {
-            const statusResponse = await fetch("/api/user/subscription")
-            if (statusResponse.ok) {
-                const { isPro, planType: userPlanType } = await statusResponse.json()
-
-                if (isPro) {
-                    if (userPlanType === 'lifetime' || userPlanType === 'studio' || userPlanType === 'creator') {
-                        onAlreadyPro(userPlanType)
-                        setIsLoading(null)
-                        return
-                    }
-                }
-            }
-
-            const response = await fetch("/api/stripe/checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ planType: 'creator' }),
-            })
-
-            if (!response.ok) {
-                throw new Error(await response.text() || "Something went wrong")
-            }
-
-            const data = await response.json()
-            window.location.href = data.url
-        } catch (error) {
-            console.error("Billing Error:", error)
-            setIsLoading(null)
-        }
-    }
-
-    return (
-        <>
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
-            <div className="absolute -top-[100px] left-1/2 -translate-x-1/2 w-[200px] h-[200px] bg-blue-500/15 blur-[80px] rounded-full pointer-events-none group-hover:bg-blue-500/25 transition-colors duration-500"></div>
-
-            <div className="mb-6 relative z-10">
-                <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-xl font-bold">Creator</h3>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold">
-                        <Clock className="w-3 h-3" />
-                        30 Days
-                    </div>
-                </div>
-                <div className="flex items-baseline gap-1 mb-3">
-                    <span className="text-3xl font-bold">${CREATOR_PRICE}</span>
-                    <span className="text-white/50">one-time</span>
-                </div>
-                <p className="text-white/50 text-sm">Ideal for focused projects—everything you need to complete a single masterpiece.</p>
-            </div>
-
-            <ul className="space-y-3 mb-6 relative z-10 text-sm flex-1">
-                <li className="flex items-start gap-2.5 text-white/90">
-                    <Check className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                    <span>Generate dice art from any photo</span>
-                </li>
-                <li className="flex items-start gap-2.5 text-white/90">
-                    <Check className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                    <span><strong>Unlimited</strong> dice in Builder Studio</span>
-                </li>
-                <li className="flex items-start gap-2.5 text-white/90">
-                    <Check className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                    <span>Full resolution SVG blueprints</span>
-                </li>
-                <li className="flex items-start gap-2.5 text-white/90">
-                    <Check className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                    <span>1 project in the cloud</span>
-                </li>
-                <li className="flex items-start gap-2.5 text-white/50">
-                    <Clock className="w-4 h-4 shrink-0 mt-0.5" />
-                    <span>Access expires after 30 days</span>
-                </li>
-            </ul>
-
-            <button
-                onClick={onUpgrade}
-                disabled={isLoading !== null}
-                className="w-full py-3 px-4 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed mt-auto"
-            >
-                {isLoading === 'creator' ? (
-                    <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                ) : (
-                    "Get Creator Pass"
-                )}
-            </button>
-        </>
-    )
-}
-
-function StudioCardLandingPage({ source, onAuthRequired, onAlreadyPro, isLoading, setIsLoading }: LandingCardProps) {
-    const [studioInterval, setStudioInterval] = useState<'monthly' | 'yearly'>('yearly')
-
-    const onUpgrade = async () => {
-        const planType = studioInterval === 'monthly' ? 'studio_monthly' : 'studio_yearly'
-
-        sendGAEvent('event', 'click_upgrade', {
-            source,
-            plan_type: planType
-        })
-
-        setIsLoading(planType)
-        const session = await getSession()
-
-        if (!session) {
-            setIsLoading(null)
-            onAuthRequired()
-            return
-        }
-
-        try {
-            const statusResponse = await fetch("/api/user/subscription")
-            if (statusResponse.ok) {
-                const { isPro, planType: userPlanType } = await statusResponse.json()
-
-                if (isPro) {
-                    if (userPlanType === 'lifetime' || userPlanType === 'studio') {
-                        onAlreadyPro(userPlanType)
-                        setIsLoading(null)
-                        return
-                    }
-                }
-            }
-
-            const response = await fetch("/api/stripe/checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ planType }),
-            })
-
-            if (!response.ok) {
-                throw new Error(await response.text() || "Something went wrong")
-            }
-
-            const data = await response.json()
-            window.location.href = data.url
-        } catch (error) {
-            console.error("Billing Error:", error)
-            setIsLoading(null)
-        }
-    }
-
-    return (
-        <>
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-pink-500 to-transparent opacity-50"></div>
-            <div className="absolute -top-[100px] left-1/2 -translate-x-1/2 w-[200px] h-[200px] bg-pink-500/20 blur-[80px] rounded-full pointer-events-none group-hover:bg-pink-500/30 transition-colors duration-500"></div>
-
-            <div className="mb-6 relative z-10">
-                <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-xl font-bold">Studio</h3>
-                    {/* Toggle inline with title */}
-                    <div className="flex items-center gap-1 p-1 rounded-full bg-white/5 border border-white/10">
-                        <button
-                            onClick={() => setStudioInterval('monthly')}
-                            className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${studioInterval === 'monthly'
-                                ? 'bg-white text-black'
-                                : 'text-white/70 hover:text-white'
-                                }`}
-                        >
-                            Monthly
-                        </button>
-                        <button
-                            onClick={() => setStudioInterval('yearly')}
-                            className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all flex items-center gap-1 ${studioInterval === 'yearly'
-                                ? 'bg-white text-black'
-                                : 'text-white/70 hover:text-white'
-                                }`}
-                        >
-                            Yearly
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${studioInterval === 'yearly'
-                                ? 'bg-green-500 text-white'
-                                : 'bg-green-500/20 text-green-400'
-                                }`}>
-                                -{STUDIO_YEARLY_SAVINGS_PERCENT}%
-                            </span>
-                        </button>
-                    </div>
-                </div>
-
-
-                {studioInterval === 'monthly' ? (
-                    <div className="mb-3">
-                        <div className="flex items-baseline gap-1 mb-1">
-                            <span className="text-3xl font-bold">${STUDIO_MONTHLY_PRICE}</span>
-                            <span className="text-white/50">/month</span>
-                        </div>
-                        <p className="text-sm text-white/40">Billed monthly</p>
-                    </div>
-                ) : (
-                    <div className="mb-3">
-                        <div className="flex items-baseline gap-2 mb-1">
-                            <span className="text-white/40 line-through text-lg">${STUDIO_MONTHLY_PRICE}</span>
-                            <span className="text-3xl font-bold text-green-400">${STUDIO_YEARLY_MONTHLY_EFFECTIVE.toFixed(2)}</span>
-                            <span className="text-white/50">/month</span>
-                        </div>
-                        <p className="text-sm text-white/40">Billed annually at ${STUDIO_YEARLY_PRICE}</p>
-                    </div>
-                )}
-                <p className="text-white/50 text-sm">For artists who want to take their time or create multiple pieces.</p>
-            </div>
-
-            <ul className="space-y-3 mb-6 relative z-10 text-sm flex-1">
-                <li className="flex items-start gap-2.5 text-white/90">
-                    <Check className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
-                    <span>Generate dice art from any photo</span>
-                </li>
-                <li className="flex items-start gap-2.5 text-white/90">
-                    <Check className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
-                    <span><strong>Unlimited</strong> dice in Builder Studio</span>
-                </li>
-                <li className="flex items-start gap-2.5 text-white/90">
-                    <Check className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
-                    <span>Full resolution SVG blueprints</span>
-                </li>
-                <li className="flex items-start gap-2.5 text-white/90">
-                    <Check className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
-                    <span><strong>5 projects</strong> in the cloud</span>
-                </li>
-                <li className="flex items-start gap-2.5 text-white/90">
-                    <Check className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
-                    <span>Cancel anytime</span>
-                </li>
-            </ul>
-
-            <button
-                onClick={onUpgrade}
-                disabled={isLoading !== null}
-                className="btn-primary w-full justify-center relative z-10 text-sm mt-auto"
-            >
-                {isLoading === 'studio_monthly' || isLoading === 'studio_yearly' ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                    "Subscribe"
-                )}
-            </button>
-        </>
     )
 }

@@ -27,7 +27,6 @@ import AuthModal from '@/components/AuthModal'
 import LimitReachedModal from '@/components/LimitReachedModal'
 import ProFeatureModal from '@/components/ProFeatureModal'
 import Footer from '@/components/Footer'
-import { UpgradeButton } from '@/components/UpgradeButton'
 import { devLog, devError } from '@/lib/utils/debug'
 
 import { useEditorStore } from '@/lib/store/useEditorStore'
@@ -729,7 +728,7 @@ function EditorContent() {
                           case 'creator':
                             return <span className="px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30">CREATOR PASS</span>
                           default:
-                            return null
+                            return <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 text-[10px] font-bold border border-white/20">EXPLORER</span>
                         }
                       }
 
@@ -751,11 +750,7 @@ function EditorContent() {
                             )}
                           </div>
 
-                          {planType === 'explorer' && (
-                            <div className="p-3 border-b border-white/10">
-                              <UpgradeButton source="user_menu" className="w-full text-sm py-2 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 shadow-lg shadow-pink-500/20 text-white border border-white/10" />
-                            </div>
-                          )}
+
 
                           {/* Manage subscription for Studio users */}
                           {planType === 'studio' && subStatus !== 'canceled' && (
