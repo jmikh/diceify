@@ -52,6 +52,7 @@ interface EditorState {
 
   showLimitModal: boolean
   showProFeatureModal: boolean
+  showCommissionModal: boolean
 
   // Build State
   buildProgress: BuildProgress
@@ -88,6 +89,7 @@ interface EditorState {
 
   setShowLimitModal: (show: boolean) => void
   setShowProFeatureModal: (show: boolean) => void
+  setShowCommissionModal: (show: boolean) => void
 
   setBuildProgress: (progress: BuildProgress | ((prev: BuildProgress) => BuildProgress)) => void
   setSelectedRatio: (ratio: AspectRatio) => void
@@ -149,6 +151,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   showLimitModal: false,
   showProFeatureModal: false,
+  showCommissionModal: false,
 
   buildProgress: { x: 0, y: 0, percentage: 0 },
 
@@ -205,6 +208,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setShowLimitModal: (show) => set({ showLimitModal: show }),
   setShowProFeatureModal: (show) => set({ showProFeatureModal: show }),
+  setShowCommissionModal: (show) => set({ showCommissionModal: show }),
 
   setBuildProgress: (progress) => set((state) => {
     const newProgress = typeof progress === 'function' ? progress(state.buildProgress) : progress

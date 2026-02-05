@@ -27,6 +27,7 @@ model User {
   subscriptionStatus      String?   // 'active', 'canceled', 'past_due', 'trialing', 'creator_pass'
   subscriptionExpiresAt   DateTime? // When the current period ends (null = lifetime)
   planType                String    @default("explorer") // 'explorer', 'creator', 'studio', 'lifetime'
+  commissionInterest      Boolean   @default(false) // Track users interested in commission service
 }
 
 model Account {

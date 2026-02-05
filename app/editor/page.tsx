@@ -26,6 +26,7 @@ import Logo from '@/components/Logo'
 import AuthModal from '@/components/AuthModal'
 import LimitReachedModal from '@/components/LimitReachedModal'
 import ProFeatureModal from '@/components/ProFeatureModal'
+import CommissionModal from '@/components/CommissionModal'
 import Footer from '@/components/Footer'
 import { devLog, devError } from '@/lib/utils/debug'
 
@@ -912,6 +913,7 @@ function EditorContent() {
       {/* Limit Reached Modal */}
       <LimitReachedModal />
       <ProFeatureModal />
+      <CommissionModal />
 
       {/* Footer */}
       <Footer />
