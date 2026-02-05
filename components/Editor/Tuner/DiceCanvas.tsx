@@ -265,21 +265,17 @@ const DiceCanvas = forwardRef<DiceCanvasRef, DiceCanvasProps>(({ maxWidth = 1080
   if (!imageUrl) return null
 
   return (
-    <div className="flex-1 w-full h-full relative flex items-center justify-center" ref={containerRef}>
+    <div className="flex-1 w-full h-full min-w-0 min-h-0 relative overflow-hidden" ref={containerRef}>
       {/* Rasterized image */}
       {rasterizedImage && (
-        <div className="relative inline-block">
-          <img
-            src={rasterizedImage}
-            alt="Dice art preview"
-            style={{
-              display: 'block',
-              maxWidth: '100%',
-              maxHeight: '100%',
-              imageRendering: 'pixelated'
-            }}
-          />
-        </div>
+        <img
+          src={rasterizedImage}
+          alt="Dice art preview"
+          className="absolute inset-0 w-full h-full object-contain"
+          style={{
+            imageRendering: 'pixelated'
+          }}
+        />
       )}
     </div>
   )

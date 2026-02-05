@@ -30,7 +30,7 @@ export default function BuilderLimitToast() {
 
     return (
         <div
-            className="absolute top-6 left-1/2 -translate-x-1/2 z-20 flex flex-col sm:flex-row items-center gap-2 sm:gap-4 px-5 py-3 rounded-xl backdrop-blur-md border animate-in fade-in slide-in-from-top-2 duration-300"
+            className="absolute top-6 left-1/2 -translate-x-1/2 z-20 hidden sm:flex flex-col sm:flex-row items-center gap-2 sm:gap-4 px-5 py-3 rounded-xl backdrop-blur-md border animate-in fade-in slide-in-from-top-2 duration-300"
             style={{
                 // Leave 80px on each side to avoid zoom buttons (right-6 + w-10 + buffer)
                 maxWidth: 'calc(100% - 250px)',

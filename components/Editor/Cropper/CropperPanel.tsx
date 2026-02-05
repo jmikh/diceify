@@ -142,14 +142,14 @@ export default function CropperPanel() {
                 <h3 className="text-lg font-bold text-white">Aspect Ratio</h3>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="flex flex-wrap justify-center gap-3 mb-6">
                 {aspectRatioOptions.map((option) => (
                     <button
                         key={option.value}
                         onClick={() => setSelectedRatio(option.value)}
                         className={`
               group relative flex flex-col items-center justify-center gap-3
-              aspect-square rounded-xl border transition-all duration-200
+              w-20 h-20 rounded-xl border transition-all duration-200 flex-shrink-0
               ${selectedRatio === option.value
                                 ? 'bg-pink-500/10 border-pink-500'
                                 : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'

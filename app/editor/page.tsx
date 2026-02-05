@@ -859,7 +859,7 @@ function EditorContent() {
           </div>
 
           {/* MAIN CONTENT AREA - Top on mobile, Main on desktop */}
-          <div className="flex-grow flex items-center justify-center relative w-full lg:w-auto min-w-0 lg:min-w-[400px] max-w-full lg:max-w-[850px] min-h-[400px] lg:min-h-[650px] max-h-[60vh] lg:max-h-[650px] lg:[@media(min-height:800px)]:max-h-[750px] lg:[@media(min-height:900px)]:max-h-[850px] overflow-hidden bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-4 lg:p-6 shadow-2xl order-1 lg:order-2">
+          <div className="flex items-center justify-center relative w-full lg:flex-grow lg:w-auto min-w-0 lg:min-w-[400px] max-w-full lg:max-w-[850px] h-[50vh] lg:h-auto lg:min-h-[650px] lg:max-h-[650px] lg:[@media(min-height:800px)]:max-h-[750px] lg:[@media(min-height:900px)]:max-h-[850px] overflow-hidden bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-4 lg:p-6 shadow-2xl order-1 lg:order-2">
             {renderMainContent()}
           </div>
         </div>

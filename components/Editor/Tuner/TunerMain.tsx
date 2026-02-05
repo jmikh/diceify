@@ -51,7 +51,7 @@ export default function TunerMain({ diceCanvasRef }: TunerMainProps) {
     const showLoading = isLoading || !processedImageUrl
 
     return (
-        <div className="flex-1 relative w-full h-full flex items-center justify-center">
+        <div className="flex-1 relative w-full h-full flex items-center justify-center overflow-hidden">
             {/* Themed loading overlay */}
             {showLoading && (
                 <div className="absolute inset-0 flex items-center justify-center z-10">
