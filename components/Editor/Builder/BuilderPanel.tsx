@@ -348,7 +348,7 @@ export default function BuilderPanel() {
             {/* Purchase Dice Button */}
             <div className="mt-4">
                 <a
-                    href="https://amzn.to/3NXrLuO"
+                    href="https://amzn.to/4bPWsvQ"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => sendGAEvent('event', 'purchase_dice_click', { label: 'amazon_affiliate' })}
