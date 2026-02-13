@@ -1,10 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Pink background rounded -->
-  <rect fill="#FF2D92" x="0" y="0" width="32" height="32" rx="6" ry="6"/>
-  <!-- Dice outline with 2 dots matching the logo -->
-  <rect fill="none" stroke="#fff" stroke-width="2" x="3" y="3" width="26" height="26" rx="3.5" ry="3.5"/>
-  <!-- Dot 1 (top-left) -->
-  <circle fill="#fff" cx="10" cy="10" r="3.5"/>
-  <!-- Dot 2 (bottom-right) -->
-  <circle fill="#fff" cx="22" cy="22" r="3.5"/>
+  <g transform="rotate(45 16 16)">
+    <!-- Pink diamond background -->
+    <rect fill="#FF2D92" x="4" y="4" width="24" height="24" rx="4" ry="4"/>
+    <!-- Dice border -->
+    <rect fill="none" stroke="#fff" stroke-width="1.5" x="6.5" y="6.5" width="19" height="19" rx="3" ry="3"/>
+    <!-- Dot 1 -->
+    <circle fill="#fff" cx="11.5" cy="11.5" r="2.5"/>
+    <!-- Dot 2 -->
+    <circle fill="#fff" cx="20.5" cy="20.5" r="2.5"/>
+  </g>
 </svg>
