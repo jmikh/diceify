@@ -5,7 +5,7 @@ export const DICE_RENDERING = {
   DOT_RADIUS_FACTOR: 0.12,  // 12% of dice size
 
   // Dice padding and layout
-  PADDING_FACTOR: 0.25,  // Controls dot spacing (0 = furthest apart)
+  PADDING_FACTOR: 0.35,  // Controls dot spacing (0 = furthest apart)
 
   // Dice appearance
   CORNER_RADIUS_FACTOR: 0.10,  // 10% corner radius for rounded dice

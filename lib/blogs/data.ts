@@ -20,8 +20,7 @@ export const blogPosts: BlogPost[] = [
         author: 'John Mikhail',
         featuredImage: '/images/blog/why-i-built-diceify.png',
         readTime: '5 min read',
-        tags: ['Behind the Scenes', 'Story'],
-        hidden: true
+        tags: ['Behind the Scenes', 'Story']
     },
     {
         slug: 'jeremy-dice-portraits-nieces',
