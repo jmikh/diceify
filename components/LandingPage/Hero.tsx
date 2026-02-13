@@ -58,11 +58,12 @@ export default function Hero() {
             {/* Demo video */}
             <div className="glass" style={{ padding: '0.5rem', maxWidth: '800px', width: '100%' }}>
                 <video
-                    src="/demo.mp4"
+                    src="/demo-optimized.mp4"
                     autoPlay
                     loop
                     muted
                     playsInline
+                    preload="metadata"
                     style={{ width: '100%', borderRadius: '1rem', display: 'block' }}
                 />
             </div>
