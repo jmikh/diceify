@@ -2,15 +2,9 @@
 
 import Link from 'next/link'
 import { sendGAEvent } from '@next/third-parties/google'
-import { getVisibleBlogPosts } from '@/lib/blogs/data'
-import BlogCard from '@/components/BlogCard'
-
 import Image from 'next/image'
 
 export default function Hero() {
-    // Take up to 2 blog posts for the hero visual
-    const featuredBlogs = getVisibleBlogPosts().slice(0, 2)
-
     return (
         <section className="hero hero--centered">
             <div className="hero-content text-center mx-auto">
@@ -33,23 +27,37 @@ export default function Hero() {
                     >
                         Start creating
                     </Link>
-                    <Link href="#how" className="btn-secondary">
-                        How it works
-                    </Link>
+                </div>
+                <div className="flex items-center justify-center gap-3 mt-6">
+                    <div className="flex -space-x-2">
+                        {['from-pink-500 to-purple-600', 'from-blue-400 to-cyan-500', 'from-amber-400 to-orange-500', 'from-emerald-400 to-teal-600', 'from-violet-400 to-indigo-500'].map((gradient, i) => (
+                            <div
+                                key={i}
+                                className={`w-8 h-8 rounded-full bg-gradient-to-br ${gradient} border-2 border-[var(--bg-primary)] flex items-center justify-center`}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="white" opacity="0.8">
+                                    <circle cx="12" cy="8" r="4" />
+                                    <path d="M20 21a8 8 0 1 0-16 0" />
+                                </svg>
+                            </div>
+                        ))}
+                    </div>
+                    <span className="text-sm text-[var(--text-muted)]">
+                        Join <strong className="text-[var(--text-primary)]">5,000+</strong> happy creators
+                    </span>
                 </div>
             </div>
 
-            {/* Blog section */}
-            <div className="hero-blogs-section">
-                <div className="hero-badge mx-auto">
-                    <span className="dot"></span>
-                    New blog entries
-                </div>
-                <div className="hero-blogs-row">
-                    {featuredBlogs.map((blog) => (
-                        <BlogCard key={blog.slug} post={blog} source="hero" compact />
-                    ))}
-                </div>
+            {/* Demo video */}
+            <div className="glass" style={{ padding: '0.5rem', maxWidth: '800px', width: '100%' }}>
+                <video
+                    src="/demo.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    style={{ width: '100%', borderRadius: '1rem', display: 'block' }}
+                />
             </div>
 
             {/* Decorative glow */}

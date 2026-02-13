@@ -2,8 +2,9 @@ import { Suspense } from 'react'
 import Script from 'next/script'
 import Navbar from '@/components/LandingPage/Navbar'
 import Hero from '@/components/LandingPage/Hero'
-import HowItWorks from '@/components/LandingPage/HowItWorks'
+
 import Gallery from '@/components/LandingPage/Gallery'
+import BlogSection from '@/components/LandingPage/BlogSection'
 import Pricing from '@/components/LandingPage/Pricing'
 import Footer from '@/components/Footer'
 import { HashScrollHandler } from '@/components/HashScrollHandler'
@@ -87,8 +88,9 @@ export default function Home() {
         <Navbar />
         <main>
           <Hero />
-          <HowItWorks />
+
           <Gallery />
+          <BlogSection />
           <Suspense fallback={<div className="py-24" />}>
             <Pricing />
           </Suspense>
