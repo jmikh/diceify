@@ -28,6 +28,13 @@ export default function Hero() {
                         Start creating
                     </Link>
                 </div>
+                <Link
+                    href="/dice-art"
+                    className="text-sm text-[var(--text-muted)] hover:text-[var(--pink)] transition-colors no-underline"
+                    onClick={() => sendGAEvent('event', 'hub_click', { source: 'hero' })}
+                >
+                    or learn about dice art →
+                </Link>
                 <div className="flex items-center justify-center gap-3 mt-6">
                     <div className="flex -space-x-2">
                         {['from-pink-500 to-purple-600', 'from-blue-400 to-cyan-500', 'from-amber-400 to-orange-500', 'from-emerald-400 to-teal-600', 'from-violet-400 to-indigo-500'].map((gradient, i) => (

@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import Script from 'next/script'
 
 const galleryItems = [
@@ -101,6 +102,15 @@ export default function Gallery() {
                         </div>
                     ))}
                 </div>
+            </div>
+
+            <div className="flex justify-center mt-8">
+                <Link href="/gallery" className="btn-secondary">
+                    View more
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </Link>
             </div>
         </section>
     )

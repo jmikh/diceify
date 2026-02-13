@@ -112,6 +112,21 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
+            <Script
+                id="blog-breadcrumb-jsonld"
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "BreadcrumbList",
+                        "itemListElement": [
+                            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://diceify.art" },
+                            { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://diceify.art/blog" },
+                            { "@type": "ListItem", "position": 3, "name": post.title, "item": `https://diceify.art/blog/${slug}` }
+                        ]
+                    })
+                }}
+            />
 
             {/* Background Elements */}
             <div className="bg-gradient">

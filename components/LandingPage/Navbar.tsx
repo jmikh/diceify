@@ -10,9 +10,13 @@ export default function Navbar() {
                 Dice<span className="text-[var(--pink)]">ify</span>
             </div>
             <ul className="hidden md:flex gap-2 list-none">
-
                 <li>
-                    <Link href="#gallery" className="text-[var(--text-muted)] text-sm font-medium px-4 py-2 rounded-full transition-all hover:text-white hover:bg-white/5 no-underline">
+                    <Link href="/dice-art" className="text-[var(--text-muted)] text-sm font-medium px-4 py-2 rounded-full transition-all hover:text-white hover:bg-white/5 no-underline">
+                        Dice Art
+                    </Link>
+                </li>
+                <li>
+                    <Link href="/gallery" className="text-[var(--text-muted)] text-sm font-medium px-4 py-2 rounded-full transition-all hover:text-white hover:bg-white/5 no-underline">
                         Gallery
                     </Link>
                 </li>
@@ -22,8 +26,13 @@ export default function Navbar() {
                     </Link>
                 </li>
                 <li>
-                    <Link href="#blog" className="text-[var(--text-muted)] text-sm font-medium px-4 py-2 rounded-full transition-all hover:text-white hover:bg-white/5 no-underline">
+                    <Link href="/blog" className="text-[var(--text-muted)] text-sm font-medium px-4 py-2 rounded-full transition-all hover:text-white hover:bg-white/5 no-underline">
                         Blog
+                    </Link>
+                </li>
+                <li>
+                    <Link href="#faq" className="text-[var(--text-muted)] text-sm font-medium px-4 py-2 rounded-full transition-all hover:text-white hover:bg-white/5 no-underline">
+                        FAQ
                     </Link>
                 </li>
             </ul>

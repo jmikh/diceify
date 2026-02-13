@@ -14,22 +14,21 @@ const syne = Syne({ subsets: ['latin'], variable: '--font-syne', display: 'swap'
 export const metadata: Metadata = {
   metadataBase: new URL('https://diceify.art'),
   title: {
-    default: 'Diceify | Free Dice Art Generator',
-    template: 'Diceify | %s'
+    default: 'Diceify — Free Dice Art Generator for Portraits & Mosaics',
+    template: '%s | Diceify'
   },
-  description: 'Free dice art generator to create portraits and mosaics from photos. Convert any picture into buildable dice patterns with our step-by-step guide.',
+  description: 'Create dice art portraits and mosaics from any photo. Diceify is a free dice art generator with contrast tuning, a step-by-step builder, and patterns you can build by hand.',
   keywords: [
+    'dice art',
+    'dice portrait',
     'dice art generator',
+    'dice mosaic',
     'dice portrait generator',
     'dice picture generator',
     'dice mosaic generator',
-    'dice',
-    'dice art',
     'dice mosaic maker',
     'photo to dice',
     'dice pixel art',
-    'rubiks cube art alternative',
-    'mosaic blueprints',
     'diy art project'
   ],
   authors: [{ name: 'Diceify Team' }],
@@ -41,8 +40,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: 'Diceify - Free Dice Art Generator',
-    description: 'Free dice art generator to create portraits and mosaics from photos. Convert any picture into buildable dice patterns.',
+    title: 'Diceify — Free Dice Art Generator for Portraits & Mosaics',
+    description: 'Create dice art portraits and mosaics from any photo. Free generator with contrast tuning and a step-by-step builder.',
     url: 'https://diceify.art',
     siteName: 'Diceify',
     locale: 'en_US',
@@ -52,14 +51,14 @@ export const metadata: Metadata = {
         url: '/opengraph-image',
         width: 1200,
         height: 630,
-        alt: 'Diceify - Free Dice Art Generator',
+        alt: 'Diceify — Free Dice Art Generator for Portraits & Mosaics',
       }
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Diceify - Free Dice Art Generator',
-    description: 'Free dice art generator to create portraits and mosaics from photos. Convert any picture into buildable dice patterns.',
+    title: 'Diceify — Free Dice Art Generator for Portraits & Mosaics',
+    description: 'Create dice art portraits and mosaics from any photo. Free generator with contrast tuning and a step-by-step builder.',
     images: ['/twitter-image'],
     creator: '@diceify',
   },
@@ -130,9 +129,30 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Diceify",
+    "url": "https://diceify.art",
+    "description": "Free dice art generator for portraits and mosaics. Turn any photo into buildable dice patterns.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Diceify",
+      "url": "https://diceify.art",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://diceify.art/favicon-192x192.png"
+      }
+    }
+  }
+
   return (
     <html lang="en" className={`${outfit.variable} ${syne.variable}`}>
       <body className={outfit.className}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         <Providers>
           {children}
         </Providers>
