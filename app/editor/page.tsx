@@ -599,7 +599,7 @@ function EditorContent() {
         </div>
         <div className="grid-overlay"></div>
         <div className="text-center relative z-10">
-          <img src="/icon.svg" alt="Loading..." className="animate-spin w-12 h-12 mb-4 mx-auto block" />
+          <img src="/favicon.svg" alt="Loading..." className="animate-spin w-12 h-12 mb-4 mx-auto block" />
           <p className="text-white text-lg">Loading workspace...</p>
         </div>
       </div>

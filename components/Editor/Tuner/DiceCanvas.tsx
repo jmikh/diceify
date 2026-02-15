@@ -51,6 +51,7 @@ const DiceCanvas = forwardRef<DiceCanvasRef, DiceCanvasProps>(({ maxWidth = 1080
   const currentGridRef = useRef<DiceGrid | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout>()
   const isInitializedRef = useRef(false)
+  const logoImageRef = useRef<HTMLImageElement | null>(null)
   const rasterAbortRef = useRef<boolean>(false)
 
   // Initialize once on mount
@@ -60,6 +61,11 @@ const DiceCanvas = forwardRef<DiceCanvasRef, DiceCanvasProps>(({ maxWidth = 1080
     generatorRef.current = new DiceGenerator()
     svgRendererRef.current = new DiceSVGRenderer()
     isInitializedRef.current = true
+
+    // Preload the Diceify logo for branding on the rasterized image
+    const logoImg = new Image()
+    logoImg.onload = () => { logoImageRef.current = logoImg }
+    logoImg.src = '/logo-full.svg'
 
     return () => {
       if (timeoutRef.current) {
@@ -125,6 +131,33 @@ const DiceCanvas = forwardRef<DiceCanvasRef, DiceCanvasProps>(({ maxWidth = 1080
 
           if (ctx) {
             ctx.drawImage(img, 0, 0, rasterWidth, rasterHeight)
+
+            // Draw Diceify branding in top-right corner
+            if (logoImageRef.current) {
+              const brandingHeight = Math.round(rasterHeight * 0.088)
+              const logoAspect = logoImageRef.current.naturalWidth / logoImageRef.current.naturalHeight
+              const brandingWidth = Math.round(brandingHeight * logoAspect)
+              const pad = Math.round(rasterHeight * 0.025)
+              const pillPadX = Math.round(pad * 0.8)
+              const pillPadY = Math.round(pad * 0.5)
+              const x = rasterWidth - brandingWidth - pad - pillPadX
+              const y = pad
+
+              // Semi-transparent dark pill backdrop
+              const pillX = x - pillPadX
+              const pillY = y - pillPadY
+              const pillW = brandingWidth + pillPadX * 2
+              const pillH = brandingHeight + pillPadY * 2
+              const pillR = Math.round(pillH / 2)
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.65)'
+              ctx.beginPath()
+              ctx.roundRect(pillX, pillY, pillW, pillH, pillR)
+              ctx.fill()
+
+              // Draw the logo
+              ctx.drawImage(logoImageRef.current, x, y, brandingWidth, brandingHeight)
+            }
+
             const dataUrl = canvas.toDataURL('image/png')
             URL.revokeObjectURL(url)
             resolve(dataUrl)

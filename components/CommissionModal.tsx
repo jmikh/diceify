@@ -171,7 +171,7 @@ export default function CommissionModal() {
                     <div className="relative z-10 py-4 text-center">
                         <div className="relative w-20 h-20 mb-6 mx-auto">
                             <Image
-                                src="/icon.svg"
+                                src="/favicon.svg"
                                 alt="Diceify Icon"
                                 fill
                                 className="object-contain drop-shadow-[0_0_20px_rgba(236,72,153,0.6)]"

@@ -53,7 +53,7 @@ export default function ResetProgressModal({ isOpen, onClose, onConfirm }: Reset
                     {/* Icon */}
                     <div className="relative w-16 h-16 mb-4">
                         <Image
-                            src="/icon.svg"
+                            src="/favicon.svg"
                             alt="Diceify Icon"
                             fill
                             className="object-contain drop-shadow-[0_0_15px_rgba(236,72,153,0.5)]"

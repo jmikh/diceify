@@ -109,7 +109,7 @@ export default function ProjectSelectionModal({
           <div className="flex items-center gap-3">
             <div className="relative w-8 h-8">
               <Image
-                src="/icon.svg"
+                src="/favicon.svg"
                 alt="Diceify"
                 fill
                 className="object-contain"
