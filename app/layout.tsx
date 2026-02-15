@@ -141,7 +141,11 @@ export default function RootLayout({
       "url": "https://diceify.art",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://diceify.art/favicon-192x192.png"
+        "url": "https://diceify.art/favicon-192x192.png",
+        "copyrightNotice": "© 2024 Diceify. All rights reserved.",
+        "creditText": "Created with Diceify (diceify.art)",
+        "license": "https://diceify.art/terms",
+        "acquireLicensePage": "https://diceify.art/terms"
       }
     }
   }
