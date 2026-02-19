@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { FaTiktok, FaInstagram } from 'react-icons/fa'
+import { FaInstagram } from 'react-icons/fa'
+import { ImReddit } from 'react-icons/im'
+import { RiTiktokLine } from 'react-icons/ri'
 
 export default function Footer() {
   return (
@@ -18,7 +20,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="text-[var(--text-dim)] text-lg no-underline hover:text-[var(--pink)] transition-colors"
             >
-              <FaTiktok />
+              <RiTiktokLine />
             </a>
             <a
               href="https://www.instagram.com/diceify.art/"
@@ -27,6 +29,14 @@ export default function Footer() {
               className="text-[var(--text-dim)] text-lg no-underline hover:text-[var(--pink)] transition-colors"
             >
               <FaInstagram />
+            </a>
+            <a
+              href="https://www.reddit.com/r/DicePortraits"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--text-dim)] text-lg no-underline hover:text-[var(--pink)] transition-colors"
+            >
+              <ImReddit />
             </a>
           </div>
         </div>
