@@ -6,8 +6,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 import {
-  Dices
+  Dices,
+  X
 } from 'lucide-react'
+import { ImReddit } from 'react-icons/im'
 import UploaderPanel from '@/components/Editor/Uploader/UploaderPanel'
 import UploadMain from '@/components/Editor/Uploader/UploadMain'
 import CropperPanel from '@/components/Editor/Cropper/CropperPanel'
@@ -107,6 +109,12 @@ function EditorContent() {
 
   // Local UI state
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [redditBannerDismissed, setRedditBannerDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('redditBannerDismissed') === 'true'
+    }
+    return false
+  })
 
   const [isRestoringOAuthState, setIsRestoringOAuthState] = useState(false)
 
@@ -837,6 +845,36 @@ function EditorContent() {
 
       {/* Main Content Area */}
       < main className="relative p-1 sm:p-4 flex-grow" >
+        {/* Reddit Announcement Banner */}
+        {!redditBannerDismissed && (
+          <div className="flex items-center justify-center gap-3 mx-auto mb-3 px-4 py-2.5 rounded-full bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] max-w-fit">
+            <ImReddit className="text-[var(--pink)] text-lg flex-shrink-0" />
+            <span className="text-white/70 text-sm">
+              <span className="font-medium text-white/90">New!</span>{' '}
+              Join{' '}
+              <a
+                href="https://www.reddit.com/r/DicePortraits"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--pink)] hover:underline font-medium"
+              >
+                r/DicePortraits
+              </a>
+              {' '}— share your builds & see what others are creating
+            </span>
+            <button
+              onClick={() => {
+                setRedditBannerDismissed(true)
+                localStorage.setItem('redditBannerDismissed', 'true')
+              }}
+              className="text-white/30 hover:text-white/60 transition-colors flex-shrink-0 p-0.5"
+              aria-label="Dismiss"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         {/* Center: Stepper */}
         < div className="flex justify-center items-center mb-4" >
           {/* Stepper */}
