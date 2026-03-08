@@ -13,8 +13,8 @@ export const contentType = 'image/png'
 
 export default async function Image() {
   // Read the static OG image from public folder
-  const imageData = await readFile(join(process.cwd(), 'public/images/og-image.webp'))
-  const base64Image = `data:image/webp;base64,${imageData.toString('base64')}`
+  const imageData = await readFile(join(process.cwd(), 'public/images/og-image.jpg'))
+  const base64Image = `data:image/jpeg;base64,${imageData.toString('base64')}`
 
   // Fetch Syne Bold font from Google Fonts
   const syneBoldData = await fetch(
