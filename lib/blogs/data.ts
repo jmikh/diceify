@@ -18,7 +18,7 @@ export const blogPosts: BlogPost[] = [
         description: 'The story behind Diceify — a COVID project born out of frustration with existing dice art tools, and a tribute to Um Kulthum.',
         date: '2024-01-24',
         author: 'John Mikhail',
-        featuredImage: '/images/blog/why-i-built-diceify.png',
+        featuredImage: '/images/blog/why-i-built-diceify.webp',
         readTime: '5 min read',
         tags: ['Behind the Scenes', 'Story']
     },
@@ -29,7 +29,7 @@ export const blogPosts: BlogPost[] = [
         date: '2023-11-21',
         author: 'Jeremy Klammer',
         authorUrl: 'https://jeremyklammer.com',
-        featuredImage: '/images/blog/jeremy-dice-portrait.png',
+        featuredImage: '/images/blog/jeremy-dice-portrait.webp',
         readTime: '4 min read',
         tags: ['Community', 'Gift Ideas']
     }

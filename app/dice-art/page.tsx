@@ -205,9 +205,9 @@ export default function DiceArtPage() {
                         {/* Inline gallery preview */}
                         <div className="grid grid-cols-3 gap-3 my-8 rounded-xl overflow-hidden">
                             {[
-                                { src: '/images/dali-51x51.png', alt: 'Salvador Dali dice art portrait' },
-                                { src: '/images/frida-54x54.png', alt: 'Frida Kahlo dice portrait mosaic' },
-                                { src: '/images/monalisa.jpg', alt: 'Mona Lisa recreated in dice art' },
+                                { src: '/images/dali-51x51.webp', alt: 'Salvador Dali dice art portrait' },
+                                { src: '/images/frida-54x54.webp', alt: 'Frida Kahlo dice portrait mosaic' },
+                                { src: '/images/monalisa.webp', alt: 'Mona Lisa recreated in dice art' },
                             ].map((img, i) => (
                                 <div key={i} className="relative aspect-square rounded-lg overflow-hidden">
                                     <Image src={img.src} alt={img.alt} fill className="object-cover" sizes="250px" />
@@ -275,10 +275,10 @@ export default function DiceArtPage() {
 
                         <div className="grid grid-cols-2 gap-3 my-8 rounded-xl overflow-hidden">
                             {[
-                                { src: '/images/salah-61x61.png', alt: 'Mo Salah football player dice art portrait' },
-                                { src: '/images/kobe-71x71.png', alt: 'Kobe Bryant tribute in dice art' },
-                                { src: '/images/sharbatgula-52x52.png', alt: 'Afghan Girl famous dice portrait' },
-                                { src: '/images/ummkulthum58x58.png', alt: 'Umm Kulthum singer dice mosaic art' },
+                                { src: '/images/salah-61x61.webp', alt: 'Mo Salah football player dice art portrait' },
+                                { src: '/images/kobe-71x71.webp', alt: 'Kobe Bryant tribute in dice art' },
+                                { src: '/images/sharbatgula-52x52.webp', alt: 'Afghan Girl famous dice portrait' },
+                                { src: '/images/ummkulthum58x58.webp', alt: 'Umm Kulthum singer dice mosaic art' },
                             ].map((img, i) => (
                                 <div key={i} className="relative aspect-square rounded-lg overflow-hidden">
                                     <Image src={img.src} alt={img.alt} fill className="object-cover" sizes="350px" />

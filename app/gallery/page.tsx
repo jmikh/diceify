@@ -22,22 +22,22 @@ export const metadata: Metadata = {
 }
 
 const portraits = [
-    { src: '/images/dali-51x51.png', alt: 'Salvador Dali dice art portrait', name: 'Salvador Dali' },
-    { src: '/images/frida-54x54.png', alt: 'Frida Kahlo dice art portrait', name: 'Frida Kahlo' },
-    { src: '/images/monalisa.jpg', alt: 'Mona Lisa dice art mosaic', name: 'Mona Lisa' },
-    { src: '/images/salah-61x61.png', alt: 'Mo Salah football dice art portrait', name: 'Mo Salah' },
-    { src: '/images/kobe-71x71.png', alt: 'Kobe Bryant tribute dice art', name: 'Kobe Bryant' },
-    { src: '/images/sharbatgula-52x52.png', alt: 'Afghan Girl famous dice portrait', name: 'Afghan Girl' },
-    { src: '/images/ummkulthum58x58.png', alt: 'Umm Kulthum singer dice mosaic', name: 'Umm Kulthum' },
+    { src: '/images/dali-51x51.webp', alt: 'Salvador Dali dice art portrait', name: 'Salvador Dali' },
+    { src: '/images/frida-54x54.webp', alt: 'Frida Kahlo dice art portrait', name: 'Frida Kahlo' },
+    { src: '/images/monalisa.webp', alt: 'Mona Lisa dice art mosaic', name: 'Mona Lisa' },
+    { src: '/images/salah-61x61.webp', alt: 'Mo Salah football dice art portrait', name: 'Mo Salah' },
+    { src: '/images/kobe-71x71.webp', alt: 'Kobe Bryant tribute dice art', name: 'Kobe Bryant' },
+    { src: '/images/sharbatgula-52x52.webp', alt: 'Afghan Girl famous dice portrait', name: 'Afghan Girl' },
+    { src: '/images/ummkulthum58x58.webp', alt: 'Umm Kulthum singer dice mosaic', name: 'Umm Kulthum' },
 ]
 
 const abstract = [
-    { src: '/images/abstract/abstract.png', alt: 'Abstract geometric dice art mosaic', name: 'Abstract' },
-    { src: '/images/abstract/pikachu.png', alt: 'Pikachu character dice art', name: 'Pikachu' },
-    { src: '/images/abstract/sun.png', alt: 'Sun dice art mosaic', name: 'Sun' },
-    { src: '/images/abstract/tile1.png', alt: 'Abstract tile pattern dice art', name: 'Tile Pattern' },
-    { src: '/images/abstract/tile2.png', alt: 'Abstract tile design dice art', name: 'Tile Design' },
-    { src: '/images/abstract/woman.png', alt: 'Woman silhouette dice art', name: 'Woman' },
+    { src: '/images/abstract/abstract.webp', alt: 'Abstract geometric dice art mosaic', name: 'Abstract' },
+    { src: '/images/abstract/pikachu.webp', alt: 'Pikachu character dice art', name: 'Pikachu' },
+    { src: '/images/abstract/sun.webp', alt: 'Sun dice art mosaic', name: 'Sun' },
+    { src: '/images/abstract/tile1.webp', alt: 'Abstract tile pattern dice art', name: 'Tile Pattern' },
+    { src: '/images/abstract/tile2.webp', alt: 'Abstract tile design dice art', name: 'Tile Design' },
+    { src: '/images/abstract/woman.webp', alt: 'Woman silhouette dice art', name: 'Woman' },
 ]
 
 const allItems = [...portraits, ...abstract]

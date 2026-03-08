@@ -5,13 +5,13 @@ import Link from 'next/link'
 import Script from 'next/script'
 
 const galleryItems = [
-    { src: '/images/dali-51x51.png', alt: 'Salvador Dali dice art mosaic', name: 'Salvador Dali Dice Art Mosaic' },
-    { src: '/images/frida-54x54.png', alt: 'Frida Kahlo portrait made of dice', name: 'Frida Kahlo Dice Portrait' },
-    { src: '/images/monalisa.jpg', alt: 'Mona Lisa dice mosaic art', name: 'Mona Lisa Dice Mosaic' },
-    { src: '/images/salah-61x61.png', alt: 'Mo Salah football player dice art', name: 'Mo Salah Dice Art' },
-    { src: '/images/kobe-71x71.png', alt: 'Kobe Bryant tribute in dice', name: 'Kobe Bryant Dice Tribute' },
-    { src: '/images/sharbatgula-52x52.png', alt: 'Afghan Girl famous portrait in dice', name: 'Afghan Girl Dice Portrait' },
-    { src: '/images/ummkulthum58x58.png', alt: 'Umm Kulthum singer dice mosaic', name: 'Umm Kulthum Dice Mosaic' },
+    { src: '/images/dali-51x51.webp', alt: 'Salvador Dali dice art mosaic', name: 'Salvador Dali Dice Art Mosaic' },
+    { src: '/images/frida-54x54.webp', alt: 'Frida Kahlo portrait made of dice', name: 'Frida Kahlo Dice Portrait' },
+    { src: '/images/monalisa.webp', alt: 'Mona Lisa dice mosaic art', name: 'Mona Lisa Dice Mosaic' },
+    { src: '/images/salah-61x61.webp', alt: 'Mo Salah football player dice art', name: 'Mo Salah Dice Art' },
+    { src: '/images/kobe-71x71.webp', alt: 'Kobe Bryant tribute in dice', name: 'Kobe Bryant Dice Tribute' },
+    { src: '/images/sharbatgula-52x52.webp', alt: 'Afghan Girl famous portrait in dice', name: 'Afghan Girl Dice Portrait' },
+    { src: '/images/ummkulthum58x58.webp', alt: 'Umm Kulthum singer dice mosaic', name: 'Umm Kulthum Dice Mosaic' },
 ]
 
 // JSON-LD structured data for the image gallery
