@@ -41,6 +41,11 @@ const jsonLd = {
         "logo": {
             "@type": "ImageObject",
             "url": "https://diceify.art/favicon-192x192.png",
+            "creator": {
+                "@type": "Organization",
+                "name": "Diceify",
+                "url": "https://diceify.art"
+            },
             "copyrightNotice": "© 2024 Diceify. All rights reserved.",
             "creditText": "Created with Diceify (diceify.art)",
             "license": "https://diceify.art/terms",

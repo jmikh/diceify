@@ -1,7 +1,7 @@
 'use client'
 
 import { devLog } from '@/lib/utils/debug'
-import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, memo, type MouseEvent } from 'react'
 import { animate } from 'motion'
 import { Plus, Minus } from 'lucide-react'
 import { DiceSVGRenderer } from '@/lib/dice/svg-renderer'
@@ -22,6 +22,7 @@ const BuildViewer = memo(function BuildViewer() {
         navigateNext,
         navigatePrevDiff,
         navigateNextDiff,
+        navigateTo,
         canNavigate,
         currentDice,
         totalCols,
@@ -51,6 +52,9 @@ const BuildViewer = memo(function BuildViewer() {
     const [containerDimensions, setContainerDimensions] = useState({ width: 600, height: 600 })
     const [squareSize, setSquareSize] = useState<number | null>(null)
 
+    // Window of cells currently present in the DOM (inclusive bounds, SVG rows)
+    const renderedWindowRef = useRef<{ x0: number; x1: number; y0: number; y1: number } | null>(null)
+
     // Cleanup animation on unmount
     useEffect(() => {
         return () => {
@@ -59,6 +63,37 @@ const BuildViewer = memo(function BuildViewer() {
             }
         }
     }, [])
+
+    // Selective generation: only materialize dice for the view rect plus a
+    // buffer. Re-renders only when the view gets within `margin` dice of the
+    // rendered window's edge; the buffer (one full viewport on each side)
+    // provides hysteresis so single-step pans never touch the DOM.
+    const ensureRendered = useCallback((viewX: number, viewY: number, viewW: number, viewH: number) => {
+        if (!svgRendererRef.current) {
+            svgRendererRef.current = new DiceSVGRenderer()
+        }
+
+        const margin = 1
+        const needX0 = Math.max(0, Math.floor(viewX) - margin)
+        const needX1 = Math.min(totalCols - 1, Math.ceil(viewX + viewW) + margin)
+        const needY0 = Math.max(0, Math.floor(viewY) - margin)
+        const needY1 = Math.min(totalRows - 1, Math.ceil(viewY + viewH) + margin)
+
+        const w = renderedWindowRef.current
+        if (w && needX0 >= w.x0 && needX1 <= w.x1 && needY0 >= w.y0 && needY1 <= w.y1) {
+            return
+        }
+
+        const bufferX = Math.ceil(viewW)
+        const bufferY = Math.ceil(viewH)
+        const x0 = Math.max(0, Math.floor(viewX) - bufferX)
+        const x1 = Math.min(totalCols - 1, Math.ceil(viewX + viewW) + bufferX)
+        const y0 = Math.max(0, Math.floor(viewY) - bufferY)
+        const y1 = Math.min(totalRows - 1, Math.ceil(viewY + viewH) + bufferY)
+
+        renderedWindowRef.current = { x0, x1, y0, y1 }
+        setSvgContent(svgRendererRef.current.renderWindow(grid, x0, x1, y0, y1))
+    }, [grid, totalCols, totalRows])
 
     // Calculate and animate viewBox transition
     const buildZoom = useCallback(() => {
@@ -127,6 +162,9 @@ const BuildViewer = memo(function BuildViewer() {
         if (svgY < viewY + padding) viewY = Math.max(-edgePadding, svgY - padding)
         if (svgY >= viewY + viewHeight - padding) viewY = Math.min(totalRows + edgePadding - viewHeight, svgY - viewHeight + 1 + padding)
 
+        // Make sure the dice for the target view exist in the DOM before panning there
+        ensureRendered(viewX, viewY, viewWidth, viewHeight)
+
         const newViewBox = `${viewX} ${viewY} ${viewWidth} ${viewHeight}`
 
         // Parse current viewBox values from ref to avoid dependency cycle
@@ -190,18 +228,7 @@ const BuildViewer = memo(function BuildViewer() {
                 }
             }
         )
-    }, [currentX, currentY, totalRows, totalCols, zoomLevel, containerDimensions.width, containerDimensions.height])
-
-    // Initialize SVG renderer and generate SVG only when grid changes
-    useEffect(() => {
-        if (!svgRendererRef.current) {
-            svgRendererRef.current = new DiceSVGRenderer()
-        }
-
-        // Generate SVG without highlighting (we handle it separately now)
-        const svgResult = svgRendererRef.current.renderWithStats(grid)
-        setSvgContent(svgResult.svg)
-    }, [grid])
+    }, [currentX, currentY, totalRows, totalCols, zoomLevel, containerDimensions.width, containerDimensions.height, ensureRendered])
 
     // Initial setup effect - run once on mount
     useEffect(() => {
@@ -253,6 +280,15 @@ const BuildViewer = memo(function BuildViewer() {
             }
         }, 0)
     }, []) // Run only once on mount
+
+    // Regenerate the rendered window when the grid itself changes
+    useEffect(() => {
+        renderedWindowRef.current = null
+        const [vx, vy, vw, vh] = viewBoxRef.current.split(' ').map(Number)
+        if (![vx, vy, vw, vh].some(isNaN)) {
+            ensureRendered(vx, vy, vw, vh)
+        }
+    }, [grid, ensureRendered])
 
     // Track wrapper dimensions and calculate square size
     useEffect(() => {
@@ -312,6 +348,43 @@ const BuildViewer = memo(function BuildViewer() {
         animationId = requestAnimationFrame(measureFPS)
         return () => cancelAnimationFrame(animationId)
     }, [showDebug])
+
+    // Dice cell currently under the mouse (SVG coordinates), for the hover indicator
+    const [hoverCell, setHoverCell] = useState<{ x: number; svgY: number } | null>(null)
+
+    // Map a mouse event from screen space into a dice cell (1 viewBox unit = 1 die)
+    const cellFromEvent = useCallback((e: MouseEvent<SVGSVGElement>) => {
+        const svg = svgRef.current
+        if (!svg) return null
+
+        const ctm = svg.getScreenCTM()
+        if (!ctm) return null
+
+        const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse())
+        const x = Math.floor(pt.x)
+        const svgY = Math.floor(pt.y)
+        if (x < 0 || x >= totalCols || svgY < 0 || svgY >= totalRows) return null
+
+        return { x, svgY }
+    }, [totalCols, totalRows])
+
+    // Click a dice to jump the selector to it
+    const handleSvgClick = useCallback((e: MouseEvent<SVGSVGElement>) => {
+        const cell = cellFromEvent(e)
+        if (cell) {
+            navigateTo(cell.x, totalRows - 1 - cell.svgY)
+        }
+    }, [cellFromEvent, totalRows, navigateTo])
+
+    const handleSvgMouseMove = useCallback((e: MouseEvent<SVGSVGElement>) => {
+        const cell = cellFromEvent(e)
+        // Only update state when the hovered cell actually changes
+        setHoverCell(prev =>
+            prev?.x === cell?.x && prev?.svgY === cell?.svgY ? prev : cell
+        )
+    }, [cellFromEvent])
+
+    const handleSvgMouseLeave = useCallback(() => setHoverCell(null), [])
 
     // Keyboard navigation
     useEffect(() => {
@@ -373,7 +446,10 @@ const BuildViewer = memo(function BuildViewer() {
                             ref={svgRef}
                             xmlns="http://www.w3.org/2000/svg"
                             preserveAspectRatio="xMidYMid meet"
-                            style={{ width: '100%', height: '100%', imageRendering: 'crisp-edges', willChange: 'transform' }}
+                            style={{ width: '100%', height: '100%', imageRendering: 'crisp-edges', willChange: 'transform', cursor: 'pointer' }}
+                            onClick={handleSvgClick}
+                            onMouseMove={handleSvgMouseMove}
+                            onMouseLeave={handleSvgMouseLeave}
                         >
                             {/* Render dice content */}
                             <g dangerouslySetInnerHTML={{ __html: svgContent }} />
@@ -428,6 +504,23 @@ const BuildViewer = memo(function BuildViewer() {
                                     />
                                 )
                             })()}
+
+                            {/* Hover indicator - subtler version of the selection highlight */}
+                            {hoverCell && !(hoverCell.x === currentX && hoverCell.svgY === totalRows - 1 - currentY) && (
+                                <rect
+                                    x={hoverCell.x + 0.02}
+                                    y={hoverCell.svgY + 0.02}
+                                    width={0.96}
+                                    height={0.96}
+                                    fill={theme.colors.accent.pink}
+                                    fillOpacity="0.08"
+                                    stroke={theme.colors.dice.highlightColor}
+                                    strokeWidth="0.04"
+                                    strokeOpacity="0.45"
+                                    rx="0.1"
+                                    style={{ pointerEvents: 'none' }}
+                                />
+                            )}
 
                             {/* Animated highlight overlay (rendered on top) */}
                             <rect

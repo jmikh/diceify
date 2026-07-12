@@ -31,8 +31,6 @@ import { useState, useRef, useEffect } from 'react'
 import CountUp from 'react-countup'
 import { Grid3x3, Contrast, Sun, Sparkles, RotateCw, Palette } from 'lucide-react'
 import { useEditorStore } from '@/lib/store/useEditorStore'
-import { generateGridHash } from '@/lib/utils/paramUtils'
-import { usePersistence } from '@/app/editor/hooks/usePersistence'
 import styles from './TunerPanel.module.css'
 
 // Removed interface TunerPanelProps
@@ -44,8 +42,6 @@ export default function TunerPanel() {
 
   const diceStats = useEditorStore(state => state.diceStats)
   const { blackCount, whiteCount, totalCount } = diceStats
-
-  const { saveTuneStep } = usePersistence()
 
   // Track previous values for smooth transitions
   const prevCountRef = useRef(totalCount)
@@ -569,38 +565,7 @@ export default function TunerPanel() {
         </button>
 
         <button
-          onClick={() => {
-            // Check if any params have changed since load/last save
-            // Check if any params have changed since load/last save
-            const savedParams = useEditorStore.getState().savedDiceParams
-
-            // If we don't have saved params (new project?), treat as dirty
-            let isDirty = !savedParams
-
-            if (savedParams) {
-              // Use hash comparison
-              const currentHash = generateGridHash(params)
-              const savedHash = generateGridHash(savedParams)
-
-              if (currentHash !== savedHash) {
-                isDirty = true
-              }
-            }
-
-            if (isDirty) {
-              console.log('[TUNER] Params changed, saving to DB...')
-              saveTuneStep()
-              // Update local saved state for dirty checking (even if DB save was skipped due to no session)
-              useEditorStore.getState().setSavedTuneState(params)
-              // Reset build progress in store
-              useEditorStore.getState().setBuildProgress({ x: 0, y: 0, percentage: 0 })
-            } else {
-              console.log('[TUNER] No changes detected, skipping DB save.')
-            }
-
-            // Always proceed
-            setStep('build')
-          }}
+          onClick={() => useEditorStore.getState().enterBuild()}
           className="
             flex-1 py-3.5 rounded-full
             bg-pink-500 hover:bg-pink-600

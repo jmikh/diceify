@@ -4,14 +4,13 @@ import { useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, Image as ImageIcon } from 'lucide-react'
 import { useEditorStore } from '@/lib/store/useEditorStore'
-import { usePersistence } from '@/app/editor/hooks/usePersistence'
+import { persistImage } from '@/app/editor/hooks/useAutosave'
 
 interface UploadMainProps { }
 
 export default function UploadMain({ }: UploadMainProps) {
     const uploadImage = useEditorStore(state => state.uploadImage)
     const originalImage = useEditorStore(state => state.originalImage)
-    const { saveUploadStep } = usePersistence()
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const file = acceptedFiles[0]
@@ -24,15 +23,16 @@ export default function UploadMain({ }: UploadMainProps) {
                     const img = new Image()
                     img.src = result
                     img.onload = () => {
-                        // Always update store and persist internally
                         uploadImage(result)
-                        saveUploadStep(result)
+                        // The image is the one piece of state the snapshot autosave
+                        // doesn't carry - persist it explicitly on upload
+                        persistImage(result)
                     }
                 }
             }
             reader.readAsDataURL(file)
         }
-    }, [uploadImage, saveUploadStep])
+    }, [uploadImage])
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,

@@ -23,12 +23,6 @@ export default function CropperMain({
 
     // Store Actions
     const updateCrop = useEditorStore(state => state.updateCrop)
-    const setStep = useEditorStore(state => state.setStep)
-
-    const setBuildProgress = useEditorStore(state => state.setBuildProgress)
-    const setHasCropChanged = useEditorStore(state => state.setHasCropChanged)
-    const setCropParams = useEditorStore(state => state.setCropParams)
-    const setCroppedImage = useEditorStore(state => state.setCroppedImage)
 
     // Store State
     const cropParams = useEditorStore(state => state.cropParams)
@@ -51,43 +45,6 @@ export default function CropperMain({
             devLog('[CROP] Synced rotation:', { delta, newRotation: cropRotation })
         }
     }, [cropRotation])
-
-    // Store initial params to detect changes against the session start
-    const initialCropParamsRef = useRef(cropParams)
-
-    // Helper function to compare crop parameters
-    const areCropParamsEqual = (params1: typeof cropParams, params2: typeof cropParams): boolean => {
-        if (!params1 || !params2) return params1 === params2
-
-        const tolerance = 0.01
-        return Math.abs(params1.x - params2.x) < tolerance &&
-            Math.abs(params1.y - params2.y) < tolerance &&
-            Math.abs(params1.width - params2.width) < tolerance &&
-            Math.abs(params1.height - params2.height) < tolerance &&
-            Math.abs(params1.rotation - params2.rotation) < tolerance
-    }
-
-    const handleCropComplete = useCallback((croppedImageUrl: string, params: { x: number, y: number, width: number, height: number, rotation: number }) => {
-        // Check if crop parameters actually changed
-        const hasChanged = !areCropParamsEqual(initialCropParamsRef.current, params)
-        devLog('[CROP] Crop parameters changed: ', hasChanged)
-
-        if (hasChanged) {
-            if (setHasCropChanged) setHasCropChanged(true)
-
-            // Allow re-tuning if already built
-
-
-            // Reset build progress - use getState to avoid dependency
-            const currentBuildProgress = useEditorStore.getState().buildProgress
-            if (currentBuildProgress.x !== 0 || currentBuildProgress.y !== 0) {
-                setBuildProgress({ x: 0, y: 0, percentage: 0 })
-            }
-        }
-
-        setCropParams(params)
-        setCroppedImage(croppedImageUrl)
-    }, [setCropParams, setCroppedImage, setHasCropChanged, setBuildProgress])
 
     const selectedOption = aspectRatioOptions.find(opt => opt.value === selectedRatio) || aspectRatioOptions[2]
 
@@ -136,7 +93,7 @@ export default function CropperMain({
     } : undefined
 
 
-    const performAutoCrop = useCallback(async (isComplete = false) => {
+    const performAutoCrop = useCallback(async () => {
         try {
             const cropper = fixedCropperRef.current
             if (!cropper) return
@@ -160,23 +117,19 @@ export default function CropperMain({
                     rotation: Math.round((state?.transforms?.rotate || 0) * 100) / 100
                 }
 
-                if (isComplete) {
-                    handleCropComplete(croppedImage, cropData)
-                } else {
-                    updateCrop(croppedImage, cropData)
-                }
+                updateCrop(croppedImage, cropData)
             }
         } catch (error) {
             devError('Error auto-cropping image:', error)
         }
-    }, [selectedOption.ratio, handleCropComplete, updateCrop])
+    }, [selectedOption.ratio, updateCrop])
 
     const handleCropperChange = useCallback(() => {
         if (cropChangeTimeoutRef.current) {
             clearTimeout(cropChangeTimeoutRef.current)
         }
         cropChangeTimeoutRef.current = setTimeout(() => {
-            performAutoCrop(false)
+            performAutoCrop()
         }, 500)
     }, [performAutoCrop])
 
@@ -184,7 +137,7 @@ export default function CropperMain({
     useEffect(() => {
         if (imageLoaded) {
             const timeout = setTimeout(() => {
-                performAutoCrop(false)
+                performAutoCrop()
             }, 100)
             return () => clearTimeout(timeout)
         }

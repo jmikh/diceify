@@ -8,16 +8,16 @@ import { sendGAEvent } from '@next/third-parties/google'
 import Image from 'next/image'
 import Logo from '@/components/Logo'
 import { useEditorStore } from '@/lib/store/useEditorStore'
+import { flushSave, persistImage } from '@/app/editor/hooks/useAutosave'
 
 interface AuthModalProps {
   isOpen: boolean
   onClose?: () => void
-  onSuccess?: () => void
   message?: string
 }
 
 export default function AuthModal({
-  isOpen, onClose, onSuccess, message }: AuthModalProps) {
+  isOpen, onClose, message }: AuthModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<React.ReactNode | null>(null)
   const [showOtherMethods, setShowOtherMethods] = useState(false)
@@ -30,21 +30,13 @@ export default function AuthModal({
     setError(null)
 
     try {
-      // OAuth providers require redirect, so save state to sessionStorage first
-      // The editor will restore this state after redirect
-      // Get latest state directly from Zustand instead of stale props
+      // OAuth redirects away from the page - make sure the local draft
+      // (which the editor autosaves continuously) is fully written first
       const state = useEditorStore.getState()
-      const editorState = {
-        originalImage: state.originalImage,
-        croppedImage: state.croppedImage,
-        processedImageUrl: state.processedImageUrl,
-        cropParams: state.cropParams,
-        diceParams: state.diceParams,
-        step: state.step,
-      }
-      if (editorState.originalImage || editorState.cropParams) {
-        devLog('[DEBUG] Saving editor state before OAuth redirect')
-        sessionStorage.setItem('editorStateBeforeAuth', JSON.stringify(editorState))
+      devLog('[AUTH] Flushing draft before OAuth redirect')
+      await flushSave()
+      if (state.originalImage && !state.currentProjectId) {
+        await persistImage(state.originalImage)
       }
 
       // For OAuth providers, we must redirect to the provider's auth page

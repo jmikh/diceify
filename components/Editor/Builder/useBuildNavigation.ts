@@ -2,8 +2,8 @@ import { useCallback, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 
-// Dice limit for free (explorer) users
-const EXPLORER_DICE_LIMIT = 100
+// Free users (explorer plan or not signed in) can only build the first N rows
+const EXPLORER_ROW_LIMIT = 5
 
 export function useBuildNavigation() {
     const { data: session } = useSession()
@@ -33,6 +33,22 @@ export function useBuildNavigation() {
         setBuildProgress(prev => ({ ...prev, x, y }))
     }, [setBuildProgress])
 
+    // Guard for any forward movement: without a paid plan, moving past the
+    // first EXPLORER_ROW_LIMIT rows prompts anonymous users to sign in and
+    // explorer users to upgrade. Returns true if the move is allowed.
+    const enforceLimit = useCallback((targetIndex: number) => {
+        const targetRow = Math.floor(targetIndex / totalCols)
+        if (!hasUnlimitedDice && targetRow >= EXPLORER_ROW_LIMIT) {
+            if (!session?.user) {
+                setShowAuthModal(true)
+            } else {
+                setShowLimitModal(true)
+            }
+            return false
+        }
+        return true
+    }, [hasUnlimitedDice, totalCols, session, setShowAuthModal, setShowLimitModal])
+
     const navigatePrev = useCallback(() => {
         if (currentX > 0) {
             setPosition(currentX - 1, currentY)
@@ -42,26 +58,25 @@ export function useBuildNavigation() {
     }, [currentX, currentY, totalCols, setPosition])
 
     const navigateNext = useCallback(() => {
-        // Enforce trial limit for non-logged in users
-        // Only allow up to index 10 (11th dice)
-        // If current index > 10, we block further navigation
-        if (!session?.user && currentIndex > 10) {
-            setShowAuthModal(true)
-            return
-        }
-
-        // Enforce limit for free (explorer) users
-        if (session?.user && !hasUnlimitedDice && currentIndex >= EXPLORER_DICE_LIMIT) {
-            setShowLimitModal(true)
-            return
-        }
+        if (!enforceLimit(currentIndex + 1)) return
 
         if (currentX < totalCols - 1) {
             setPosition(currentX + 1, currentY)
         } else if (currentY < totalRows - 1) {
             setPosition(0, currentY + 1)
         }
-    }, [currentX, currentY, totalCols, totalRows, setPosition, session, currentIndex, setShowAuthModal, setShowLimitModal, hasUnlimitedDice])
+    }, [currentX, currentY, totalCols, totalRows, setPosition, currentIndex, enforceLimit])
+
+    // Jump directly to a dice (e.g. from clicking it in the viewer).
+    // Backward jumps are always allowed; forward jumps respect the limit.
+    const navigateTo = useCallback((x: number, y: number) => {
+        if (x < 0 || x >= totalCols || y < 0 || y >= totalRows) return
+
+        const targetIndex = y * totalCols + x
+        if (targetIndex > currentIndex && !enforceLimit(targetIndex)) return
+
+        setPosition(x, y)
+    }, [totalCols, totalRows, currentIndex, enforceLimit, setPosition])
 
     const currentDice = useMemo(() => diceGrid?.dice[currentX]?.[currentY] || null, [diceGrid, currentX, currentY])
 
@@ -89,18 +104,6 @@ export function useBuildNavigation() {
     const navigateNextDiff = useCallback(() => {
         if (!diceGrid) return
 
-        // Enforce trial limit for non-logged in users
-        if (!session?.user && currentIndex > 10) {
-            setShowAuthModal(true)
-            return
-        }
-
-        // Enforce limit for free (explorer) users
-        if (session?.user && !hasUnlimitedDice && currentIndex >= EXPLORER_DICE_LIMIT) {
-            setShowLimitModal(true)
-            return
-        }
-
         const currentFace = currentDice?.face
         const currentColor = currentDice?.color
 
@@ -108,6 +111,9 @@ export function useBuildNavigation() {
         for (let x = currentX + 1; x < totalCols; x++) {
             const dice = diceGrid.dice[x][currentY]
             if (dice.face !== currentFace || dice.color !== currentColor) {
+                // Check the landing index, not the current one - a long run of
+                // identical dice must not jump past the limit
+                if (!enforceLimit(currentY * totalCols + x)) return
                 setPosition(x, currentY)
                 return
             }
@@ -115,9 +121,10 @@ export function useBuildNavigation() {
 
         // If no different dice found on this row and not at last row, move to next row
         if (currentY < totalRows - 1) {
+            if (!enforceLimit((currentY + 1) * totalCols)) return
             setPosition(0, currentY + 1)
         }
-    }, [currentX, currentY, currentDice, totalCols, totalRows, diceGrid, setPosition, session, currentIndex, setShowAuthModal, setShowLimitModal, hasUnlimitedDice])
+    }, [currentX, currentY, currentDice, totalCols, totalRows, diceGrid, setPosition, enforceLimit])
 
     const canNavigate = useMemo(() => {
         if (!diceGrid) return { prev: false, next: false, prevDiff: false, nextDiff: false }
@@ -162,6 +169,7 @@ export function useBuildNavigation() {
         navigateNext,
         navigatePrevDiff,
         navigateNextDiff,
+        navigateTo,
         canNavigate,
         currentDice,
         currentX,
@@ -171,6 +179,6 @@ export function useBuildNavigation() {
         totalDice,
         currentIndex,
         hasUnlimitedDice, // Expose for UI
-        diceLimit: hasUnlimitedDice ? Infinity : EXPLORER_DICE_LIMIT, // Expose for UI
+        diceLimit: hasUnlimitedDice ? Infinity : EXPLORER_ROW_LIMIT * totalCols, // Expose for UI
     }
 }

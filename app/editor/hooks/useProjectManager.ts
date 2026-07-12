@@ -1,10 +1,10 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEditorStore, DEFAULT_DICE_STATS } from '@/lib/store/useEditorStore'
-import { generateGridHash } from '@/lib/utils/paramUtils'
+import { useEditorStore } from '@/lib/store/useEditorStore'
+import { buildProjectPayload, markSnapshotClean, clearLocalDraft, flushSave } from './useAutosave'
+import { cropImage } from '@/lib/utils/image'
 import { devLog, devError } from '@/lib/utils/debug'
-import { WorkflowStep, DiceParams, DiceGrid, DiceStats } from '@/lib/types'
 
 export function useProjectManager() {
     const { data: session } = useSession()
@@ -13,15 +13,6 @@ export function useProjectManager() {
     // Store state
     const currentProjectId = useEditorStore(state => state.currentProjectId)
     const originalImage = useEditorStore(state => state.originalImage)
-    const croppedImage = useEditorStore(state => state.croppedImage)
-    const processedImageUrl = useEditorStore(state => state.processedImageUrl)
-    const cropParams = useEditorStore(state => state.cropParams)
-    const diceParams = useEditorStore(state => state.diceParams)
-    const diceStats = useEditorStore(state => state.diceStats)
-    const diceGrid = useEditorStore(state => state.diceGrid)
-
-    const buildProgress = useEditorStore(state => state.buildProgress)
-    const showProjectModal = useEditorStore(state => state.showProjectModal)
 
     // Store actions
     const setCurrentProjectId = useEditorStore(state => state.setCurrentProjectId)
@@ -35,16 +26,11 @@ export function useProjectManager() {
     const setProcessedImageUrl = useEditorStore(state => state.setProcessedImageUrl)
     const setDiceParams = useEditorStore(state => state.setDiceParams)
     const setDiceStats = useEditorStore(state => state.setDiceStats)
-    const setDiceGrid = useEditorStore(state => state.setDiceGrid)
     const setBuildProgress = useEditorStore(state => state.setBuildProgress)
-
-    const setIsInitializing = useEditorStore(state => state.setIsInitializing)
     const resetWorkflow = useEditorStore(state => state.resetWorkflow)
 
     // Local state
     const [userProjects, setUserProjects] = useState<any[]>([])
-    const loadingProjectRef = useRef(false)
-    const [lastGridHash, setLastGridHash] = useState<string>('')
 
     // Update URL with project ID
     const updateURLWithProject = useCallback((projectId: string | null) => {
@@ -60,16 +46,13 @@ export function useProjectManager() {
 
     const handleResetWorkflow = useCallback(() => {
         resetWorkflow()
-        // Clear localStorage when resetting
-        localStorage.removeItem('editorState')
-        devLog('[LOCAL STORAGE] Cleared - workflow reset')
+        clearLocalDraft()
     }, [resetWorkflow])
 
     // Fetch user projects
     const fetchUserProjects = useCallback(async () => {
         if (!session?.user?.id) return []
 
-        devLog('[CLIENT] fetchUserProjects called')
         try {
             const response = await fetch('/api/projects')
             if (response.ok) {
@@ -83,68 +66,57 @@ export function useProjectManager() {
         return []
     }, [session])
 
-    // Create a new project
-    const createProject = useCallback(async (name?: string) => {
-        if (!session?.user?.id) return
+    const registerCreatedProject = useCallback(async (project: any) => {
+        setCurrentProjectId(project.id)
+        setProjectName(project.name)
+        updateURLWithProject(project.id)
+        setLastSaved(new Date())
+        setShowProjectModal(false)
+        markSnapshotClean()
+        await fetchUserProjects()
+    }, [setCurrentProjectId, setProjectName, updateURLWithProject, setLastSaved, setShowProjectModal, fetchUserProjects])
 
-        // Reset all states for new project
+    const postProject = useCallback(async (payload: object) => {
+        const response = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        if (response.status === 403) {
+            const data = await response.json()
+            alert(data.error || 'Project limit reached.')
+            return null
+        }
+        if (!response.ok) {
+            devError('Failed to create project')
+            return null
+        }
+        return response.json()
+    }, [])
+
+    // Create a new empty project (server defaults fill in the rest)
+    const createProject = useCallback(async (name?: string) => {
+        if (!session?.user?.id || !name) return
+
+        // Push pending changes to the current project and detach the autosave
+        // from it BEFORE resetting, so the reset can't be saved into it
+        await flushSave()
+        setCurrentProjectId(null)
         handleResetWorkflow()
 
-        // Use provided name or generate default
-        const projectName = name
-        if (!projectName) {
-            return // Name is required now
-        }
-
-
-        devLog(`[DB] Creating new empty project: ${projectName}`)
+        devLog(`[DB] Creating new empty project: ${name}`)
         try {
-            const response = await fetch('/api/projects', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: projectName,
-
-                    originalImage: null,
-                    croppedImage: null,
-                    numRows: 50,
-                    colorMode: 'both',
-                    contrast: 0,
-                    gamma: 1.0,
-                    edgeSharpening: 0,
-                    rotate2: false,
-                    rotate3: false,
-                    rotate6: false,
-                    gridData: null,
-                    totalDice: 0,
-                    completedDice: 0,
-                    currentX: 0,
-                    currentY: 0,
-                    percentComplete: 0
-                })
-            })
-
-            if (response.ok) {
-                const project = await response.json()
-                setCurrentProjectId(project.id)
-                setProjectName(project.name)
-                updateURLWithProject(project.id)
-                setLastSaved(new Date())
-                setShowProjectModal(false)
-                await fetchUserProjects()
+            const project = await postProject({ name })
+            if (project) {
+                await registerCreatedProject(project)
                 setStep('upload')
-            } else if (response.status === 403) {
-                const data = await response.json()
-                alert(data.error || 'Project limit reached. Maximum 3 projects allowed.')
-            } else {
-                devError('Failed to create project')
             }
         } catch (error) {
             devError('Failed to create project:', error)
         }
-    }, [session, handleResetWorkflow, fetchUserProjects, setCurrentProjectId, setProjectName, updateURLWithProject, setLastSaved, setShowProjectModal, setStep])
+    }, [session, handleResetWorkflow, postProject, registerCreatedProject, setStep, setCurrentProjectId])
 
-    // Create project from current state
+    // Create a project from the current (anonymous draft) state
     const createProjectFromCurrent = useCallback(async (name?: string) => {
         if (!session?.user?.id) return
 
@@ -155,57 +127,20 @@ export function useProjectManager() {
         }
 
         devLog(`[DB] Creating new project with current state: ${projectName}`)
-
         try {
-            const payload = {
+            const project = await postProject({
+                ...buildProjectPayload(),
                 name: projectName,
-
                 originalImage,
-                croppedImage,
-                numRows: diceParams.numRows,
-                colorMode: diceParams.colorMode,
-                contrast: diceParams.contrast,
-                gamma: diceParams.gamma,
-                edgeSharpening: diceParams.edgeSharpening,
-                rotate2: diceParams.rotate2,
-                rotate3: diceParams.rotate3,
-                rotate6: diceParams.rotate6,
-                gridWidth: diceGrid?.width || null,
-                gridHeight: diceGrid?.height || null,
-                totalDice: diceStats.totalCount,
-                completedDice: 0,
-                currentX: buildProgress.x,
-                currentY: buildProgress.y,
-                percentComplete: buildProgress.percentage,
-                cropX: cropParams?.x || null,
-                cropY: cropParams?.y || null,
-                cropWidth: cropParams?.width || null,
-                cropHeight: cropParams?.height || null,
-                cropRotation: cropParams?.rotation || 0
-            }
-
-            const response = await fetch('/api/projects', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
             })
-
-            if (response.ok) {
-                const project = await response.json()
-                setCurrentProjectId(project.id)
-                setProjectName(project.name)
-                updateURLWithProject(project.id)
-                setLastSaved(new Date())
-                setShowProjectModal(false)
-                await fetchUserProjects()
-            } else if (response.status === 403) {
-                const data = await response.json()
-                alert(data.error || 'Project limit reached. Maximum 3 projects allowed.')
+            if (project) {
+                // The draft is cleared by the page effect once currentProjectId is set
+                await registerCreatedProject(project)
             }
         } catch (error) {
             devError('Failed to create project:', error)
         }
-    }, [session, originalImage, croppedImage, diceParams, diceGrid, diceStats, buildProgress, fetchUserProjects, cropParams, setCurrentProjectId, setProjectName, updateURLWithProject, setLastSaved, setShowProjectModal])
+    }, [session, originalImage, postProject, registerCreatedProject])
 
     // Delete project
     const deleteProject = useCallback(async (projectId: string) => {
@@ -223,7 +158,6 @@ export function useProjectManager() {
                 if (projectId === currentProjectId) {
                     handleResetWorkflow()
                     setCurrentProjectId(null)
-                    // Don't set a new name immediately, let the user choose or let it remain null until they create/load
                     updateURLWithProject(null)
                 }
             }
@@ -235,47 +169,27 @@ export function useProjectManager() {
     // Load a project
     const loadProject = useCallback(async (project: any) => {
         devLog('[CLIENT] Loading project:', project.name)
-        loadingProjectRef.current = true
 
-        // Always fetch the latest full project data
+        // Always fetch the latest full project data (the list omits large fields)
         try {
             const response = await fetch(`/api/projects/${project.id}`)
             if (response.ok) {
-                const fullProject = await response.json()
-                // Merge the fetched data with the existing project object
-                // This ensures we have the latest server state (images, grid, etc.)
-                project = fullProject
+                project = await response.json()
             }
         } catch (error) {
             devError('Failed to fetch full project:', error)
         }
 
-        // Clear state
+        // Clear derived state
         setOriginalImage(null)
         setCroppedImage(null)
         setCropParams(null)
         setProcessedImageUrl(null)
 
-        // Initialize saved state for dirty checking
-        const loadedDiceParams = {
-            numRows: project.numRows || 30,
-            colorMode: project.colorMode || 'both',
-            contrast: project.contrast || 0,
-            gamma: project.gamma || 1.0,
-            edgeSharpening: project.edgeSharpening || 0,
-            rotate2: project.rotate2 || false,
-            rotate3: project.rotate3 || false,
-            rotate6: project.rotate6 || false
-        }
-        useEditorStore.getState().setSavedTuneState(
-            loadedDiceParams
-        )
-
-        // Project Metadata
+        // Project metadata
         setCurrentProjectId(project.id)
         setProjectName(project.name)
         updateURLWithProject(project.id)
-
         if (project.updatedAt) {
             setLastSaved(new Date(project.updatedAt))
         }
@@ -284,7 +198,7 @@ export function useProjectManager() {
             setOriginalImage(project.originalImage)
         }
 
-        // Load crop params and regenerate image
+        // Crop params + regenerate the cropped image (derived, not stored)
         if (project.cropX !== null && project.cropY !== null && project.cropWidth && project.cropHeight) {
             const params = {
                 x: project.cropX,
@@ -294,34 +208,18 @@ export function useProjectManager() {
                 rotation: project.cropRotation || 0
             }
             setCropParams(params)
-
-            // Initialize saved state for crop dirty checking
-            useEditorStore.getState().setSavedCropState(params)
+            // Keep the cropper widget's rotation in sync with the restored params
+            useEditorStore.getState().setCropRotation(params.rotation)
 
             if (project.originalImage) {
-                const img = new Image()
-                img.onload = () => {
-                    const canvas = document.createElement('canvas')
-                    canvas.width = params.width
-                    canvas.height = params.height
-                    const ctx = canvas.getContext('2d')
-                    if (ctx) {
-                        ctx.drawImage(img, params.x, params.y, params.width, params.height, 0, 0, params.width, params.height)
-                        const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.95)
-                        setCroppedImage(croppedDataUrl)
-                    }
-                }
-                img.src = project.originalImage
-            }
-        } else if (project.croppedImage) {
-            setCroppedImage(project.croppedImage)
-            if (project.currentStep === 'build') {
-                setProcessedImageUrl(project.croppedImage)
+                cropImage(project.originalImage, params)
+                    .then(setCroppedImage)
+                    .catch(err => devError('Failed to regenerate cropped image:', err))
             }
         }
 
-        // Load params
-        const newDiceParams = {
+        // Tune params
+        const diceParams = {
             numRows: project.numRows || 30,
             colorMode: project.colorMode || 'both',
             contrast: project.contrast || 0,
@@ -331,26 +229,26 @@ export function useProjectManager() {
             rotate3: project.rotate3 || false,
             rotate6: project.rotate6 || false
         }
-        setDiceParams(newDiceParams)
-        setLastGridHash(generateGridHash(newDiceParams))
+        setDiceParams(diceParams)
+        // The loaded progress belongs to the loaded params
+        useEditorStore.getState().setBuildBaseline()
 
-
+        // Black/white split is recomputed when the grid regenerates
         if (project.totalDice) {
             setDiceStats({
-                blackCount: project.blackDice || 0,
-                whiteCount: project.whiteDice || 0,
-                totalCount: project.totalDice || 0
+                blackCount: 0,
+                whiteCount: 0,
+                totalCount: project.totalDice
             })
         }
 
         setBuildProgress({
             x: project.currentX || 0,
-            y: project.currentY || 0,
-            percentage: project.percentComplete || 0
+            y: project.currentY || 0
         })
 
         if (project.originalImage) {
-            if ((project.currentX && project.currentX > 0) || (project.currentY && project.currentY > 0)) {
+            if (project.currentX > 0 || project.currentY > 0) {
                 setStep('build')
             } else {
                 setStep('tune')
@@ -359,24 +257,18 @@ export function useProjectManager() {
             setStep('upload')
         }
 
-        setTimeout(() => {
-            loadingProjectRef.current = false
-        }, 500)
-    }, [setCurrentProjectId, setProjectName, updateURLWithProject, setLastSaved, setOriginalImage, setCroppedImage, setCropParams, setProcessedImageUrl, setDiceGrid, setDiceStats, setDiceParams, setBuildProgress, setStep])
+        // Everything just loaded is by definition saved
+        markSnapshotClean()
+    }, [setCurrentProjectId, setProjectName, updateURLWithProject, setLastSaved, setOriginalImage, setCroppedImage, setCropParams, setProcessedImageUrl, setDiceStats, setDiceParams, setBuildProgress, setStep])
 
     return {
         userProjects,
-        setUserProjects,
         fetchUserProjects,
         createProject,
         createProjectFromCurrent,
         deleteProject,
         loadProject,
         updateURLWithProject,
-        handleResetWorkflow,
-        loadingProjectRef,
-        lastGridHash,
-        setLastGridHash,
-        generateGridHash
+        handleResetWorkflow
     }
 }

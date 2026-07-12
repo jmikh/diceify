@@ -8,22 +8,22 @@ export type PlanType = 'explorer' | 'creator' | 'studio' | 'lifetime'
 export const PLAN_LIMITS = {
     explorer: {
         projectLimit: 1,
-        diceLimit: 100,
+        builderRowLimit: 5,
         hasSvgExport: false,
     },
     creator: {
         projectLimit: 1,
-        diceLimit: Infinity,
+        builderRowLimit: Infinity,
         hasSvgExport: true,
     },
     studio: {
         projectLimit: 5,
-        diceLimit: Infinity,
+        builderRowLimit: Infinity,
         hasSvgExport: true,
     },
     lifetime: {
         projectLimit: 5,
-        diceLimit: Infinity,
+        builderRowLimit: Infinity,
         hasSvgExport: true,
     },
 } as const

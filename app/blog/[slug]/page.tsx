@@ -93,6 +93,11 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
             "logo": {
                 "@type": "ImageObject",
                 "url": "https://diceify.art/logo-full.svg",
+                "creator": {
+                    "@type": "Organization",
+                    "name": "Diceify",
+                    "url": "https://diceify.art"
+                },
                 "copyrightNotice": "© 2024 Diceify. All rights reserved.",
                 "creditText": "Created with Diceify (diceify.art)",
                 "license": "https://diceify.art/terms",

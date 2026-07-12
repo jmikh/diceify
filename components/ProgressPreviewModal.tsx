@@ -68,9 +68,9 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
                         `<svg x='${x}' y='${svgY}' width='1' height='1' viewBox='0 0 100 100'>${diceSvg}</svg>`
                     )
                 } else {
-                    // Render a placeholder (light gray background)
+                    // Render a placeholder (light beige background)
                     svgElements.push(
-                        `<rect x='${x}' y='${svgY}' width='1' height='1' fill='#e5e5e5' stroke='#d4d4d4' stroke-width='0.02' />`
+                        `<rect x='${x}' y='${svgY}' width='1' height='1' fill='#eae3d2' stroke='#dcd3bd' stroke-width='0.02' />`
                     )
                 }
             }
@@ -105,7 +105,7 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
         const viewBox = `0 0 ${cols} ${rows}`
         const fullSvg = `
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="${rasterWidth}" height="${rasterHeight}">
-                <rect width="${cols}" height="${rows}" fill="#e5e5e5" />
+                <rect width="${cols}" height="${rows}" fill="#eae3d2" />
                 ${progressSvgContent}
             </svg>
         `
@@ -229,8 +229,8 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
                                 imageRendering: 'crisp-edges'
                             }}
                         >
-                            {/* Light gray background for entire canvas */}
-                            <rect width={cols} height={rows} fill="#e5e5e5" />
+                            {/* Light beige background for entire canvas */}
+                            <rect width={cols} height={rows} fill="#eae3d2" />
 
                             {/* Render dice content */}
                             <g dangerouslySetInnerHTML={{ __html: progressSvgContent }} />

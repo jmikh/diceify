@@ -139,7 +139,7 @@ export default function Pricing() {
                             </li>
                             <li className="flex items-start gap-2.5 text-white/80">
                                 <Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-                                <span>Builder Studio works up to 100 dice</span>
+                                <span>Builder Studio works for the first 5 rows</span>
                             </li>
                             <li className="flex items-start gap-2.5 text-white/80">
                                 <Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />

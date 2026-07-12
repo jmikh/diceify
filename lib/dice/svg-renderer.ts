@@ -74,6 +74,52 @@ export class DiceSVGRenderer {
     return svg
   }
 
+  /**
+   * SVG <defs> with one <symbol> per face/color combination.
+   * Windowed rendering references these via <use>, so each die costs a
+   * single DOM node instead of a full copy of the dice markup.
+   */
+  renderDefs(): string {
+    const symbols: string[] = []
+    for (const color of ['black', 'white'] as DiceColor[]) {
+      for (let face = 1; face <= 6; face++) {
+        symbols.push(
+          `<symbol id='dice-${color}-${face}' viewBox='0 0 100 100'>${this.getSvgDice(face as DiceFace, color)}</symbol>`
+        )
+      }
+    }
+    return `<defs>${symbols.join('')}</defs>`
+  }
+
+  /**
+   * Renders only the dice inside the given cell window (inclusive bounds),
+   * as <use> references to the symbols from renderDefs (included in output).
+   * Columns are grid x; rows are SVG rows (0 = top row = grid y of height-1),
+   * matching the viewBox coordinate space used by the build viewer.
+   */
+  renderWindow(grid: DiceGrid, colStart: number, colEnd: number, rowStart: number, rowEnd: number): string {
+    const rows = grid.height
+    const x0 = Math.max(0, colStart)
+    const x1 = Math.min(grid.width - 1, colEnd)
+    const r0 = Math.max(0, rowStart)
+    const r1 = Math.min(rows - 1, rowEnd)
+
+    const uses: string[] = []
+    for (let x = x0; x <= x1; x++) {
+      for (let svgY = r0; svgY <= r1; svgY++) {
+        const dice = grid.dice[x]?.[rows - 1 - svgY]
+        if (!dice) {
+          devWarn(`Missing dice at x ${x}, y ${rows - 1 - svgY}`)
+          continue
+        }
+        const rotation = dice.rotate90 ? ` transform='rotate(90 ${x + 0.5} ${svgY + 0.5})'` : ''
+        uses.push(`<use href='#dice-${dice.color}-${dice.face}' x='${x}' y='${svgY}' width='1' height='1'${rotation}/>`)
+      }
+    }
+
+    return `${this.renderDefs()}${uses.join('')}`
+  }
+
   render(grid: DiceGrid): string {
     const svgElements: string[] = []
 

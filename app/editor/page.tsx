@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, Suspense } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -10,6 +10,7 @@ import {
   X
 } from 'lucide-react'
 import { ImReddit } from 'react-icons/im'
+import UserMenu from '@/components/Editor/UserMenu'
 import UploaderPanel from '@/components/Editor/Uploader/UploaderPanel'
 import UploadMain from '@/components/Editor/Uploader/UploadMain'
 import CropperPanel from '@/components/Editor/Cropper/CropperPanel'
@@ -34,7 +35,7 @@ import { devLog, devError } from '@/lib/utils/debug'
 
 import { useEditorStore } from '@/lib/store/useEditorStore'
 import { useProjectManager } from './hooks/useProjectManager'
-import { usePersistence } from './hooks/usePersistence'
+import { useAutosave, flushSave, hydrateFromLocalDraft, clearLocalDraft } from './hooks/useAutosave'
 import { PLAN_LIMITS, PlanType } from '@/lib/subscription'
 
 function EditorContent() {
@@ -55,12 +56,9 @@ function EditorContent() {
     updateURLWithProject
   } = useProjectManager()
 
-  const {
-    saveProgressOnly,
-    saveUploadStep,
-    saveCropStep,
-    saveTuneStep
-  } = usePersistence()
+  // Single autosave pipeline: watches the store, persists the snapshot
+  // (DB when a project is loaded, localStorage draft otherwise)
+  useAutosave()
 
   // Calculate limits based on subscription plan
   const planType = (session?.user?.planType as PlanType) || 'explorer'
@@ -77,46 +75,23 @@ function EditorContent() {
 
   const originalImage = useEditorStore(state => state.originalImage)
   const croppedImage = useEditorStore(state => state.croppedImage)
-  const cropParams = useEditorStore(state => state.cropParams)
-  const cropRotation = useEditorStore(state => state.cropRotation)
-  const diceParams = useEditorStore(state => state.diceParams)
-  const diceStats = useEditorStore(state => state.diceStats)
   const diceGrid = useEditorStore(state => state.diceGrid)
-  const processedImageUrl = useEditorStore(state => state.processedImageUrl)
-  const projectName = useEditorStore(state => state.projectName)
   const currentProjectId = useEditorStore(state => state.currentProjectId)
-  const lastSaved = useEditorStore(state => state.lastSaved)
-  const isSaving = useEditorStore(state => state.isSaving)
   const isInitializing = useEditorStore(state => state.isInitializing)
-  const buildProgress = useEditorStore(state => state.buildProgress)
 
   // Store actions
-  const setStep = useEditorStore(state => state.setStep)
-
   const setShowAuthModal = useEditorStore(state => state.setShowAuthModal)
   const setAuthModalMessage = useEditorStore(state => state.setAuthModalMessage)
   const setShowProjectModal = useEditorStore(state => state.setShowProjectModal)
-  const setOriginalImage = useEditorStore(state => state.setOriginalImage)
-  const setCroppedImage = useEditorStore(state => state.setCroppedImage)
-  const setCropParams = useEditorStore(state => state.setCropParams)
-  const setDiceParams = useEditorStore(state => state.setDiceParams)
-  const setDiceStats = useEditorStore(state => state.setDiceStats)
-  const setDiceGrid = useEditorStore(state => state.setDiceGrid)
-  const setProcessedImageUrl = useEditorStore(state => state.setProcessedImageUrl)
-  const setProjectName = useEditorStore(state => state.setProjectName)
   const setIsInitializing = useEditorStore(state => state.setIsInitializing)
-  const setBuildProgress = useEditorStore(state => state.setBuildProgress)
 
   // Local UI state
-  const [showUserMenu, setShowUserMenu] = useState(false)
   const [redditBannerDismissed, setRedditBannerDismissed] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('redditBannerDismissed') === 'true'
     }
     return false
   })
-
-  const [isRestoringOAuthState, setIsRestoringOAuthState] = useState(false)
 
   // Track window size for responsive cropper
   const [windowSize, setWindowSize] = useState({ width: 800, height: 600 })
@@ -139,69 +114,6 @@ function EditorContent() {
 
 
 
-  // Keep latest buildProgress in a ref to avoid stale closures
-  const buildProgressRef = useRef(buildProgress)
-  buildProgressRef.current = buildProgress
-
-  // Close user menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (!target.closest('.user-menu-container')) {
-        setShowUserMenu(false)
-
-      }
-    }
-
-    if (showUserMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showUserMenu])
-
-
-
-
-  // Close user menu when clicking outside
-
-  // Clean up timeouts on unmount and save build progress
-  useEffect(() => {
-    // Handle browser tab close/refresh
-    const handleBeforeUnload = () => {
-      if (step === 'build' && currentProjectId && session?.user?.id) {
-        const currentProgress = buildProgressRef.current
-        if (currentProgress.x > 0 || currentProgress.y > 0) {
-          devLog('[CLIENT] Page unloading, saving build progress')
-          // Use navigator.sendBeacon for reliable saving on page unload
-          const data = JSON.stringify({
-            currentX: currentProgress.x,
-            currentY: currentProgress.y,
-            completedDice: Math.floor((currentProgress.percentage / 100) * diceStats.totalCount),
-
-          })
-          navigator.sendBeacon(`/api/projects/${currentProjectId}/progress`, data)
-        }
-      }
-    }
-
-    // Add event listener
-    window.addEventListener('beforeunload', handleBeforeUnload)
-
-    return () => {
-      // Remove event listener
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-
-
-
-      // Save build progress on component unmount
-      handleBeforeUnload()
-    }
-  }, [step, currentProjectId, session?.user?.id, diceStats.totalCount])
-
-  // Handle project loading from URL
   // Handle project loading from URL
   useEffect(() => {
     const projectId = searchParams.get('project')
@@ -252,348 +164,67 @@ function EditorContent() {
     }
   }, [status, session?.user?.id, fetchUserProjects])
 
-  // Save state to localStorage whenever it changes (for recovery on refresh)
-  // HEAVY SAVE: Only triggers on image/params changes, NOT on buildProgress
+  // Restore the anonymous draft from localStorage.
+  // Two entry points share the same draft: a plain visit while logged out, and
+  // the return from an OAuth redirect (?restored=true) where the pre-login
+  // work is picked up so the login effect below can offer to save it.
+  const hasHydratedRef = useRef(false)
   useEffect(() => {
-    // Only save if NOT logged in and we have meaningful state
-    if (!session?.user?.id && (originalImage || (cropParams && Object.keys(cropParams).length > 0))) {
-      try {
-        // Only store what the database stores - no generated images
-        // Note: buildProgress is saved separately in a lightweight effect
-        const stateToSave = {
-          originalImage,  // Keep this as it's the source image
-          // Don't save croppedImage or processedImageUrl - they're regenerated
-          cropParams,     // Used to regenerate cropped image
-          diceParams,     // Used to regenerate dice grid
-          step,
-          projectName,
-          diceStats
-        }
-        localStorage.setItem('editorState', JSON.stringify(stateToSave))
-        devLog('[LOCAL STORAGE] Saved editor state (heavy save - params only, not logged in)')
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-          devError('[LOCAL STORAGE] Quota exceeded - clearing and retrying without image')
-          localStorage.removeItem('editorState')
-          // Try again without the original image
-          try {
-            const minimalState = {
-              cropParams,
-              diceParams,
-              step,
-              projectName,
-              diceStats
-            }
-            localStorage.setItem('editorState', JSON.stringify(minimalState))
-            devLog('[LOCAL STORAGE] Saved minimal state without images')
-          } catch (retryError) {
-            devError('[LOCAL STORAGE] Failed to save even minimal state:', retryError)
-          }
-        } else {
-          devError('[LOCAL STORAGE] Failed to save state:', error)
-        }
-      }
-    } else if (session?.user?.id) {
-      // Clear localStorage when logged in (using database instead)
-      localStorage.removeItem('editorState')
-      localStorage.removeItem('editorBuildProgress')
-    }
-  }, [session?.user?.id, originalImage, cropParams, diceParams, step, projectName, diceStats])
-  // Note: buildProgress intentionally excluded - saved in separate lightweight effect
+    if (status === 'loading' || hasHydratedRef.current) return
 
-  // LIGHT SAVE: Only saves buildProgress to a separate key (fast, no image serialization)
-  useEffect(() => {
-    // Only save if NOT logged in and we have build progress
-    if (!session?.user?.id && (buildProgress.x > 0 || buildProgress.y > 0)) {
-      try {
-        localStorage.setItem('editorBuildProgress', JSON.stringify(buildProgress))
-        // Don't log every build progress save to avoid console spam
-      } catch (error) {
-        // Silently fail - this is non-critical
-      }
+    const isOAuthReturn = searchParams.get('restored') === 'true'
+    if (isOAuthReturn) {
+      hasHydratedRef.current = true
+      hydrateFromLocalDraft()
+      window.history.replaceState({}, '', '/editor')
+    } else if (!session?.user?.id && !currentProjectId) {
+      hasHydratedRef.current = true
+      hydrateFromLocalDraft()
+      setIsInitializing(false)
     }
-  }, [session?.user?.id, buildProgress])
+  }, [status, session?.user?.id, currentProjectId, searchParams, setIsInitializing])
 
-  // Restore state from localStorage on mount (if no project is loaded)
+  // Handle user login - offer to save local work, or load the most recent project
   useEffect(() => {
-    // Skip if still determining session status
     if (status === 'loading') return
 
-    // Only restore if not logged in, don't have a project, and aren't in OAuth flow
-    if (!session?.user?.id && !currentProjectId && !searchParams.get('restored')) {
-      const savedState = localStorage.getItem('editorState')
-      if (savedState) {
-        try {
-          const state = JSON.parse(savedState)
-          devLog('[LOCAL STORAGE] Found saved editor state, restoring...')
-
-          // Only restore if the saved state has actual content
-          if (state.originalImage || state.cropParams) {
-            // Restore all state
-            if (state.originalImage) setOriginalImage(state.originalImage)
-            // Don't restore croppedImage or processedImageUrl - they'll be regenerated
-            if (state.cropParams) setCropParams(state.cropParams)
-            if (state.diceParams) setDiceParams(state.diceParams)
-            if (state.projectName) setProjectName(state.projectName)
-            if (state.diceStats) setDiceStats(state.diceStats)
-            if (state.step) setStep(state.step)
-
-            // Restore buildProgress from separate key (lightweight storage)
-            const savedBuildProgress = localStorage.getItem('editorBuildProgress')
-            if (savedBuildProgress) {
-              try {
-                const progress = JSON.parse(savedBuildProgress)
-                setBuildProgress(progress)
-                devLog('[LOCAL STORAGE] Restored buildProgress from separate key')
-              } catch (e) {
-                // Fallback to state.buildProgress if separate key fails
-                if (state.buildProgress) setBuildProgress(state.buildProgress)
-              }
-            } else if (state.buildProgress) {
-              // Legacy support: restore from main state if no separate key
-              setBuildProgress(state.buildProgress)
-            }
-
-            // If we have crop params and original image, regenerate the cropped image
-            // This is needed for the tune and build steps
-            if (state.cropParams && state.originalImage && (state.step === 'tune' || state.step === 'build')) {
-              devLog('[LOCAL STORAGE] Regenerating cropped image from params')
-              // Create a canvas to generate the cropped image
-              const img = new Image()
-              img.onload = () => {
-                const canvas = document.createElement('canvas')
-                canvas.width = state.cropParams.width
-                canvas.height = state.cropParams.height
-                const ctx = canvas.getContext('2d')
-                if (ctx) {
-                  // Draw the cropped portion
-                  ctx.drawImage(img,
-                    state.cropParams.x,
-                    state.cropParams.y,
-                    state.cropParams.width,
-                    state.cropParams.height,
-                    0, 0,
-                    state.cropParams.width,
-                    state.cropParams.height
-                  )
-                  const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.95)
-                  devLog('[LOCAL STORAGE] Cropped image regenerated successfully')
-                  setCroppedImage(croppedDataUrl)
-                }
-              }
-              img.src = state.originalImage
-            }
-
-            devLog('[LOCAL STORAGE] State restored successfully')
-            // Add small delay to ensure state is applied before showing UI
-            setTimeout(() => setIsInitializing(false), 500)
-          } else {
-            // No state to restore
-            setIsInitializing(false)
-          }
-        } catch (err) {
-          devError('[LOCAL STORAGE] Failed to restore state:', err)
-          setIsInitializing(false)
-        }
-      } else {
-        // No saved state
-        setIsInitializing(false)
-      }
-    }
-  }, [status, session?.user?.id, currentProjectId, searchParams]) // Re-run when session status changes
-
-  // Handle OAuth restoration after redirect
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    if (urlParams.get('restored') === 'true') {
-      devLog('[DEBUG] OAuth redirect detected, checking for saved state')
-      setIsRestoringOAuthState(true)
-      const savedState = sessionStorage.getItem('editorStateBeforeAuth')
-      if (savedState) {
-        try {
-          const state = JSON.parse(savedState)
-          devLog('[DEBUG] Restoring editor state after OAuth redirect')
-          devLog('[DEBUG] Saved state contains:')
-          devLog('  - originalImage:', state.originalImage ? `${state.originalImage.substring(0, 50)}...` : 'null')
-          devLog('  - croppedImage:', state.croppedImage ? `${state.croppedImage.substring(0, 50)}...` : 'null')
-          devLog('  - processedImageUrl:', state.processedImageUrl ? `${state.processedImageUrl.substring(0, 50)}...` : 'null')
-          devLog('  - step:', state.step)
-
-          devLog('  - cropParams:', state.cropParams)
-          devLog('  - diceParams:', state.diceParams)
-
-          // Restore the state
-          if (state.originalImage) {
-            devLog('[DEBUG] Restoring originalImage')
-            setOriginalImage(state.originalImage)
-          }
-          if (state.croppedImage) {
-            devLog('[DEBUG] Restoring croppedImage')
-            setCroppedImage(state.croppedImage)
-          }
-          if (state.processedImageUrl) {
-            devLog('[DEBUG] Restoring processedImageUrl')
-            setProcessedImageUrl(state.processedImageUrl)
-          }
-          if (state.cropParams) {
-            devLog('[DEBUG] Restoring cropParams')
-            setCropParams(state.cropParams)
-          }
-          if (state.diceParams) {
-            devLog('[DEBUG] Restoring diceParams')
-            setDiceParams(state.diceParams)
-          }
-          if (state.step) {
-            devLog('[DEBUG] Restoring step')
-            setStep(state.step)
-          }
-
-
-          // Clear the saved state and URL param
-          sessionStorage.removeItem('editorStateBeforeAuth')
-          window.history.replaceState({}, '', '/editor')
-
-          // Set flag for auto-save ONLY if there's actual work (an image) to save
-          if (state.originalImage || state.processedImageUrl) {
-            devLog('[DEBUG] Setting flag for auto-save after restoration completes (has image)')
-            sessionStorage.setItem('shouldAutoSaveRestoredState', 'true')
-          } else {
-            devLog('[DEBUG] No image in restored state, skipping auto-save flag')
-          }
-
-          // Check if user intended to go to build step after login
-          const intendedStep = sessionStorage.getItem('intendedStepAfterLogin')
-          if (intendedStep === 'build') {
-            devLog('[DEBUG] User intended to go to build step after login - navigating there')
-            sessionStorage.removeItem('intendedStepAfterLogin')
-            // Set step to build after restoration
-            setStep('build')
-
-          }
-
-          // Mark restoration as complete - this will trigger auto-save logic
-          devLog('[DEBUG] OAuth state restoration complete')
-          // Note: The state variables here will show old values due to closure, but setState calls have been made
-          setIsRestoringOAuthState(false)
-        } catch (err) {
-          devError('[DEBUG] Failed to restore state:', err)
-          setIsRestoringOAuthState(false)
-        }
-      } else {
-        setIsRestoringOAuthState(false)
-      }
-    }
-  }, []) // Run once on mount
-
-  // Handle user login - auto-create project or show capacity modal
-  useEffect(() => {
-    // Skip if still determining session status
-    if (status === 'loading') return
-
-    devLog('[LOGIN EFFECT] Triggered with:', {
-      sessionStatus: status,
-      hasSession: !!session?.user?.id,
-      currentProjectId,
-      isRestoringOAuthState,
-      originalImage: !!originalImage,
-      processedImageUrl: !!processedImageUrl,
-      croppedImage: !!croppedImage
-    })
-
-    // Only run this logic when user just logged in and has no project loaded yet
-    if (session?.user?.id && !currentProjectId && !isRestoringOAuthState) {
-      devLog('[LOGIN EFFECT] User logged in without current project, fetching user projects...')
+    if (session?.user?.id && !currentProjectId) {
       fetchUserProjects().then((projects) => {
-        const projectCount = (projects || []).length
-        devLog('[LOGIN EFFECT] Projects fetched:', {
-          projectCount,
-          projects: projects?.map((p: any) => ({ id: p.id, name: p.name, updatedAt: p.updatedAt }))
-        })
+        // Read fresh from the store: the draft may have been hydrated after
+        // this effect's render (e.g. right after an OAuth redirect)
+        const { originalImage, processedImageUrl } = useEditorStore.getState()
+        const hasWorkInProgress = !!(originalImage || processedImageUrl)
 
-        // Check if user has work in progress (including restored OAuth state)
-        const shouldAutoSaveRestoredState = sessionStorage.getItem('shouldAutoSaveRestoredState') === 'true'
-        const hasWorkInProgress = originalImage || processedImageUrl || shouldAutoSaveRestoredState
-
-        devLog('[LOGIN EFFECT] Work state check:', {
-          shouldAutoSaveRestoredState,
-          hasOriginalImage: !!originalImage,
-          hasProcessedImageUrl: !!processedImageUrl,
-          hasCroppedImage: !!croppedImage,
-          hasWorkInProgress
-        })
-
-        if (shouldAutoSaveRestoredState) {
-          devLog('[LOGIN EFFECT] Found shouldAutoSaveRestoredState flag - state should now be restored')
-          sessionStorage.removeItem('shouldAutoSaveRestoredState')
-        }
-
-        // Check if there is a project in the URL - if so, don't show modal
-        const projectIdParam = searchParams.get('project')
-        if (!projectIdParam) {
-          // Decide whether to show project modal or auto-load most recent project
+        // If a project is in the URL, the URL effect above will load it
+        if (!searchParams.get('project')) {
           if (hasWorkInProgress) {
-            // User has local work in progress - show modal so they can save it
-            devLog('[LOGIN EFFECT] Has work in progress, showing project dashboard')
+            // Local work in progress - show the dashboard so it can be saved
             setShowProjectModal(true)
-          } else if (projectCount > 0) {
-            // No local work, but has existing projects - auto-load the most recent one
-            // Projects are already sorted by updatedAt desc, so first one is most recent
-            const mostRecentProject = projects[0]
-            devLog('[LOGIN EFFECT] No local work, auto-loading most recent project:', mostRecentProject.name)
-            loadProject(mostRecentProject)
+          } else if (projects.length > 0) {
+            // Projects are sorted by updatedAt desc - load the most recent
+            loadProject(projects[0])
           } else {
-            // No local work AND no existing projects - show modal to create first project
-            devLog('[LOGIN EFFECT] No projects found, showing project dashboard to create first project')
+            // First visit - show the dashboard to create a project
             setShowProjectModal(true)
           }
-        } else {
-          devLog('[LOGIN EFFECT] Skipping project dashboard - project ID in URL')
         }
-
-        // Mark initialization as complete after handling all login logic with small delay
-        setTimeout(() => setIsInitializing(false), 500)
+        setIsInitializing(false)
       }).catch(err => {
-        devError('[LOGIN EFFECT] Failed to fetch projects:', err)
-        // Still mark as complete even on error
-        setTimeout(() => setIsInitializing(false), 500)
+        devError('[LOGIN] Failed to fetch projects:', err)
+        setIsInitializing(false)
       })
-    } else {
-      devLog('[LOGIN EFFECT] Conditions not met, skipping:', {
-        hasSession: !!session?.user?.id,
-        hasCurrentProjectId: !!currentProjectId,
-        isRestoringOAuthState
-      })
-      // Mark initialization as complete if not logged in or already has project
-      if (!session?.user?.id || currentProjectId) {
-        setTimeout(() => setIsInitializing(false), 500)
-      }
+    } else if (!session?.user?.id || currentProjectId) {
+      setIsInitializing(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id, currentProjectId, isRestoringOAuthState, originalImage, processedImageUrl, croppedImage, searchParams, loadProject])
+  }, [status, session?.user?.id, currentProjectId, searchParams, loadProject])
 
-
-  // Clear localStorage when a project is loaded or workflow is reset
+  // The draft has served its purpose once a project is loaded
   useEffect(() => {
     if (currentProjectId) {
-      // Clear localStorage when a project is loaded
-      localStorage.removeItem('editorState')
-      devLog('[LOCAL STORAGE] Cleared - project loaded')
+      clearLocalDraft()
     }
   }, [currentProjectId])
-
-
-
-  // Save progress when Y changes (row change)
-  useEffect(() => {
-    // Skip initial render or if no project loaded
-    if (!session?.user?.id || !currentProjectId) return
-
-    devLog('[AUTO-SAVE] Y changed, saving progress')
-    // We rely on the ref inside saveProgressOnly to get current X and Y
-    saveProgressOnly()
-  }, [buildProgress.y, session?.user?.id, currentProjectId, saveProgressOnly])
-
-  // No cleanup needed - removed auto-save timers
 
   // Show loading screen while initializing or session is loading
   if (isInitializing || status === 'loading') {
@@ -662,130 +293,7 @@ function EditorContent() {
             {/* Auth Button - always on right */}
             <div className="ml-auto">
               {status === 'authenticated' && session ? (
-                <div className="flex items-center gap-3">
-                  <div className="relative user-menu-container">
-                    <div
-                      className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-600 hover:border-gray-400 transition-colors cursor-pointer"
-                      onClick={() => {
-                        setShowUserMenu(!showUserMenu)
-                      }}
-                    >
-                      {session.user?.image ? (
-                        <img
-                          src={session.user.image}
-                          alt={session.user.name || 'User'}
-                          className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
-                          onError={(e) => {
-                            devError('Image failed to load:', session.user?.image)
-                            // Hide the broken image and show fallback
-                            e.currentTarget.style.display = 'none'
-                            const fallback = e.currentTarget.nextElementSibling as HTMLElement
-                            if (fallback) fallback.style.display = 'flex'
-                          }}
-                        />
-                      ) : null}
-                      <div
-                        className="w-full h-full bg-gradient-to-br from-pink-500 to-purple-600 items-center justify-center text-white font-semibold"
-                        style={{ display: session.user?.image ? 'none' : 'flex' }}
-                      >
-                        {session.user?.name?.[0]?.toUpperCase() || session.user?.email?.[0]?.toUpperCase() || 'U'}
-                      </div>
-                    </div>
-
-                    {/* Dropdown menu */}
-                    {showUserMenu && (() => {
-                      const planType = session.user?.planType || 'explorer'
-                      const subStatus = session.user?.subscriptionStatus
-                      const expiresAt = session.user?.subscriptionExpiresAt
-
-                      // Calculate expiration text
-                      let expirationText = ''
-                      if (expiresAt) {
-                        const expiresDate = new Date(expiresAt)
-                        const now = new Date()
-                        const isExpired = expiresDate.getTime() < now.getTime()
-                        const formattedDate = expiresDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-
-                        if (planType === 'creator') {
-                          // Creator shows expiration date only
-                          expirationText = isExpired ? 'Expired' : `Expires on ${formattedDate}`
-                        } else if (planType === 'studio' && subStatus === 'canceled') {
-                          // Canceled Studio shows expiration date
-                          expirationText = isExpired ? 'Expired' : `Expires on ${formattedDate}`
-                        }
-                      }
-
-                      const handleManageSubscription = async () => {
-                        try {
-                          const response = await fetch('/api/stripe/portal', { method: 'POST' })
-                          const data = await response.json()
-                          if (data.url) {
-                            window.location.href = data.url
-                          }
-                        } catch (error) {
-                          console.error('Failed to open billing portal:', error)
-                        }
-                      }
-
-                      const getPlanBadge = () => {
-                        switch (planType) {
-                          case 'lifetime':
-                            return <span className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/30">LIFETIME</span>
-                          case 'studio':
-                            return <span className="px-1.5 py-0.5 rounded-full bg-pink-500/20 text-pink-400 text-[10px] font-bold border border-pink-500/30">STUDIO</span>
-                          case 'creator':
-                            return <span className="px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30">CREATOR PASS</span>
-                          default:
-                            return <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 text-[10px] font-bold border border-white/20">EXPLORER</span>
-                        }
-                      }
-
-                      return (
-                        <div className="absolute top-full right-0 mt-2 bg-[#0a0014]/90 backdrop-blur-xl rounded-lg shadow-2xl border border-white/10 overflow-hidden z-50" style={{ minWidth: '280px' }}>
-                          <div className="px-4 py-3 border-b border-gray-700">
-                            <div className="text-sm font-medium text-white">
-                              {session.user?.name || 'User'}
-                            </div>
-                            <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
-                              {session.user?.email}
-                              {getPlanBadge()}
-                            </div>
-                            {expirationText && (
-                              <div className={`text-xs mt-1.5 ${subStatus === 'canceled' ? 'text-orange-400' : 'text-gray-500'}`}>
-                                {subStatus === 'canceled' && <span className="text-orange-400">Canceled • </span>}
-                                {expirationText}
-                              </div>
-                            )}
-                          </div>
-
-
-
-                          {/* Manage subscription for Studio users */}
-                          {planType === 'studio' && subStatus !== 'canceled' && (
-                            <button
-                              onClick={handleManageSubscription}
-                              className="w-full px-4 py-2 text-sm text-left text-white/90 hover:text-white hover:bg-white/10 transition-colors border-b border-white/5"
-                            >
-                              Manage subscription
-                            </button>
-                          )}
-
-                          {/* Sign Out */}
-                          <button
-                            onClick={() => {
-                              setShowUserMenu(false)
-                              signOut()
-                            }}
-                            className="w-full px-4 py-2 text-sm text-left text-white/90 hover:text-white hover:bg-white/10 transition-colors hover:rounded-b-lg"
-                          >
-                            Sign out
-                          </button>
-                        </div>
-                      )
-                    })()}
-                  </div>
-                </div>
+                <UserMenu />
               ) : (
                 <button
                   onClick={() => setShowAuthModal(true)}
@@ -803,35 +311,16 @@ function EditorContent() {
               <ProjectSelector
                 projects={userProjects}
                 onSelectProject={async (projectId) => {
-                  // Find the target project first
                   const project = userProjects.find(p => p.id === projectId)
                   if (!project) return
 
-                  // Auto-save current project before switching if we have an active project
-                  if (currentProjectId && session?.user?.id) {
-                    try {
-                      devLog('[CLIENT] Auto-saving before project switch...')
-                      switch (step) {
-                        case 'upload':
-                          await saveUploadStep()
-                          break
-                        case 'crop':
-                          await saveCropStep()
-                          break
-                        case 'tune':
-                          await saveTuneStep()
-                          break
-                        case 'build':
-                          await saveProgressOnly()
-                          break
-                      }
-                    } catch (err) {
-                      console.error("Failed to auto-save before switch:", err)
-                      // Continue with switch even if save fails
-                    }
+                  // Push any pending autosave to the current project before switching
+                  try {
+                    await flushSave()
+                  } catch (err) {
+                    console.error('Failed to auto-save before switch:', err)
                   }
 
-                  // Load the new project
                   loadProject(project)
                 }}
                 onCreateNew={createProject}
@@ -912,12 +401,6 @@ function EditorContent() {
           setShowAuthModal(false)
           setAuthModalMessage(null)
           // User can continue exploring up to x=3
-        }}
-        onSuccess={() => {
-          setShowAuthModal(false)
-          setAuthModalMessage(null)
-          setStep('build')
-          // Everything else is handled automatically by the login useEffect
         }}
         message={authModalMessage || "To continue using the builder you must be signed in"}
       />

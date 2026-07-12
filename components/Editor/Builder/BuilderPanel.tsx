@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import CountUp from 'react-countup'
 import { theme } from '@/lib/theme'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, ShoppingCart } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download } from 'lucide-react'
 import { RiProgress5Line } from 'react-icons/ri'
 import { FaAmazon } from 'react-icons/fa'
 import { useEditorStore } from '@/lib/store/useEditorStore'
@@ -69,11 +69,6 @@ export default function BuilderPanel() {
     const [showResetModal, setShowResetModal] = useState(false)
     // Modal state for progress preview
     const [showProgressModal, setShowProgressModal] = useState(false)
-
-    // Commission modal state from store
-    const showCommissionModal = useEditorStore(state => state.showCommissionModal)
-    const setShowCommissionModal = useEditorStore(state => state.setShowCommissionModal)
-    const diceGrid = useEditorStore(state => state.diceGrid)
 
     // Track previous values for smooth transitions
     const prevCountRef = useRef(totalCount)
@@ -248,7 +243,7 @@ export default function BuilderPanel() {
                                     lineHeight: '1',
                                     transform: 'translateY(-2px)'
                                 }}>
-                                    X
+                                    Col
                                 </legend>
                                 <span className="text-white text-2xl font-bold" data-testid="build-pos-x">
                                     {currentX + 1}
@@ -280,7 +275,7 @@ export default function BuilderPanel() {
                                     lineHeight: '1',
                                     transform: 'translateY(-2px)'
                                 }}>
-                                    Y
+                                    Row
                                 </legend>
                                 <span className="text-white text-2xl font-bold" data-testid="build-pos-y">
                                     {currentY + 1}
@@ -348,7 +343,7 @@ export default function BuilderPanel() {
             {/* Purchase Dice Button */}
             <div className="mt-4">
                 <a
-                    href="https://amzn.to/4bPWsvQ"
+                    href="https://www.amazon.com/s?k=1000+black+and+white+dice&crid=1AKYI6O2CJ5YD&sprefix=1000+black+and+white+di%2Caps%2C310&ref=nb_sb_noss_1"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => sendGAEvent('event', 'purchase_dice_click', { label: 'amazon_affiliate' })}
@@ -359,37 +354,11 @@ export default function BuilderPanel() {
                 </a>
             </div>
 
-            {/* Commission Button */}
-            <div className="mt-4 relative">
-                <button
-                    onClick={() => setShowCommissionModal(true)}
-                    className="w-full py-3 rounded-lg border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
-                >
-                    <ShoppingCart size={16} className="group-hover:scale-110 transition-transform" />
-                    <span>Commission This Piece</span>
-                </button>
-                {/* NEW Badge */}
-                <div
-                    className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide"
-                    style={{
-                        background: 'linear-gradient(135deg, #22c55e, #10b981)',
-                        color: '#ffffff',
-                        boxShadow: '0 2px 8px rgba(34, 197, 94, 0.4)'
-                    }}
-                >
-                    NEW
-                </div>
-            </div>
-
             {/* Download Blueprint Button */}
             <div className="mt-4 relative">
                 <button
                     onClick={handleDownloadSvg}
-                    className="w-full py-3 rounded-lg text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
-                    style={{
-                        backgroundColor: theme.colors.accent.pink,
-                        boxShadow: `0 0 15px ${theme.colors.accent.pink}40`
-                    }}
+                    className="w-full py-3 rounded-lg border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
                 >
                     <Download size={16} className="group-hover:scale-110 transition-transform" />
                     <span>Download Blueprint</span>
@@ -424,7 +393,6 @@ export default function BuilderPanel() {
                 isOpen={showResetModal}
                 onClose={() => setShowResetModal(false)}
                 onConfirm={handleConfirmReset}
-                currentProgress={buildProgress}
             />
 
             {/* Progress Preview Modal */}

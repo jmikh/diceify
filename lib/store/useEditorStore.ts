@@ -10,10 +10,41 @@ interface CropParams {
   rotation: number
 }
 
+// Position of the die currently being placed. Completed count and percentage
+// are derived from this + the grid dimensions, never stored.
 interface BuildProgress {
   x: number
   y: number
-  percentage: number
+}
+
+// The params the current build progress was made against. Progress is only
+// meaningful for the exact grid it was built on; when current params drift
+// from this baseline, entering the build step resets progress (and the
+// autosave reports progress as 0 to keep persisted state self-consistent).
+interface BuildBaseline {
+  crop: CropParams | null
+  dice: DiceParams
+}
+
+const jsonEquals = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
+
+// Crop coordinates jitter by fractions of a pixel when the cropper remounts,
+// so compare with a tolerance instead of exact equality
+const cropParamsEqual = (a: CropParams | null, b: CropParams | null): boolean => {
+  if (!a || !b) return a === b
+  const t = 0.01
+  return Math.abs(a.x - b.x) < t &&
+    Math.abs(a.y - b.y) < t &&
+    Math.abs(a.width - b.width) < t &&
+    Math.abs(a.height - b.height) < t &&
+    Math.abs(a.rotation - b.rotation) < t
+}
+
+// Does the current build progress still apply to the current params?
+export const matchesBuildBaseline = (state: Pick<EditorState, 'buildBaseline' | 'cropParams' | 'diceParams'>): boolean => {
+  return !!state.buildBaseline &&
+    cropParamsEqual(state.buildBaseline.crop, state.cropParams) &&
+    jsonEquals(state.buildBaseline.dice, state.diceParams)
 }
 
 interface EditorState {
@@ -26,7 +57,6 @@ interface EditorState {
   croppedImage: string | null
   processedImageUrl: string | null
   cropParams: CropParams | null
-  hasCropChanged: boolean
 
   // Dice Configuration
   diceParams: DiceParams
@@ -39,9 +69,8 @@ interface EditorState {
   lastSaved: Date | null
   isSaving: boolean
 
-  // Saved State for Dirty Checking
-  savedDiceParams: DiceParams | null
-  savedCropParams: CropParams | null
+  // Params the current build progress was made against
+  buildBaseline: BuildBaseline | null
 
   // UI State
   isInitializing: boolean
@@ -68,14 +97,12 @@ interface EditorState {
   setCroppedImage: (url: string | null) => void
   setProcessedImageUrl: (url: string | null) => void
   setCropParams: (params: CropParams | null) => void
-  setHasCropChanged: (changed: boolean) => void
   setDiceParams: (params: Partial<DiceParams>) => void
   setDiceStats: (stats: DiceStats) => void
   setDiceGrid: (grid: DiceGrid | null) => void
 
-  // Actions to update saved state
-  setSavedTuneState: (params: DiceParams) => void
-  setSavedCropState: (params: CropParams) => void
+  // Re-anchor the baseline to the current params (after load/hydrate)
+  setBuildBaseline: () => void
 
   setProjectName: (name: string) => void
   setCurrentProjectId: (id: string | null) => void
@@ -98,7 +125,7 @@ interface EditorState {
   // Complex Actions
   uploadImage: (url: string) => void
   updateCrop: (croppedImageUrl: string, crop: CropParams) => void
-  completeCrop: (croppedImageUrl: string, crop: CropParams) => void
+  enterBuild: () => void
   resetWorkflow: () => void
 }
 
@@ -128,12 +155,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   croppedImage: null,
   processedImageUrl: null,
   cropParams: null,
-  hasCropChanged: false,
-  savedCropParams: null,
+  buildBaseline: null,
 
   diceParams: DEFAULT_DICE_PARAMS,
-
-  savedDiceParams: null,
 
   diceStats: DEFAULT_DICE_STATS,
   diceGrid: null,
@@ -153,7 +177,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   showProFeatureModal: false,
   showCommissionModal: false,
 
-  buildProgress: { x: 0, y: 0, percentage: 0 },
+  buildProgress: { x: 0, y: 0 },
 
   selectedRatio: '1:1',
   cropRotation: 0,
@@ -166,34 +190,28 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setCroppedImage: (url) => set({ croppedImage: url }),
   setProcessedImageUrl: (url) => set({ processedImageUrl: url }),
 
+  // Note: the jsonEquals guards below aren't just an optimization — canvas
+  // and cropper callbacks re-emit identical values on every interaction, and
+  // a new object reference would re-render every subscriber.
   setCropParams: (params) => set((state) => {
-    // Only update if values actually changed
-    if (JSON.stringify(state.cropParams) === JSON.stringify(params)) return state
+    if (jsonEquals(state.cropParams, params)) return state
     return { cropParams: params }
   }),
-  setHasCropChanged: (changed) => set({ hasCropChanged: changed }),
-
   setDiceParams: (params) => set((state) => {
     const newParams = { ...state.diceParams, ...params }
-    // Only update if values actually changed
-    if (JSON.stringify(state.diceParams) === JSON.stringify(newParams)) return state
+    if (jsonEquals(state.diceParams, newParams)) return state
     return { diceParams: newParams }
   }),
 
   setDiceStats: (stats) => set((state) => {
-    // Only update if values actually changed
-    if (JSON.stringify(state.diceStats) === JSON.stringify(stats)) return state
+    if (jsonEquals(state.diceStats, stats)) return state
     return { diceStats: stats }
   }),
   setDiceGrid: (grid) => set({ diceGrid: grid }),
 
-  setSavedTuneState: (params) => set({
-    savedDiceParams: { ...params },
-  }),
-
-  setSavedCropState: (params) => set({
-    savedCropParams: { ...params },
-  }),
+  setBuildBaseline: () => set((state) => ({
+    buildBaseline: { crop: state.cropParams, dice: state.diceParams }
+  })),
 
   setProjectName: (name) => set({ projectName: name }),
   setCurrentProjectId: (id) => set({ currentProjectId: id }),
@@ -212,8 +230,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setBuildProgress: (progress) => set((state) => {
     const newProgress = typeof progress === 'function' ? progress(state.buildProgress) : progress
-    // Only update if values actually changed
-    if (JSON.stringify(state.buildProgress) === JSON.stringify(newProgress)) return state
+    if (jsonEquals(state.buildProgress, newProgress)) return state
     return { buildProgress: newProgress }
   }),
 
@@ -229,14 +246,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       processedImageUrl: null,
       diceGrid: null,
       cropParams: null,
+      buildBaseline: null,
       diceStats: DEFAULT_DICE_STATS,
-      buildProgress: { x: 0, y: 0, percentage: 0 }
+      buildProgress: { x: 0, y: 0 }
     })
   },
 
   updateCrop: (croppedImageUrl: string, crop: CropParams) => set((state) => {
-    // Only update if cropParams actually changed
-    if (JSON.stringify(state.cropParams) === JSON.stringify(crop)) return state
+    if (jsonEquals(state.cropParams, crop)) return state
     return {
       croppedImage: croppedImageUrl,
       cropParams: crop,
@@ -244,16 +261,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     }
   }),
 
-  completeCrop: (croppedImageUrl: string, crop: CropParams) => set((state) => {
-    // Only update if cropParams actually changed
-    if (JSON.stringify(state.cropParams) === JSON.stringify(crop) && state.step === 'tune') return state
-    return {
-      croppedImage: croppedImageUrl,
-      cropParams: crop,
-      step: 'tune',
-      diceGrid: null
-    }
-  }),
+  // The single gateway into the build step. If crop/tune params changed since
+  // the progress was made, the progress is for a different grid — reset it.
+  enterBuild: () => set((state) => ({
+    step: 'build',
+    buildProgress: matchesBuildBaseline(state) ? state.buildProgress : { x: 0, y: 0 },
+    buildBaseline: { crop: state.cropParams, dice: state.diceParams },
+  })),
 
   resetWorkflow: () => {
     devLog('[STORE] Resetting workflow')
@@ -265,10 +279,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       processedImageUrl: null,
       diceParams: DEFAULT_DICE_PARAMS,
       diceStats: DEFAULT_DICE_STATS,
-      buildProgress: { x: 0, y: 0, percentage: 0 },
+      buildProgress: { x: 0, y: 0 },
       diceGrid: null,
-      savedDiceParams: null,
-      savedCropParams: null,
+      buildBaseline: null,
       selectedRatio: '1:1',
       cropRotation: 0,
       // We don't reset project ID or name here usually, unless explicitly creating new

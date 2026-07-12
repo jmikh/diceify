@@ -47,7 +47,7 @@ export default function LimitReachedModal() {
                     <h2 className="text-2xl font-bold text-white mb-2">Build Limit Reached</h2>
 
                     <p className="text-[var(--text-muted)] text-sm mb-6">
-                        You've reached the Explorer plan limit of 100 dice.
+                        You've reached the Explorer plan limit of 5 rows.
                         Upgrade to unlock unlimited building and create massive masterpieces!
                     </p>
 

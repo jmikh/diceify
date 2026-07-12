@@ -44,7 +44,7 @@ export default function BuilderLimitToast() {
                 className="text-sm font-medium text-center sm:text-left"
                 style={{ color: theme.colors.text.secondary }}
             >
-                Builder limited to 100 dice on Explorer plan
+                Explorer builder limited to first 5 rows
             </span>
 
             {/* Upgrade Button */}

@@ -9,11 +9,6 @@ interface ResetProgressModalProps {
     isOpen: boolean
     onClose: () => void
     onConfirm: () => void
-    currentProgress: {
-        x: number
-        y: number
-        percentage: number
-    }
 }
 
 export default function ResetProgressModal({ isOpen, onClose, onConfirm }: ResetProgressModalProps) {
