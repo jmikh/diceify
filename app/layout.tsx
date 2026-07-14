@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, Outfit, Syne } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { GoogleAnalytics } from '@next/third-parties/google'
@@ -10,6 +10,14 @@ import { Providers } from '@/components/Providers'
 const inter = Inter({ subsets: ['latin'] })
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit', display: 'swap' })
 const syne = Syne({ subsets: ['latin'], variable: '--font-syne', display: 'swap' })
+
+// viewportFit: 'cover' lets the editor extend behind notches and use
+// env(safe-area-inset-*) for the mobile toolbars
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://diceify.art'),

@@ -1,15 +1,11 @@
 'use client'
 
-import { RefObject, useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Loader2 } from 'lucide-react'
-import DiceCanvas, { DiceCanvasRef } from './DiceCanvas'
+import DiceCanvas from './DiceCanvas'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 
-interface TunerMainProps {
-    diceCanvasRef: RefObject<DiceCanvasRef>
-}
-
-export default function TunerMain({ diceCanvasRef }: TunerMainProps) {
+export default function TunerMain() {
     const params = useEditorStore(state => state.diceParams)
     const processedImageUrl = useEditorStore(state => state.processedImageUrl)
     const croppedImage = useEditorStore(state => state.croppedImage)
@@ -102,11 +98,7 @@ export default function TunerMain({ diceCanvasRef }: TunerMainProps) {
                 </div>
             )}
 
-            <DiceCanvas
-                ref={diceCanvasRef}
-                maxWidth={1080}
-                maxHeight={1080}
-            />
+            <DiceCanvas />
         </div>
     )
 }

@@ -74,7 +74,7 @@ export default function UploadMain({ }: UploadMainProps) {
             <div
                 {...getRootProps()}
                 className={`
-          flex flex-col items-center justify-center p-12 lg:p-16 text-center
+          flex flex-col items-center justify-center p-8 sm:p-12 lg:p-16 text-center
           rounded-3xl border-2 border-dashed cursor-pointer
           transition-all duration-300 group
           ${isDragActive
@@ -102,7 +102,8 @@ export default function UploadMain({ }: UploadMainProps) {
                 </h3>
 
                 <p className="text-gray-400 text-lg mb-8 max-w-xs">
-                    Drag and drop your image here, or click to browse files
+                    <span className="sm:hidden">Tap to take a photo or pick one from your library</span>
+                    <span className="hidden sm:inline">Drag and drop your image here, or click to browse files</span>
                 </p>
 
                 <div className={`

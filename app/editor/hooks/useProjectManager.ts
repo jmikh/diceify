@@ -3,7 +3,6 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 import { buildProjectPayload, markSnapshotClean, clearLocalDraft, flushSave } from './useAutosave'
-import { cropImage } from '@/lib/utils/image'
 import { devLog, devError } from '@/lib/utils/debug'
 
 export function useProjectManager() {
@@ -198,7 +197,8 @@ export function useProjectManager() {
             setOriginalImage(project.originalImage)
         }
 
-        // Crop params + regenerate the cropped image (derived, not stored)
+        // Crop params - the cropped image itself is derived state that the
+        // dice pipeline (useDiceGeneration) regenerates automatically
         if (project.cropX !== null && project.cropY !== null && project.cropWidth && project.cropHeight) {
             const params = {
                 x: project.cropX,
@@ -210,12 +210,6 @@ export function useProjectManager() {
             setCropParams(params)
             // Keep the cropper widget's rotation in sync with the restored params
             useEditorStore.getState().setCropRotation(params.rotation)
-
-            if (project.originalImage) {
-                cropImage(project.originalImage, params)
-                    .then(setCroppedImage)
-                    .catch(err => devError('Failed to regenerate cropped image:', err))
-            }
         }
 
         // Tune params

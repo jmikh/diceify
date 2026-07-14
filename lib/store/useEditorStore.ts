@@ -253,7 +253,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   updateCrop: (croppedImageUrl: string, crop: CropParams) => set((state) => {
-    if (jsonEquals(state.cropParams, crop)) return state
+    // Skip only when nothing would change. croppedImage can be missing while
+    // cropParams are set (restored draft/project) - always store the image then,
+    // or later steps have nothing to generate dice from.
+    if (state.croppedImage && jsonEquals(state.cropParams, crop)) return state
     return {
       croppedImage: croppedImageUrl,
       cropParams: crop,

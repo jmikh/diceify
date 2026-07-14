@@ -1,16 +1,16 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
-import CountUp from 'react-countup'
+import { useState } from 'react'
 import { theme } from '@/lib/theme'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download } from 'lucide-react'
 import { RiProgress5Line } from 'react-icons/ri'
 import { FaAmazon } from 'react-icons/fa'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 import { useBuildNavigation } from './useBuildNavigation'
+import { useBlueprintDownload } from './useBlueprintDownload'
+import { DICE_PURCHASE_URL } from './constants'
 import { sendGAEvent } from '@next/third-parties/google'
-import { DiceSVGRenderer } from '@/lib/dice/svg-renderer'
+import DiceStatsCard from '../DiceStatsCard'
 import ResetProgressModal from '@/components/ResetProgressModal'
 import ProgressPreviewModal from '@/components/ProgressPreviewModal'
 
@@ -47,7 +47,6 @@ export function ProgressBar({ percentage, showComplete = true, className = '' }:
 // --- BuilderPanel Component ---
 
 export default function BuilderPanel() {
-    const { data: session } = useSession()
     const {
         currentX,
         currentY,
@@ -61,30 +60,14 @@ export default function BuilderPanel() {
     } = useBuildNavigation()
 
     const setStep = useEditorStore(state => state.setStep)
-    const diceStats = useEditorStore(state => state.diceStats)
     const buildProgress = useEditorStore(state => state.buildProgress)
-    const { blackCount, whiteCount, totalCount } = diceStats
 
     // Modal state for reset progress warning
     const [showResetModal, setShowResetModal] = useState(false)
     // Modal state for progress preview
     const [showProgressModal, setShowProgressModal] = useState(false)
 
-    // Track previous values for smooth transitions
-    const prevCountRef = useRef(totalCount)
-    const prevBlackRef = useRef(blackCount)
-    const prevWhiteRef = useRef(whiteCount)
-
-    useEffect(() => {
-        prevCountRef.current = totalCount
-        prevBlackRef.current = blackCount
-        prevWhiteRef.current = whiteCount
-    }, [totalCount, blackCount, whiteCount])
-
-    // Ease-out cubic function for smooth deceleration
-    const easeOutCubic = (t: number, b: number, c: number, d: number) => {
-        return c * ((t = t / d - 1) * t * t + 1) + b
-    }
+    const handleDownloadSvg = useBlueprintDownload()
 
     const handleBack = () => {
         // Check if user has made progress
@@ -100,118 +83,13 @@ export default function BuilderPanel() {
         setStep('tune')
     }
 
-    const handleDownloadSvg = () => {
-        // Check if logged in
-        if (!session?.user) {
-            useEditorStore.getState().setAuthModalMessage("You must be logged in to download blueprint.")
-            useEditorStore.getState().setShowAuthModal(true)
-            return
-        }
-
-        // Check for subscription
-        if (!session.user.isPro) {
-            useEditorStore.getState().setShowProFeatureModal(true)
-            return
-        }
-
-        const grid = useEditorStore.getState().diceGrid
-        if (!grid) return
-
-        try {
-            const renderer = new DiceSVGRenderer()
-            const svgString = renderer.render(grid)
-
-            const blob = new Blob([svgString], { type: 'image/svg+xml' })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = `dice-art-${Date.now()}.svg`
-            document.body.appendChild(a)
-            a.click()
-            document.body.removeChild(a)
-            URL.revokeObjectURL(url)
-        } catch (error) {
-            console.error('Error generating SVG:', error)
-        }
-    }
-
     return (
         <>
             {/* Build Progress Controls */}
             <div>
                 <div className="space-y-6">
                     {/* Stats Section */}
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-4">
-                        {/* Total dice count */}
-                        <div className="text-center">
-                            <div className="text-2xl font-bold" style={{ color: theme.colors.text.primary }}>
-                                <CountUp
-                                    start={prevCountRef.current}
-                                    end={totalCount}
-                                    duration={1.5}
-                                    separator=","
-                                    useEasing={true}
-                                    easingFn={easeOutCubic}
-                                    preserveValue={true}
-                                />
-                            </div>
-                            <div className="text-xs" style={{ color: theme.colors.text.muted }}>total dice</div>
-                        </div>
-
-                        {/* Proportional bar */}
-                        <div className="h-4 rounded-lg overflow-hidden flex border" style={{
-                            backgroundColor: theme.colors.glass.light,
-                            borderColor: 'rgba(255, 255, 255, 0.2)'
-                        }}>
-                            {totalCount > 0 && (
-                                <>
-                                    <div
-                                        className="bg-black transition-all"
-                                        style={{
-                                            width: `${(blackCount / totalCount) * 100}%`
-                                        }}
-                                    />
-                                    <div
-                                        className="bg-white transition-all"
-                                        style={{
-                                            width: `${(whiteCount / totalCount) * 100}%`
-                                        }}
-                                    />
-                                </>
-                            )}
-                        </div>
-
-                        <div className="flex justify-between text-xs">
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded-sm border" style={{ backgroundColor: 'black', borderColor: 'rgba(255, 255, 255, 0.2)' }} />
-                                <span style={{ color: theme.colors.text.secondary }}>
-                                    <CountUp
-                                        start={prevBlackRef.current}
-                                        end={blackCount}
-                                        duration={1}
-                                        separator=","
-                                        useEasing={true}
-                                        easingFn={easeOutCubic}
-                                        preserveValue={true}
-                                    />
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded-sm border" style={{ backgroundColor: 'white', borderColor: 'rgba(255, 255, 255, 0.2)' }} />
-                                <span style={{ color: theme.colors.text.secondary }}>
-                                    <CountUp
-                                        start={prevWhiteRef.current}
-                                        end={whiteCount}
-                                        duration={1}
-                                        separator=","
-                                        useEasing={true}
-                                        easingFn={easeOutCubic}
-                                        preserveValue={true}
-                                    />
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+                    <DiceStatsCard />
 
                     {/* Coordinates & Controls Section */}
                     <div className="flex flex-col gap-4">
@@ -343,7 +221,7 @@ export default function BuilderPanel() {
             {/* Purchase Dice Button */}
             <div className="mt-4">
                 <a
-                    href="https://www.amazon.com/s?k=1000+black+and+white+dice&crid=1AKYI6O2CJ5YD&sprefix=1000+black+and+white+di%2Caps%2C310&ref=nb_sb_noss_1"
+                    href={DICE_PURCHASE_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => sendGAEvent('event', 'purchase_dice_click', { label: 'amazon_affiliate' })}

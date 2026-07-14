@@ -15,7 +15,6 @@ import UploaderPanel from '@/components/Editor/Uploader/UploaderPanel'
 import UploadMain from '@/components/Editor/Uploader/UploadMain'
 import CropperPanel from '@/components/Editor/Cropper/CropperPanel'
 import CropperMain from '@/components/Editor/Cropper/CropperMain'
-import { DiceCanvasRef } from '@/components/Editor/Tuner/DiceCanvas'
 import TunerPanel from '@/components/Editor/Tuner/TunerPanel'
 import TunerMain from '@/components/Editor/Tuner/TunerMain'
 
@@ -25,6 +24,8 @@ import BuilderMain from '@/components/Editor/Builder/BuilderMain'
 import ProjectSelector from '@/components/Editor/ProjectSelector'
 import ProjectSelectionModal from '@/components/ProjectSelectionModal'
 import DiceStepper from '@/components/Editor/DiceStepper'
+import MobileTopBar from '@/components/Editor/Mobile/MobileTopBar'
+import MobileControls from '@/components/Editor/Mobile/MobileControls'
 import Logo from '@/components/Logo'
 import AuthModal from '@/components/AuthModal'
 import LimitReachedModal from '@/components/LimitReachedModal'
@@ -36,14 +37,13 @@ import { devLog, devError } from '@/lib/utils/debug'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 import { useProjectManager } from './hooks/useProjectManager'
 import { useAutosave, flushSave, hydrateFromLocalDraft, clearLocalDraft } from './hooks/useAutosave'
+import { useDiceGeneration } from './hooks/useDiceGeneration'
 import { PLAN_LIMITS, PlanType } from '@/lib/subscription'
 
 function EditorContent() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
-
-  const diceCanvasRef = useRef<DiceCanvasRef>(null)
 
   // Custom Hooks
   const {
@@ -60,6 +60,10 @@ function EditorContent() {
   // (DB when a project is loaded, localStorage draft otherwise)
   useAutosave()
 
+  // Dice derivation pipeline: crop -> grid/stats -> preview image. Runs
+  // independently of the visible step so restored states always regenerate.
+  useDiceGeneration()
+
   // Calculate limits based on subscription plan
   const planType = (session?.user?.planType as PlanType) || 'explorer'
   const maxProjects = PLAN_LIMITS[planType].projectLimit
@@ -74,8 +78,6 @@ function EditorContent() {
   const showLimitModal = useEditorStore(state => state.showLimitModal)
 
   const originalImage = useEditorStore(state => state.originalImage)
-  const croppedImage = useEditorStore(state => state.croppedImage)
-  const diceGrid = useEditorStore(state => state.diceGrid)
   const currentProjectId = useEditorStore(state => state.currentProjectId)
   const isInitializing = useEditorStore(state => state.isInitializing)
 
@@ -95,6 +97,10 @@ function EditorContent() {
 
   // Track window size for responsive cropper
   const [windowSize, setWindowSize] = useState({ width: 800, height: 600 })
+
+  // Below lg the editor switches to a fixed-viewport mobile shell:
+  // full-screen canvas with a step bar on top and controls in the thumb zone
+  const isMobile = windowSize.width < 1024
 
   useEffect(() => {
     const handleResize = () => {
@@ -245,26 +251,34 @@ function EditorContent() {
     )
   }
 
-  // Render main content based on current step
+  // Switch projects, pushing any pending autosave to the current one first.
+  // Shared by the desktop project selector and the mobile menu.
+  const handleSelectProject = async (projectId: string) => {
+    const project = userProjects.find(p => p.id === projectId)
+    if (!project) return
+
+    try {
+      await flushSave()
+    } catch (err) {
+      console.error('Failed to auto-save before switch:', err)
+    }
+
+    loadProject(project)
+  }
+
+  // Render main content based on current step. Steps render their own
+  // loading state while the dice pipeline regenerates missing derived data.
   const renderMainContent = () => {
-    if (step === 'upload') {
-      return <UploadMain />
+    switch (step) {
+      case 'upload': return <UploadMain />
+      case 'crop': return <CropperMain windowSize={windowSize} />
+      case 'tune': return <TunerMain />
+      case 'build': return <BuilderMain />
     }
-    if (step === 'crop' || !croppedImage) {
-      return <CropperMain windowSize={windowSize} />
-    }
-    if (step === 'tune' || !diceGrid) {
-      return (
-        <TunerMain
-          diceCanvasRef={diceCanvasRef}
-        />
-      )
-    }
-    return <BuilderMain />
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
+    <div className={`flex flex-col relative overflow-hidden ${isMobile ? 'h-[100dvh]' : 'min-h-screen'}`}>
       {/* Background Elements */}
       <div className="bg-gradient">
         <div className="orb one"></div>
@@ -273,126 +287,134 @@ function EditorContent() {
       </div>
       <div className="grid-overlay"></div>
 
-      <header
-        className="relative"
-        style={{
-          zIndex: 50
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 py-4 relative">
-          {/* Top row with logo and auth */}
-          <div className="flex items-center">
-            {/* Logo - always on left */}
-            <Link href="/" className="flex-shrink-0 hover:opacity-80 transition-opacity">
-              <Logo />
-            </Link>
+      {/* Header - desktop only; on mobile its functions fold into the top bar menu */}
+      {!isMobile && (
+        <header
+          className="relative flex-shrink-0"
+          style={{
+            zIndex: 50
+          }}
+        >
+          <div className="max-w-7xl mx-auto px-4 py-4 relative">
+            {/* Single row: logo, project name, auth */}
+            <div className="flex items-center">
+              {/* Logo - always on left */}
+              <Link href="/" className="flex-shrink-0 hover:opacity-80 transition-opacity">
+                <Logo />
+              </Link>
 
-            {/* Spacer for desktop */}
-            <div className="flex-1 hidden sm:block"></div>
+              {/* Project name - absolutely centered */}
+              <div className="absolute left-1/2 top-4 transform -translate-x-1/2 py-2">
+                {session?.user && (
+                  <ProjectSelector
+                    projects={userProjects}
+                    onSelectProject={handleSelectProject}
+                    onCreateNew={createProject}
+                    onDeleteProject={deleteProject}
+                    maxProjects={maxProjects}
+                  />
+                )}
+              </div>
 
-            {/* Auth Button - always on right */}
-            <div className="ml-auto">
-              {status === 'authenticated' && session ? (
-                <UserMenu />
-              ) : (
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="px-4 py-2 text-sm font-medium text-white/90 hover:text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-colors"
+              {/* Auth Button - always on right */}
+              <div className="ml-auto flex-shrink-0">
+                {status === 'authenticated' && session ? (
+                  <UserMenu />
+                ) : (
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="px-4 py-2 text-sm font-medium text-white/90 hover:text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-colors"
+                  >
+                    Sign in
+                  </button>
+                )}
+              </div>
+            </div>
+          </div >
+        </header >
+      )}
+
+      {/* Main Content Area */}
+      {isMobile ? (
+        /* Mobile: fixed viewport - step bar on top, canvas fills, controls in the thumb zone */
+        <main
+          className="relative flex-1 min-h-0 flex flex-col px-2 pb-2 gap-2 z-10"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.25rem)' }}
+        >
+          <MobileTopBar
+            projects={userProjects}
+            onSelectProject={handleSelectProject}
+            onCreateNew={createProject}
+            onDeleteProject={deleteProject}
+            maxProjects={maxProjects}
+          />
+
+          <div className="flex-1 min-h-0 relative flex items-center justify-center overflow-hidden bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 shadow-2xl">
+            {renderMainContent()}
+          </div>
+
+          <MobileControls />
+        </main>
+      ) : (
+        <main className="relative p-1 sm:p-4 flex-grow">
+          {/* Reddit Announcement Banner */}
+          {!redditBannerDismissed && (
+            <div className="flex items-center justify-center gap-3 mx-auto mb-3 px-4 py-2.5 rounded-full bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] max-w-fit">
+              <ImReddit className="text-[var(--pink)] text-lg flex-shrink-0" />
+              <span className="text-white/70 text-sm">
+                <span className="font-medium text-white/90">New!</span>{' '}
+                Join{' '}
+                <a
+                  href="https://www.reddit.com/r/DicePortraits"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--pink)] hover:underline font-medium"
                 >
-                  Sign in
-                </button>
+                  r/DicePortraits
+                </a>
+                {' '}— share your builds & see what others are creating
+              </span>
+              <button
+                onClick={() => {
+                  setRedditBannerDismissed(true)
+                  localStorage.setItem('redditBannerDismissed', 'true')
+                }}
+                className="text-white/30 hover:text-white/60 transition-colors flex-shrink-0 p-0.5"
+                aria-label="Dismiss"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {/* Center: Stepper */}
+          <div className="flex justify-center items-center mb-4">
+            <DiceStepper />
+          </div>
+
+          {/* Step Content */}
+          <div className="w-full mx-auto px-4 flex flex-row gap-6 items-stretch justify-center h-auto min-h-[calc(100vh-180px)]">
+            {/* LEFT PANEL AREA - Sidebar */}
+            <div className="flex-shrink-0 flex flex-col w-[350px] min-w-[350px] max-w-[350px] min-h-[650px] max-h-[650px] [@media(min-height:800px)]:max-h-[750px] [@media(min-height:900px)]:max-h-[850px] bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+              {step === 'upload' && <UploaderPanel />}
+
+              {step === 'crop' && <CropperPanel />}
+
+              {step === 'tune' && <TunerPanel />}
+
+              {step === 'build' && (
+                <BuilderPanel />
               )}
+            </div>
+
+            {/* MAIN CONTENT AREA */}
+            <div className="flex items-center justify-center relative flex-grow w-auto min-w-[400px] max-w-[850px] min-h-[650px] max-h-[650px] [@media(min-height:800px)]:max-h-[750px] [@media(min-height:900px)]:max-h-[850px] overflow-hidden bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+              {renderMainContent()}
             </div>
           </div>
 
-          {/* Project name - absolutely positioned center on desktop, below logo on mobile */}
-          <div className="sm:absolute sm:left-1/2 sm:top-4 sm:transform sm:-translate-x-1/2 mt-3 sm:mt-0 flex justify-center py-2">
-            {session?.user && (
-              <ProjectSelector
-                projects={userProjects}
-                onSelectProject={async (projectId) => {
-                  const project = userProjects.find(p => p.id === projectId)
-                  if (!project) return
-
-                  // Push any pending autosave to the current project before switching
-                  try {
-                    await flushSave()
-                  } catch (err) {
-                    console.error('Failed to auto-save before switch:', err)
-                  }
-
-                  loadProject(project)
-                }}
-                onCreateNew={createProject}
-                onDeleteProject={deleteProject}
-                maxProjects={maxProjects}
-              />
-            )}
-          </div>
-        </div >
-      </header >
-
-      {/* Main Content Area */}
-      < main className="relative p-1 sm:p-4 flex-grow" >
-        {/* Reddit Announcement Banner */}
-        {!redditBannerDismissed && (
-          <div className="flex items-center justify-center gap-3 mx-auto mb-3 px-4 py-2.5 rounded-full bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] max-w-fit">
-            <ImReddit className="text-[var(--pink)] text-lg flex-shrink-0" />
-            <span className="text-white/70 text-sm">
-              <span className="font-medium text-white/90">New!</span>{' '}
-              Join{' '}
-              <a
-                href="https://www.reddit.com/r/DicePortraits"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[var(--pink)] hover:underline font-medium"
-              >
-                r/DicePortraits
-              </a>
-              {' '}— share your builds & see what others are creating
-            </span>
-            <button
-              onClick={() => {
-                setRedditBannerDismissed(true)
-                localStorage.setItem('redditBannerDismissed', 'true')
-              }}
-              className="text-white/30 hover:text-white/60 transition-colors flex-shrink-0 p-0.5"
-              aria-label="Dismiss"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        )}
-
-        {/* Center: Stepper */}
-        < div className="flex justify-center items-center mb-4" >
-          {/* Stepper */}
-          < DiceStepper />
-        </div >
-
-        {/* Step Content */}
-        {/* Step Content */}
-        <div className="w-full mx-auto px-0 sm:px-4 flex flex-col lg:flex-row gap-6 items-stretch justify-center h-auto min-h-[calc(100vh-180px)]">
-          {/* LEFT PANEL AREA - Stacked on mobile, Sidebar on desktop */}
-          <div className="flex-shrink-0 flex flex-col w-full lg:w-[350px] lg:min-w-[350px] lg:max-w-[350px] min-h-0 lg:min-h-[650px] max-h-none lg:max-h-[650px] lg:[@media(min-height:800px)]:max-h-[750px] lg:[@media(min-height:900px)]:max-h-[850px] bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl order-2 lg:order-1">
-            {step === 'upload' && <UploaderPanel />}
-
-            {step === 'crop' && <CropperPanel />}
-
-            {step === 'tune' && <TunerPanel />}
-
-            {step === 'build' && (
-              <BuilderPanel />
-            )}
-          </div>
-
-          {/* MAIN CONTENT AREA - Top on mobile, Main on desktop */}
-          <div className="flex items-center justify-center relative w-full lg:flex-grow lg:w-auto min-w-0 lg:min-w-[400px] max-w-full lg:max-w-[850px] h-[50vh] lg:h-auto lg:min-h-[650px] lg:max-h-[650px] lg:[@media(min-height:800px)]:max-h-[750px] lg:[@media(min-height:900px)]:max-h-[850px] overflow-hidden bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-4 lg:p-6 shadow-2xl order-1 lg:order-2">
-            {renderMainContent()}
-          </div>
-        </div>
-
-      </main >
+        </main>
+      )}
 
       {/* Auth Modal */}
       < AuthModal
@@ -436,8 +458,8 @@ function EditorContent() {
       <ProFeatureModal />
       <CommissionModal />
 
-      {/* Footer */}
-      <Footer />
+      {/* Footer - desktop only; the mobile shell is a fixed viewport */}
+      {!isMobile && <Footer />}
     </div >
   )
 }

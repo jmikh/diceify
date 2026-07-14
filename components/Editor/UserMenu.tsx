@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { devError } from '@/lib/utils/debug'
+import { openBillingPortal } from '@/lib/utils/billing'
+import { PlanType } from '@/lib/subscription'
+import PlanBadge from '@/components/PlanBadge'
 
 // Avatar + account dropdown for the editor header (assumes an authenticated session)
 export default function UserMenu() {
@@ -26,7 +29,7 @@ export default function UserMenu() {
 
     if (!session?.user) return null
 
-    const planType = session.user.planType || 'explorer'
+    const planType = (session.user.planType as PlanType) || 'explorer'
     const subStatus = session.user.subscriptionStatus
     const expiresAt = session.user.subscriptionExpiresAt
 
@@ -43,31 +46,6 @@ export default function UserMenu() {
         } else if (planType === 'studio' && subStatus === 'canceled') {
             // Canceled Studio shows expiration date
             expirationText = isExpired ? 'Expired' : `Expires on ${formattedDate}`
-        }
-    }
-
-    const handleManageSubscription = async () => {
-        try {
-            const response = await fetch('/api/stripe/portal', { method: 'POST' })
-            const data = await response.json()
-            if (data.url) {
-                window.location.href = data.url
-            }
-        } catch (error) {
-            console.error('Failed to open billing portal:', error)
-        }
-    }
-
-    const getPlanBadge = () => {
-        switch (planType) {
-            case 'lifetime':
-                return <span className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/30">LIFETIME</span>
-            case 'studio':
-                return <span className="px-1.5 py-0.5 rounded-full bg-pink-500/20 text-pink-400 text-[10px] font-bold border border-pink-500/30">STUDIO</span>
-            case 'creator':
-                return <span className="px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30">CREATOR PASS</span>
-            default:
-                return <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 text-[10px] font-bold border border-white/20">EXPLORER</span>
         }
     }
 
@@ -110,7 +88,7 @@ export default function UserMenu() {
                             </div>
                             <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
                                 {session.user.email}
-                                {getPlanBadge()}
+                                <PlanBadge planType={planType} />
                             </div>
                             {expirationText && (
                                 <div className={`text-xs mt-1.5 ${subStatus === 'canceled' ? 'text-orange-400' : 'text-gray-500'}`}>
@@ -123,7 +101,7 @@ export default function UserMenu() {
                         {/* Manage subscription for Studio users */}
                         {planType === 'studio' && subStatus !== 'canceled' && (
                             <button
-                                onClick={handleManageSubscription}
+                                onClick={openBillingPortal}
                                 className="w-full px-4 py-2 text-sm text-left text-white/90 hover:text-white hover:bg-white/10 transition-colors border-b border-white/5"
                             >
                                 Manage subscription

@@ -1,0 +1,84 @@
+.slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    /* Track background is handled by inline style */
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ec4899;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
+    transform: translateY(-30%);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease;
+    margin-top: 0;
+}
+
+.slider::-webkit-slider-thumb:hover {
+    transform: translateY(-30%) scale(1.1);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.6);
+    background: #ec4899;
+}
+
+/* Firefox */
+.slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: #ec4899;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease;
+}
+
+.slider::-moz-range-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.6);
+    background: #ec4899;
+}
+
+.slider::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 4px;
+    cursor: pointer;
+    border-radius: 999px;
+}
+
+.slider::-moz-range-track {
+    width: 100%;
+    height: 4px;
+    cursor: pointer;
+    border-radius: 999px;
+}
+
+/* Large (touch) variant - bigger thumb and track for finger dragging */
+.sliderLg::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+    transform: translateY(-38%);
+}
+
+.sliderLg::-webkit-slider-thumb:hover {
+    transform: translateY(-38%) scale(1.05);
+}
+
+.sliderLg::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+}
+
+.sliderLg::-webkit-slider-runnable-track {
+    height: 6px;
+}
+
+.sliderLg::-moz-range-track {
+    height: 6px;
+}

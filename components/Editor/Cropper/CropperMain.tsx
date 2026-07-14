@@ -55,13 +55,13 @@ export default function CropperMain({
         // Adaptive sizing based on screen width
         const isMobile = windowSize.width < 1024
 
-        // On mobile, sidebar is stacked (or hidden), so we have full width
+        // On mobile the cropper fills the screen, minus small shell padding
         // On desktop, we subtract sidebar (350) + gap (24) + padding (32)
-        const sidebarOffset = isMobile ? 48 : (350 + 24 + 32)
+        const sidebarOffset = isMobile ? 40 : (350 + 24 + 32)
 
         const availableWidth = Math.min(900, windowSize.width - sidebarOffset)
-        // On mobile, give it more height relative to screen, adjusting for stacked panels
-        const verticalOffset = isMobile ? 300 : 180
+        // Mobile: step bar + bottom toolbar; desktop: header + stepper
+        const verticalOffset = 180
         const containerHeight = Math.max(300, Math.min(800, windowSize.height - verticalOffset))
 
         const availableHeight = containerHeight - 32

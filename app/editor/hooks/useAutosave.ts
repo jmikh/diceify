@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { useEditorStore, matchesBuildBaseline } from '@/lib/store/useEditorStore'
-import { cropImage } from '@/lib/utils/image'
 import { devLog, devError } from '@/lib/utils/debug'
 
 // ---------------------------------------------------------------------------
@@ -213,12 +212,8 @@ export function hydrateFromLocalDraft(): boolean {
     }
     if (progress) store.setBuildProgress({ x: progress.x || 0, y: progress.y || 0 })
 
-    // The cropped image is derived state — regenerate it for tune/build steps
-    if (image && snap.cropParams && (snap.step === 'tune' || snap.step === 'build')) {
-        cropImage(image, snap.cropParams)
-            .then(store.setCroppedImage)
-            .catch(err => devError('[AUTOSAVE] Failed to regenerate crop:', err))
-    }
+    // The cropped image is derived state that the dice pipeline
+    // (useDiceGeneration) regenerates automatically
 
     devLog('[AUTOSAVE] Restored local draft')
     markSnapshotClean()

@@ -3,11 +3,13 @@
 import { devLog } from '@/lib/utils/debug'
 import { useState, useEffect, useRef, useCallback, useMemo, memo, type MouseEvent } from 'react'
 import { animate } from 'motion'
-import { Plus, Minus } from 'lucide-react'
+import { useGesture } from '@use-gesture/react'
+import { Plus, Minus, Loader2 } from 'lucide-react'
 import { DiceSVGRenderer } from '@/lib/dice/svg-renderer'
 import { theme } from '@/lib/theme'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 import { useBuildNavigation } from './useBuildNavigation'
+import { useWakeLock } from '@/app/editor/hooks/useWakeLock'
 import BuilderLimitToast from './BuilderLimitToast'
 
 // --- BuildViewer Component (Internal) ---
@@ -44,13 +46,12 @@ const BuildViewer = memo(function BuildViewer() {
 
     // Track viewBox with ref only - no React state to avoid re-renders
     const viewBoxRef = useRef(`0 0 ${totalCols} ${totalRows}`) // Initial fallback
+    const initializedRef = useRef(false) // First buildZoom applies the viewBox without animating
     const lastViewXRef = useRef<number | null>(null) // Track last viewX to enable free movement
-    const wrapperRef = useRef<HTMLDivElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const svgRef = useRef<SVGSVGElement>(null)
     const animationRef = useRef<any>(null)
-    const [containerDimensions, setContainerDimensions] = useState({ width: 600, height: 600 })
-    const [squareSize, setSquareSize] = useState<number | null>(null)
+    const [containerDimensions, setContainerDimensions] = useState<{ width: number; height: number } | null>(null)
 
     // Window of cells currently present in the DOM (inclusive bounds, SVG rows)
     const renderedWindowRef = useRef<{ x0: number; x1: number; y0: number; y1: number } | null>(null)
@@ -97,32 +98,33 @@ const BuildViewer = memo(function BuildViewer() {
 
     // Calculate and animate viewBox transition
     const buildZoom = useCallback(() => {
+        // Wait for the container to be measured so the viewBox can match its aspect ratio
+        if (!containerDimensions) return
+
         // Panning threshold configuration
-        // SELECTOR_RESET_POSITION: Where the selector snaps to after panning (0.25 = 25% from left)
-        // SELECTOR_PAN_THRESHOLD: When the selector triggers a pan (0.75 = 75% from left)
+        // SELECTOR_RESET_POSITION: Where the selector snaps to after panning (0.15 = 15% from left)
+        // SELECTOR_PAN_THRESHOLD: When the selector triggers a pan (0.85 = 85% from left)
         const SELECTOR_RESET_POSITION = 0.15
         const SELECTOR_PAN_THRESHOLD = 0.85
 
-        // Calculate view dimensions - always square (1:1 aspect ratio) for consistent display
-        let viewWidth = Math.min(zoomLevel, totalCols)
-        let viewHeight = viewWidth // Keep square
-
-        // Adjust if either dimension exceeds grid bounds
-        if (viewHeight > totalRows) {
-            viewHeight = totalRows
-            viewWidth = viewHeight
+        // View dimensions match the container's aspect ratio so the SVG fills it
+        // exactly (zoomLevel = number of dice shown horizontally)
+        const aspect = containerDimensions.width / containerDimensions.height
+        let viewWidth = Math.max(3, Math.min(zoomLevel, totalCols))
+        let viewHeight = viewWidth / aspect
+        if (viewHeight < 3) {
+            viewHeight = 3
+            viewWidth = viewHeight * aspect
         }
-
-        // Ensure minimum view size
-        viewWidth = Math.max(3, viewWidth)
-        viewHeight = Math.max(3, viewHeight)
 
         // Convert our coordinate system to SVG coordinates
         const svgY = totalRows - 1 - currentY
 
+        const edgePadding = 0.1 // Extra space so highlights aren't cut off
+        const padding = 0.5 // Keep the selected dice at least this far from the view edge
+
         // Calculate position to show current dice
         // Only pan when selector reaches threshold or goes past left edge (0%)
-        const edgePadding = 0.1 // Extra space so highlights aren't cut off
         let viewX: number
 
         if (lastViewXRef.current === null) {
@@ -132,11 +134,8 @@ const BuildViewer = memo(function BuildViewer() {
             // Calculate where the selector is relative to current view
             const relativeX = (currentX - lastViewXRef.current) / viewWidth
 
-            if (relativeX >= SELECTOR_PAN_THRESHOLD) {
-                // Selector reached right edge threshold, pan so it's back at reset position
-                viewX = currentX - viewWidth * SELECTOR_RESET_POSITION
-            } else if (relativeX < 0) {
-                // Selector went past left edge, pan so it's at reset position
+            if (relativeX >= SELECTOR_PAN_THRESHOLD || relativeX < 0) {
+                // Selector crossed the right threshold or left edge, pan so it's back at reset position
                 viewX = currentX - viewWidth * SELECTOR_RESET_POSITION
             } else {
                 // Selector is within bounds, keep grid in place
@@ -146,26 +145,39 @@ const BuildViewer = memo(function BuildViewer() {
 
         let viewY = svgY - viewHeight * 0.6
 
-        // Clamp to grid boundaries with extra padding for highlights
-        if (viewX < -edgePadding) viewX = -edgePadding
-        if (viewX + viewWidth > totalCols + edgePadding) viewX = totalCols + edgePadding - viewWidth
-        if (viewY < -edgePadding) viewY = -edgePadding
-        if (viewY + viewHeight > totalRows + edgePadding) viewY = totalRows + edgePadding - viewHeight
+        // Per axis: if the whole grid fits inside the view, center it; otherwise
+        // clamp to the grid boundaries and make sure the selected dice stays visible
+        if (viewWidth >= totalCols + 2 * edgePadding) {
+            viewX = (totalCols - viewWidth) / 2
+        } else {
+            viewX = Math.min(Math.max(viewX, -edgePadding), totalCols + edgePadding - viewWidth)
+            if (currentX < viewX + padding) viewX = Math.max(-edgePadding, currentX - padding)
+            if (currentX >= viewX + viewWidth - padding) viewX = Math.min(totalCols + edgePadding - viewWidth, currentX - viewWidth + 1 + padding)
+        }
 
-        // Remember this viewX for next time
+        if (viewHeight >= totalRows + 2 * edgePadding) {
+            viewY = (totalRows - viewHeight) / 2
+        } else {
+            viewY = Math.min(Math.max(viewY, -edgePadding), totalRows + edgePadding - viewHeight)
+            if (svgY < viewY + padding) viewY = Math.max(-edgePadding, svgY - padding)
+            if (svgY >= viewY + viewHeight - padding) viewY = Math.min(totalRows + edgePadding - viewHeight, svgY - viewHeight + 1 + padding)
+        }
+
+        // Remember where the view settled for the pan-threshold logic next time
         lastViewXRef.current = viewX
-
-        // Ensure current dice is visible with some padding
-        const padding = 0.5
-        if (currentX < viewX + padding) viewX = Math.max(-edgePadding, currentX - padding)
-        if (currentX >= viewX + viewWidth - padding) viewX = Math.min(totalCols + edgePadding - viewWidth, currentX - viewWidth + 1 + padding)
-        if (svgY < viewY + padding) viewY = Math.max(-edgePadding, svgY - padding)
-        if (svgY >= viewY + viewHeight - padding) viewY = Math.min(totalRows + edgePadding - viewHeight, svgY - viewHeight + 1 + padding)
 
         // Make sure the dice for the target view exist in the DOM before panning there
         ensureRendered(viewX, viewY, viewWidth, viewHeight)
 
         const newViewBox = `${viewX} ${viewY} ${viewWidth} ${viewHeight}`
+
+        // First measured layout: apply directly, there's nothing meaningful to animate from
+        if (!initializedRef.current) {
+            initializedRef.current = true
+            viewBoxRef.current = newViewBox
+            svgRef.current?.setAttribute('viewBox', newViewBox)
+            return
+        }
 
         // Parse current viewBox values from ref to avoid dependency cycle
         const currentValues = viewBoxRef.current.split(' ').map(Number)
@@ -228,102 +240,44 @@ const BuildViewer = memo(function BuildViewer() {
                 }
             }
         )
-    }, [currentX, currentY, totalRows, totalCols, zoomLevel, containerDimensions.width, containerDimensions.height, ensureRendered])
-
-    // Initial setup effect - run once on mount
-    useEffect(() => {
-        // Calculate initial viewBox without animation
-        // Needs currentX and currentY which are now from hook, so they are available immediately.
-        // We can just rely on the main zoom effect, but need to initialize viewBoxRef correctly first time.
-        // Actually, since buildZoom has dependencies on currentX, currentY, it will run on mount/update.
-        // But to avoid animation from 0 0 0 0, we should set viewBoxRef to a reasonable start before first render if possible.
-        // However, viewBoxRef is init with 0 0 totalCols totalRows.
-
-        // Let's just manually trigger a calculation without animation for the very first frame if needed, or just let it animate.
-        // The original code had a separate effect for initial setup.
-
-        // Calculate initial viewBox without animation - use same square aspect ratio as buildZoom
-        let viewWidth = Math.min(zoomLevel, totalCols)
-        let viewHeight = viewWidth // Keep square
-
-        if (viewHeight > totalRows) {
-            viewHeight = totalRows
-            viewWidth = viewHeight
-        }
-
-        viewWidth = Math.max(3, viewWidth)
-        viewHeight = Math.max(3, viewHeight)
-
-        const svgY = totalRows - 1 - currentY
-        let viewX = currentX - viewWidth * 0.25
-        let viewY = svgY - viewHeight * 0.75
-
-        const edgePadding = 0.1
-        if (viewX < -edgePadding) viewX = -edgePadding
-        if (viewX + viewWidth > totalCols + edgePadding) viewX = totalCols + edgePadding - viewWidth
-        if (viewY < -edgePadding) viewY = -edgePadding
-        if (viewY + viewHeight > totalRows + edgePadding) viewY = totalRows + edgePadding - viewHeight
-
-        const padding = 0.5
-        if (currentX < viewX + padding) viewX = Math.max(-edgePadding, currentX - padding)
-        if (currentX >= viewX + viewWidth - padding) viewX = Math.min(totalCols + edgePadding - viewWidth, currentX - viewWidth + 1 + padding)
-        if (svgY < viewY + padding) viewY = Math.max(-edgePadding, svgY - padding)
-        if (svgY >= viewY + viewHeight - padding) viewY = Math.min(totalRows + edgePadding - viewHeight, svgY - viewHeight + 1 + padding)
-
-        const initialViewBox = `${viewX} ${viewY} ${viewWidth} ${viewHeight}`
-        viewBoxRef.current = initialViewBox
-
-        // Set initial viewBox directly on the SVG element after it mounts
-        setTimeout(() => {
-            if (svgRef.current) {
-                svgRef.current.setAttribute('viewBox', initialViewBox)
-            }
-        }, 0)
-    }, []) // Run only once on mount
+    }, [currentX, currentY, totalRows, totalCols, zoomLevel, containerDimensions, ensureRendered])
 
     // Regenerate the rendered window when the grid itself changes
     useEffect(() => {
         renderedWindowRef.current = null
+        if (!initializedRef.current) return
         const [vx, vy, vw, vh] = viewBoxRef.current.split(' ').map(Number)
         if (![vx, vy, vw, vh].some(isNaN)) {
             ensureRendered(vx, vy, vw, vh)
         }
     }, [grid, ensureRendered])
 
-    // Track wrapper dimensions and calculate square size
+    // Track container dimensions so the viewBox aspect ratio can follow them
     useEffect(() => {
-        if (!wrapperRef.current) return
+        if (!containerRef.current) return
 
-        const calculateSquareSize = () => {
-            if (!wrapperRef.current) return
-            const rect = wrapperRef.current.getBoundingClientRect()
-            // Account for padding (p-4 = 16px on each side = 32px total)
-            const availableWidth = rect.width - 32
-            const availableHeight = rect.height - 32
-            // Use the smaller dimension to ensure a square that fits
-            const size = Math.max(320, Math.min(availableWidth, availableHeight))
-            setSquareSize(size)
-            setContainerDimensions({ width: size, height: size })
+        const measure = () => {
+            if (!containerRef.current) return
+            const rect = containerRef.current.getBoundingClientRect()
+            if (rect.width > 0 && rect.height > 0) {
+                setContainerDimensions(prev =>
+                    prev?.width === rect.width && prev?.height === rect.height
+                        ? prev
+                        : { width: rect.width, height: rect.height }
+                )
+            }
         }
 
-        // Initial calculation
-        calculateSquareSize()
-
-        const resizeObserver = new ResizeObserver(() => {
-            calculateSquareSize()
-        })
-
-        resizeObserver.observe(wrapperRef.current)
-
-        return () => {
-            resizeObserver.disconnect()
-        }
+        measure()
+        const resizeObserver = new ResizeObserver(measure)
+        resizeObserver.observe(containerRef.current)
+        return () => resizeObserver.disconnect()
     }, [])
 
-    // Rebuild viewBox when container dimensions or zoom changes
+    // Rebuild viewBox when position, container dimensions or zoom change
     useEffect(() => {
         buildZoom()
-    }, [buildZoom, containerDimensions, zoomLevel])
+    }, [buildZoom])
 
 
     // FPS monitoring
@@ -348,6 +302,27 @@ const BuildViewer = memo(function BuildViewer() {
         animationId = requestAnimationFrame(measureFPS)
         return () => cancelAnimationFrame(animationId)
     }, [showDebug])
+
+    // Pinch-to-zoom (touch): pinching out shows fewer dice = zooming in.
+    // Quantized to steps of 2 (like the buttons) so the viewBox animation
+    // isn't re-triggered on every gesture frame.
+    const zoomLevelRef = useRef(zoomLevel)
+    useEffect(() => {
+        zoomLevelRef.current = zoomLevel
+    }, [zoomLevel])
+    const pinchStartZoomRef = useRef(zoomLevel)
+
+    useGesture({
+        onPinch: ({ first, movement: [scale] }) => {
+            if (first) pinchStartZoomRef.current = zoomLevelRef.current
+            const target = Math.round(pinchStartZoomRef.current / scale / 2) * 2
+            const next = Math.min(20, Math.max(4, target))
+            if (next !== zoomLevelRef.current) setZoomLevel(next)
+        }
+    }, {
+        target: containerRef,
+        eventOptions: { passive: false }
+    })
 
     // Dice cell currently under the mouse (SVG coordinates), for the hover indicator
     const [hoverCell, setHoverCell] = useState<{ x: number; svgY: number } | null>(null)
@@ -428,16 +403,18 @@ const BuildViewer = memo(function BuildViewer() {
           scrollbar-width: none;
         }
       `}</style>
-            <div ref={wrapperRef} className="w-full h-full flex items-center justify-center p-4">
+            <div className="w-full h-full flex items-center justify-center p-4">
                 <div
                     ref={containerRef}
-                    className="relative backdrop-blur-xl rounded-2xl border overflow-hidden"
+                    className="relative w-full h-full backdrop-blur-xl rounded-2xl border overflow-hidden"
                     style={{
                         backgroundColor: theme.colors.glass.medium,
                         borderColor: theme.colors.glass.border,
-                        // Explicitly set square size calculated by JS
-                        width: squareSize ? `${squareSize}px` : '320px',
-                        height: squareSize ? `${squareSize}px` : '320px',
+                        // Floor keeps the builder usable on very small windows
+                        minWidth: 280,
+                        minHeight: 280,
+                        // Keep pinch gestures for the dice grid, not browser zoom/scroll
+                        touchAction: 'none',
                     }}
                 >
                     {/* SVG Container - viewBox animates smoothly over 1 second */}
@@ -720,6 +697,23 @@ const BuildViewer = memo(function BuildViewer() {
 // --- BuilderMain Component ---
 
 export default function BuilderMain() {
+    // Building with physical dice takes a while - don't let the screen sleep
+    useWakeLock()
+
+    const diceGrid = useEditorStore(state => state.diceGrid)
+
+    // The grid is regenerated by the dice pipeline after a restore -
+    // show a spinner until it lands (also keeps BuildViewer's hooks from
+    // ever mounting without a grid)
+    if (!diceGrid) {
+        return (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: theme.colors.accent.pink }} />
+                <span className="text-sm" style={{ color: theme.colors.text.secondary }}>Preparing your build...</span>
+            </div>
+        )
+    }
+
     return (
         <div className="relative w-full h-full">
             <BuilderLimitToast />

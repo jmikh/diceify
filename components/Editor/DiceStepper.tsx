@@ -9,7 +9,7 @@ interface DiceStepperProps {
   vertical?: boolean
 }
 
-const steps: { id: WorkflowStep; label: string }[] = [
+export const steps: { id: WorkflowStep; label: string }[] = [
   { id: 'upload', label: 'Upload' },
   { id: 'crop', label: 'Crop' },
   { id: 'tune', label: 'Tune' },
