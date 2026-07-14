@@ -246,6 +246,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       processedImageUrl: null,
       diceGrid: null,
       cropParams: null,
+      cropRotation: 0,
+      selectedRatio: '1:1',
       buildBaseline: null,
       diceStats: DEFAULT_DICE_STATS,
       buildProgress: { x: 0, y: 0 }
