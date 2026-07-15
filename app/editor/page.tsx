@@ -24,7 +24,7 @@ import BuilderMain from '@/components/Editor/Builder/BuilderMain'
 import ProjectSelector from '@/components/Editor/ProjectSelector'
 import ProjectSelectionModal from '@/components/ProjectSelectionModal'
 import DiceStepper from '@/components/Editor/DiceStepper'
-import MobileTopBar from '@/components/Editor/Mobile/MobileTopBar'
+import MobileBottomBar from '@/components/Editor/Mobile/MobileBottomBar'
 import MobileControls from '@/components/Editor/Mobile/MobileControls'
 import Logo from '@/components/Logo'
 import AuthModal from '@/components/AuthModal'
@@ -336,24 +336,27 @@ function EditorContent() {
 
       {/* Main Content Area */}
       {isMobile ? (
-        /* Mobile: fixed viewport - step bar on top, canvas fills, controls in the thumb zone */
+        /* Mobile: fixed viewport - canvas fills, controls and step bar together in the thumb zone */
         <main
-          className="relative flex-1 min-h-0 flex flex-col px-2 pb-2 gap-2 z-10"
-          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.25rem)' }}
+          className="relative flex-1 min-h-0 flex flex-col px-2 gap-2 z-10"
+          style={{
+            paddingTop: 'calc(env(safe-area-inset-top) + 0.25rem)',
+            paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)',
+          }}
         >
-          <MobileTopBar
+          <div className="flex-1 min-h-0 relative flex items-center justify-center overflow-hidden bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 shadow-2xl">
+            {renderMainContent()}
+          </div>
+
+          <MobileControls />
+
+          <MobileBottomBar
             projects={userProjects}
             onSelectProject={handleSelectProject}
             onCreateNew={createProject}
             onDeleteProject={deleteProject}
             maxProjects={maxProjects}
           />
-
-          <div className="flex-1 min-h-0 relative flex items-center justify-center overflow-hidden bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 shadow-2xl">
-            {renderMainContent()}
-          </div>
-
-          <MobileControls />
         </main>
       ) : (
         <main className="relative p-1 sm:p-4 flex-grow">

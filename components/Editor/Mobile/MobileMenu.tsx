@@ -14,9 +14,9 @@ import ProjectListMenu, { ProjectListMenuProps } from '@/components/Editor/Proje
 type MobileMenuProps = Omit<ProjectListMenuProps, 'onClose'>
 
 /**
- * Account menu for the mobile top bar. One button that adapts to auth
- * state: signed out it offers sign-in; signed in it holds the project
- * switcher, save status, upgrade/billing and sign-out.
+ * Account menu for the mobile bottom bar; the dropdown opens upward. One
+ * button that adapts to auth state: signed out it offers sign-in; signed in
+ * it holds the project switcher, save status, upgrade/billing and sign-out.
  */
 export default function MobileMenu(projectProps: MobileMenuProps) {
     const { data: session } = useSession()
@@ -47,7 +47,7 @@ export default function MobileMenu(projectProps: MobileMenuProps) {
                     <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
 
                     <div
-                        className="absolute top-full right-0 mt-2 w-[19rem] max-w-[calc(100vw-1.5rem)] bg-[#0a0014]/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 overflow-hidden z-50 flex flex-col"
+                        className="absolute bottom-full right-0 mb-2 w-[19rem] max-w-[calc(100vw-1.5rem)] bg-[#0a0014]/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 overflow-hidden z-50 flex flex-col"
                         style={{ maxHeight: 'calc(100dvh - 8rem)' }}
                     >
                         {user ? (

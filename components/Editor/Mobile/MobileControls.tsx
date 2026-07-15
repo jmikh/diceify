@@ -16,10 +16,7 @@ export default function MobileControls() {
     if (step === 'upload') return null
 
     return (
-        <div
-            className="flex-shrink-0"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-        >
+        <div className="flex-shrink-0">
             {step === 'crop' && <MobileCropControls />}
             {step === 'tune' && <MobileTuneControls />}
             {step === 'build' && <MobileBuildControls />}

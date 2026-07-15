@@ -8,14 +8,16 @@ import ResetProgressModal from '@/components/ResetProgressModal'
 import MobileMenu from './MobileMenu'
 import { ProjectListMenuProps } from '@/components/Editor/ProjectListMenu'
 
-type MobileTopBarProps = Omit<ProjectListMenuProps, 'onClose'>
+type MobileBottomBarProps = Omit<ProjectListMenuProps, 'onClose'>
 
 /**
- * Mobile step navigation bar: back arrow, current step name with progress
- * dots, account menu and the primary "Next" action. Replaces the desktop
- * header + stepper and the per-panel navigation buttons on small screens.
+ * Mobile step navigation bar, pinned at the bottom of the editor so all
+ * controls stay in the thumb zone: back arrow, current step name with
+ * progress dots, account menu and the primary "Next" action. Replaces the
+ * desktop header + stepper and the per-panel navigation buttons on small
+ * screens.
  */
-export default function MobileTopBar(projectProps: MobileTopBarProps) {
+export default function MobileBottomBar(projectProps: MobileBottomBarProps) {
     const step = useEditorStore(state => state.step)
     const originalImage = useEditorStore(state => state.originalImage)
     const buildProgress = useEditorStore(state => state.buildProgress)
