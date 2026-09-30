@@ -217,23 +217,29 @@ createDefaultDocument(); migrateDocument(raw: unknown): ProjectDocument   // leg
 fromLegacyProjectRow(row): ProjectDocument   // Prisma columns → v1 (used by migration script) ; nearestAspectRatio(w,h); scaleCrop(crop, factor)
 documentStats(doc): { totalDice, completedDice }   // width*height ; y*width+x clamped
 documentsEqual(a,b); cropParamsEqual(a,b,0.01); progressApplies(doc, baseline)
+class DocumentError { code: 'INVALID' | 'UNSUPPORTED_VERSION' }   // thrown by migrateDocument / fromLegacyProjectRow
 ```
 
-Zod schema for the document lives next to it (`document.schema.ts`, zod is allowed in core as its only dep;
-validated on load and before save).
+Zod schema for the document lives next to it (`document.schema.ts`, zod `^4` is allowed in core as its only dep;
+validated on load and before save). `DICE_PARAM_BOUNDS` (numRows 20..120, contrast 0..100, gamma 0.5..1.5,
+edgeSharpening 0..100 — the real slider ranges) is exported from it for the tune sliders (B3). A current v1 document
+is validated strictly (throws); legacy inputs (draft snapshot, Prisma row) are normalized first — numbers clamped
+into the bounds, unknown color modes → 'both', `upload` step → 'crop' — so an old draft never fails to load.
 
 ### Entitlements (`core/billing/entitlements.ts`, mirrored by SQL `effective_plan`/`project_limit`)
 
 ```ts
 type Plan = 'explorer'|'creator'|'studio'|'lifetime'
 const PRO_SUBSCRIPTION_STATUSES = new Set(['active','trialing','past_due'])
-interface BillingState { plan; planExpiresAt; subscriptionStatus; currentPeriodEnd; cancelAt }   // profile columns, ISO strings
+interface BillingState { plan; planExpiresAt; subscriptionStatus; currentPeriodEnd; cancelAt; hasStripeCustomer: boolean }   // profile columns, ISO strings
 interface Entitlements { plan; isPro; projectLimit: number; builderRowLimit: number|null /* null = unlimited, never Infinity */;
                          hasSvgExport: boolean; accessUntil: string|null; cancelAt: string|null; renews: boolean; canManageBilling: boolean }
-PLAN_LIMITS = { explorer:{1,5,false}, creator:{1,null,true}, studio:{5,null,true}, lifetime:{5,null,true} }
-deriveEntitlements(b: BillingState, now: Date): Entitlements     // priority: lifetime → studio(PRO status) → creator(unexpired) → explorer
+PLAN_LIMITS = { explorer:{1,5,false}, creator:{1,null,true}, studio:{5,null,true}, lifetime:{5,null,true} }   // in core/billing/plans.ts, with PRICING + CheckoutPlan
+deriveEntitlements(b: BillingState, now: Date): Entitlements     // priority: lifetime → studio(PRO status) → creator(planExpiresAt > now) → explorer
+// accessUntil: studio = cancelAt ?? currentPeriodEnd, creator = planExpiresAt, else null; renews = studio && !cancelAt;
+// canManageBilling = hasStripeCustomer (any Stripe customer may open the portal). EXPLORER_ENTITLEMENTS = signed-out default.
 ```
-`useEntitlements()` (client) = `deriveEntitlements(profileRow)`; explorer defaults when signed out. **The only gating source.**
+`useEntitlements()` (client) = `deriveEntitlements(profileRow)`; `EXPLORER_ENTITLEMENTS` when signed out. **The only gating source.**
 
 ### Billing edge functions (`supabase/functions/`)
 
@@ -265,10 +271,10 @@ deriveEntitlements(b: BillingState, now: Date): Entitlements     // priority: li
 
 - `Pixels { data: Uint8ClampedArray; width; height }` RGBA top-down. `DiceGrid { width; height; rows: Die[][] }` **row-major, `rows[y][x]`, y=0 = bottom row** (the build row number users see). `Die { face; color; rotate90? }`.
 - Pipeline: `toGrayImage` → `downsample` (exact area-average, fractional edge weights via `axisWeights`) → `sharpen` (3×3 Laplacian on the small gray image, borders copied) → per cell `mapGrayToDie` = `applyGamma` → `applyContrast` → `mapBrightnessToDie` (threshold tables exported as constants; current values preserved) → `shouldRotate` (`rotate90: true` only when rotated; key absent otherwise). Intermediate images are `Float32Array`; `computeGridSize` = `rows: numRows, cols: max(1, round(numRows * (W / H)))`.
-- `build.ts`: `buildIndex`, `positionFromIndex`, `countCompleted`, `isCompleted` (current die NOT counted; fixes the ProgressPreviewModal off-by-one), `findRun`, `findNextDiff/PrevDiff`, `nextPosition/prevPosition`, `svgRow`, `computeViewBox` (ported verbatim from BuilderMain.buildZoom), `visibleWindow`, `bufferedWindow`, `rowLimitAllows`.
-- `svg.ts`: `renderDefs`, `renderWindowSvg`, `renderGridSvg`, `renderProgressSvg`, `rasterSize` — uses `getDotPositions` once (deletes the duplicated dot math).
+- `build.ts`: `buildIndex`, `positionFromIndex`, `countCompleted`, `isCompleted` (current die NOT counted; fixes the ProgressPreviewModal off-by-one), `sameDie` (face + color; rotation ignored), `findRun`, `findNextDiff/PrevDiff` (row-local, `null` at the row end), `nextPosition/prevPosition` (`null` at the grid ends), `svgRow`/`gridRowFromSvg`, `computeViewBox({ current, cols, rows, zoomLevel, aspect, lastViewX }) → { viewBox, lastViewX }` (ported verbatim from BuilderMain.buildZoom, minus animation), `visibleWindow`, `bufferedWindow`, `windowContains` (inclusive `CellWindow` in SVG rows), `rowLimitAllows(pos, limit | null)` (rows `< limit`; "forward moves only" stays at the call site).
+- `svg.ts`: `renderDieSymbolBody`, `renderDefs`, `renderWindowSvg(grid, win)` (defs + `<use>`), `renderGridSvg(grid, { background?, width?, height? })` and `renderProgressSvg(grid, progress, { placeholderFill?, placeholderStroke?, showAll?, width?, height? })` (both full standalone `<svg>` documents sharing one wrapper; a size swaps the fill-the-box `style` for `width/height` attributes, as the old rasterizer's regex did), `rasterSize` — uses `getDotPositions` once (deletes the duplicated dot math). `renderGridSvg` without options equals the old `render` output (test-pinned).
 - Fixtures: `scripts/gen-fixtures.ts` (sharp, dev-only; portrait source is `public/images/monalisa.webp` — `public/demo-portrait.jpg` is a text placeholder) → `core/dice/__fixtures__/*.json` `{ name, width, height, rgbaBase64, params, expected: { width, height, rows: string[] } }`, one space-separated line per grid row (row 0 = bottom) with dice encoded `w3`, `b6r` (format helpers in `core/dice/__fixtures__/format.ts`). `generate.test.ts` loads every fixture and asserts equality. `core/README.md` documents every formula, summation order, orientation, schema.
-- Purity: `core/tsconfig.json` (`lib: ["es2022"]`, no DOM types), ESLint restricted globals/imports for `core/**`, `core/purity.test.ts`.
+- Purity: `core/tsconfig.json` (`lib: ["es2022"]`, no DOM types), ESLint restricted globals/imports for `core/**` plus an import allowlist for non-test core files (relative paths and `zod` only; tests may import vitest/node and, for output comparisons, legacy app modules behind a line-level disable), `core/purity.test.ts`.
 - Browser adapters (`lib/image/`): `dataUrlToPixels`, `downscaleForUpload(file, 2048, 0.85) → Blob`, `cropToPixels(src, crop, 2048)` (**the single crop path**, replaces both `cropper.getCanvas` and `cropImage`), `rasterizeSvg(svg, size, { logo? })` (dedupes useDiceGeneration + ProgressPreviewModal), `loadImage`.
 
 ### Editor state
@@ -378,4 +384,5 @@ Each step: fresh agent, own `revamp-step-N.md`, ends with `npm run typecheck && 
 
 ## Step log
 - A1 — completed 2026-09-30. Design changes: `@next/eslint-plugin-next@^15` instead of `@14` (v14 calls `context.getAncestors`, removed in ESLint 9; v15 is dev-only with no `next` peer) and `vitest@^3` instead of 4/5 (npm 11.5.1 crashes resolving vitest 4's circular optional peers; vitest 5's rolldown binding does not install) — Tooling section updated. `eslint-plugin-react-hooks@7` registered with only `rules-of-hooks`/`exhaustive-deps` (both `warn` until B2/E3). `constants.ts` had 2 importers, not 3. `package-lock.json` regenerated (was corrupt). Four pre-existing lint errors fixed mechanically (2× `let`→`const`, empty props interface/pattern in `UploadMain`).
+- A3 — completed 2026-09-30. Design changes: `renderProgressSvg` returns a full standalone `<svg>` sharing `renderGridSvg`'s wrapper (not a body fragment); `document.schema.ts` bounds follow the real sliders (numRows 20..120) and legacy inputs are clamped/normalized instead of rejected, `DICE_PARAM_BOUNDS` exported; `DocumentError` typed error; `rowLimitAllows` takes a `GridPos`; `BillingState.hasStripeCustomer` added and `canManageBilling` = that flag; `EXPLORER_ENTITLEMENTS` constant; `PRICING`/`CheckoutPlan` in `core/billing/plans.ts`; `zod@^4` (not 3); ESLint import allowlist for non-test core files — Project document, Entitlements, Dice core and Purity sections updated. Verification: typecheck 0, test 0 (10 files, 200 tests), lint 0 (0 errors, 89 pre-existing warnings), build 0.
 - A2 — completed 2026-09-30. Design changes: fixture `expected.rows` is `string[]` (one space-separated line per grid row) instead of `string[][]` — same information, ~30% smaller, and `JSON.stringify(f, null, 2)` already yields one row per line; fixtures live in `core/dice/__fixtures__/` (as in the repo layout) with a shared `format.ts`; portrait fixtures use `public/images/monalisa.webp` because `public/demo-portrait.jpg` is a 329-byte text placeholder, not an image; per-cell pipeline factored as `mapGrayToDie` and edge weights as `axisWeights` — Dice core section updated. `sharp` moved to devDependencies (npm resolved `^0.34.5`), `tsx` added, `gen-fixtures` script added.

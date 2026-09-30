@@ -58,4 +58,22 @@ export default defineConfig(
       'no-restricted-imports': ['error', { patterns: CORE_RESTRICTED_IMPORTS }],
     },
   },
+  {
+    // Core source may import only `core` (relative paths) and `zod`. Tests are exempt: they import
+    // vitest, node:* and, for output comparisons, the legacy app modules.
+    files: ['core/**/*.ts'],
+    ignores: ['core/**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: CORE_RESTRICTED_IMPORTS },
+            // Anything that is neither a relative path nor exactly `zod`.
+            { regex: '^(?!\\.{1,2}/)(?!zod$)', message: 'core may import only core (relative) and zod.' },
+          ],
+        },
+      ],
+    },
+  },
 )
