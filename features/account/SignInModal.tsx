@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
 import { X } from 'lucide-react'
 import { sendGAEvent } from '@next/third-parties/google'
 import Image from 'next/image'
 import Logo from '@/components/Logo'
+import { signInWithGoogle } from '@/lib/supabase/auth'
 
 const DEFAULT_REDIRECT = '/editor?restored=true'
 
@@ -15,6 +15,7 @@ interface SignInModalProps {
   message?: string
   /** Runs before the OAuth redirect leaves the page (the editor flushes its draft here). */
   onBeforeSignIn?: () => Promise<void> | void
+  /** Path on this origin the OAuth round trip returns to (must match the Supabase redirect allow-list). */
   redirectTo?: string
 }
 
@@ -28,20 +29,18 @@ export default function SignInModal({
 
   if (!open) return null
 
-  const handleProviderSignIn = async (provider: string) => {
+  const handleGoogleSignIn = async () => {
     setIsLoading(true)
     setError(null)
 
     try {
       await onBeforeSignIn?.()
 
-      // For OAuth providers, we must redirect to the provider's auth page
-      await signIn(provider, {
-        callbackUrl: redirectTo
-      })
-      // The page will redirect, so this code won't execute
+      // Redirects the browser to Google; nothing after this runs on success
+      await signInWithGoogle(`${window.location.origin}${redirectTo}`)
     } catch (err) {
-      setError('An unexpected error occurred.')
+      const detail = err instanceof Error && err.message ? ` (${err.message})` : ''
+      setError(`Could not start sign-in${detail}. Please try again.`)
       setIsLoading(false)
     }
   }
@@ -113,7 +112,7 @@ export default function SignInModal({
         {/* Sign in buttons */}
         <div className="w-full space-y-3 relative z-10">
           <button
-            onClick={() => handleProviderSignIn('google')}
+            onClick={handleGoogleSignIn}
             disabled={isLoading}
             className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl border border-[var(--border-glass)] bg-white/5 hover:bg-white/10 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed group"
           >

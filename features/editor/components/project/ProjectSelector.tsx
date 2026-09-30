@@ -13,7 +13,6 @@ interface ProjectSelectorProps {
   onSelectProject?: (projectId: string) => void
   onCreateNew?: (name: string) => void
   onDeleteProject?: (projectId: string) => void
-  maxProjects?: number
 }
 
 export default function ProjectSelector({
@@ -21,7 +20,6 @@ export default function ProjectSelector({
   onSelectProject,
   onCreateNew,
   onDeleteProject,
-  maxProjects = 3
 }: ProjectSelectorProps) {
   // Get state directly from Zustand instead of props
   const currentProject = useDocumentStore(state => state.name)
@@ -255,7 +253,6 @@ export default function ProjectSelector({
             onSelectProject={onSelectProject}
             onCreateNew={onCreateNew}
             onDeleteProject={onDeleteProject}
-            maxProjects={maxProjects}
             onClose={() => setShowDropdown(false)}
           />
         </div>

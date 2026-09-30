@@ -1,11 +1,9 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-
 import BackgroundOrbs from '@/components/BackgroundOrbs'
 import Footer from '@/components/Footer'
 import { useMediaQuery } from '@/lib/media-query'
-import { PLAN_LIMITS, PlanType } from '@/lib/subscription'
+import { useUser } from '@/features/account/useUser'
 
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
@@ -52,7 +50,7 @@ function LoadingScreen() {
 }
 
 export default function EditorScreen() {
-  const { data: session, status } = useSession()
+  const { status } = useUser()
 
   const projectManager = useProjectManager()
   const { projects, createProject, createProjectFromCurrent, deleteProject, loadProject } = projectManager
@@ -71,10 +69,6 @@ export default function EditorScreen() {
   // Session / URL / draft arrival sequence; flips boot to 'ready'
   useEditorBootstrap(projectManager)
 
-  // Calculate limits based on subscription plan
-  const planType = (session?.user?.planType as PlanType) || 'explorer'
-  const maxProjects = PLAN_LIMITS[planType].projectLimit
-
   // Store state
   const step = useEditorUiStore(state => state.step)
   const modal = useEditorUiStore(state => state.modal)
@@ -85,7 +79,7 @@ export default function EditorScreen() {
 
   const isMobile = useMediaQuery(MOBILE_QUERY)
 
-  // Show loading screen while initializing or session is loading
+  // Show loading screen while initializing or the auth state is unknown
   if (boot === 'booting' || status === 'loading') {
     return <LoadingScreen />
   }
@@ -110,7 +104,6 @@ export default function EditorScreen() {
     onSelectProject: handleSelectProject,
     onCreateNew: createProject,
     onDeleteProject: deleteProject,
-    maxProjects,
   }
 
   // Render main content based on current step. Steps render their own
@@ -196,7 +189,6 @@ export default function EditorScreen() {
         onDeleteProject={deleteProject}
         projects={projects}
         hasCurrentState={!!imageSrc}
-        maxProjects={maxProjects}
       />
 
       <LimitReachedModal />

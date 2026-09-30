@@ -1,8 +1,7 @@
 import { Metadata } from 'next'
 import '@/styles/editor.css'
 
-import { auth } from '@/lib/auth'
-import { SessionProvider } from 'next-auth/react'
+import { ProfileProvider } from '@/features/account/useUser'
 import { AnalyticsTracker } from '@/features/account/AnalyticsTracker'
 
 export const metadata: Metadata = {
@@ -31,41 +30,36 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function EditorLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const session = await auth()
+const webAppJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Diceify Builder",
+  "url": "https://diceify.art/editor",
+  "description": "Free online dice art builder. Upload a photo, tune contrast, and follow step-by-step placement instructions to build a real dice mosaic.",
+  "applicationCategory": "DesignApplication",
+  "operatingSystem": "Any",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD",
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Diceify",
+    "url": "https://diceify.art",
+  },
+}
 
-  const webAppJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "Diceify Builder",
-    "url": "https://diceify.art/editor",
-    "description": "Free online dice art builder. Upload a photo, tune contrast, and follow step-by-step placement instructions to build a real dice mosaic.",
-    "applicationCategory": "DesignApplication",
-    "operatingSystem": "Any",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD",
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "Diceify",
-      "url": "https://diceify.art",
-    },
-  }
-
+// Server layout (static): metadata + JSON-LD; the auth/profile state is client-side in ProfileProvider.
+export default function EditorLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider session={session}>
+    <ProfileProvider>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(webAppJsonLd) }}
       />
       {children}
-      <AnalyticsTracker user={session?.user} />
-    </SessionProvider>
+      <AnalyticsTracker />
+    </ProfileProvider>
   )
 }

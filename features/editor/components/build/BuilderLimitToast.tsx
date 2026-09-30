@@ -1,29 +1,19 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
+import { useGate } from '@/features/editor/hooks/useGate'
 import { sendGAEvent } from '@next/third-parties/google'
 
 export default function BuilderLimitToast() {
-    const { data: session } = useSession()
-    const isPro = session?.user?.isPro ?? false
+    const { ent, gate } = useGate()
 
-    // Don't show for pro users
-    if (isPro) return null
+    // Nothing to announce for an unlimited builder
+    if (ent.builderRowLimit === null) return null
 
     const handleUpgrade = () => {
         sendGAEvent('event', 'click_upgrade', {
             source: 'builder_limit_toast',
         })
-
-        // Check if logged in
-        if (!session?.user) {
-            useEditorUiStore.getState().openModal('signIn', { message: "Sign in to upgrade your account" })
-            return
-        }
-
-        // User is logged in but not pro - show upgrade modal
-        useEditorUiStore.getState().openModal('proFeature')
+        gate(false, { signInMessage: 'Sign in to upgrade your account', modal: 'proFeature' })
     }
 
     return (
@@ -42,7 +32,7 @@ export default function BuilderLimitToast() {
                 className="text-sm font-medium text-center sm:text-left"
                 style={{ color: 'var(--text-secondary)' }}
             >
-                Explorer builder limited to first 5 rows
+                Explorer builder limited to first {ent.builderRowLimit} rows
             </span>
 
             {/* Upgrade Button */}

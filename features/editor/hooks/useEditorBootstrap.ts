@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { devLog, devError } from '@/lib/utils/debug'
+import { useUser } from '@/features/account/useUser'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import { hydrateFromLocalDraft, clearLocalDraft } from './useAutosave'
@@ -15,7 +15,8 @@ type ProjectManager = Pick<ReturnType<typeof useProjectManager>, 'fetchUserProje
  * Moved as-is from the editor page; C3 rewrites the sequence on Supabase.
  */
 export function useEditorBootstrap({ fetchUserProjects, loadProject, updateURLWithProject }: ProjectManager) {
-  const { data: session, status } = useSession()
+  const { user, status } = useUser()
+  const userId = user?.id
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -28,13 +29,13 @@ export function useEditorBootstrap({ fetchUserProjects, loadProject, updateURLWi
     const projectId = searchParams.get('project')
 
     // Redirect if unauthenticated
-    if (projectId && status === 'unauthenticated') {
+    if (projectId && status === 'anon') {
       devLog('[URL] Unauthenticated user accessing project, redirecting...')
       router.replace('/editor')
       return
     }
 
-    if (projectId && session?.user?.id && !currentProjectId) {
+    if (projectId && userId && !currentProjectId) {
       devLog('[URL] Loading project from URL:', projectId)
       // Fetch and load the specific project
       fetch(`/api/projects/${projectId}`)
@@ -54,12 +55,12 @@ export function useEditorBootstrap({ fetchUserProjects, loadProject, updateURLWi
           updateURLWithProject(null)
         })
     }
-  }, [searchParams, status, session?.user?.id, currentProjectId, loadProject, updateURLWithProject, router])
+  }, [searchParams, status, userId, currentProjectId, loadProject, updateURLWithProject, router])
 
   // Handle missing project ID in URL when state is loaded (e.g. back navigation)
   useEffect(() => {
     // Only check if we're logged in and have a project loaded in state
-    if (status === 'authenticated' && currentProjectId && !searchParams.get('project')) {
+    if (status === 'authed' && currentProjectId && !searchParams.get('project')) {
       devLog('[URL] Project loaded in state but missing from URL, redirecting...')
       router.replace(`/editor?project=${currentProjectId}`)
     }
@@ -78,18 +79,18 @@ export function useEditorBootstrap({ fetchUserProjects, loadProject, updateURLWi
       hasHydratedRef.current = true
       hydrateFromLocalDraft()
       window.history.replaceState({}, '', '/editor')
-    } else if (!session?.user?.id && !currentProjectId) {
+    } else if (!userId && !currentProjectId) {
       hasHydratedRef.current = true
       hydrateFromLocalDraft()
       setBoot('ready')
     }
-  }, [status, session?.user?.id, currentProjectId, searchParams, setBoot])
+  }, [status, userId, currentProjectId, searchParams, setBoot])
 
   // Handle user login - offer to save local work, or load the most recent project
   useEffect(() => {
     if (status === 'loading') return
 
-    if (session?.user?.id && !currentProjectId) {
+    if (userId && !currentProjectId) {
       fetchUserProjects().then((projects) => {
         // Read fresh from the store: the draft may have been hydrated after
         // this effect's render (e.g. right after an OAuth redirect)
@@ -113,11 +114,11 @@ export function useEditorBootstrap({ fetchUserProjects, loadProject, updateURLWi
         devError('[LOGIN] Failed to fetch projects:', err)
         setBoot('ready')
       })
-    } else if (!session?.user?.id || currentProjectId) {
+    } else if (!userId || currentProjectId) {
       setBoot('ready')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, session?.user?.id, currentProjectId, searchParams, loadProject])
+  }, [status, userId, currentProjectId, searchParams, loadProject])
 
   // The draft has served its purpose once a project is loaded
   useEffect(() => {

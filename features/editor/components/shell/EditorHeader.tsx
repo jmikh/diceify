@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useSession } from 'next-auth/react'
 import { X } from 'lucide-react'
 import { ImReddit } from 'react-icons/im'
 import Logo from '@/components/Logo'
+import { useUser } from '@/features/account/useUser'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import UserMenu from '../account/UserMenu'
 import ProjectSelector from '../project/ProjectSelector'
@@ -21,7 +21,7 @@ const REDDIT_BANNER_KEY = 'redditBannerDismissed'
  * r/DicePortraits banner. On mobile its functions fold into the bottom bar menu.
  */
 export default function EditorHeader(projectProps: EditorHeaderProps) {
-  const { data: session, status } = useSession()
+  const { user } = useUser()
   const openModal = useEditorUiStore(state => state.openModal)
 
   const [redditBannerDismissed, setRedditBannerDismissed] = useState(() => {
@@ -48,13 +48,13 @@ export default function EditorHeader(projectProps: EditorHeaderProps) {
 
           {/* Project name - absolutely centered */}
           <div className="absolute left-1/2 top-4 transform -translate-x-1/2 py-2">
-            {session?.user && <ProjectSelector {...projectProps} />}
+            {user && <ProjectSelector {...projectProps} />}
           </div>
 
           {/* Undo/redo + auth - always on right */}
           <div className="ml-auto flex-shrink-0 flex items-center gap-4">
             <HistoryButtons />
-            {status === 'authenticated' && session ? (
+            {user ? (
               <UserMenu />
             ) : (
               <button

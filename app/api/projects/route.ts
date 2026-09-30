@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { auth } from '@/lib/api/legacy-auth' // TODO(C3): route deleted with the Prisma backend
 import { prisma } from '@/lib/prisma'
 import { devLog, devError } from '@/lib/utils/debug'
-import { canCreateProject } from '@/lib/subscription'
 
 // GET /api/projects - Get all projects for current user
 export async function GET() {
@@ -55,18 +54,8 @@ export async function POST(request: NextRequest) {
 
   devLog(`[DB] POST /api/projects - Creating new project for user ${session.user.id}`)
   try {
-    // Check if user can create a new project based on their plan
-    devLog(`[DB] Checking project limit for user`)
-    const projectCheck = await canCreateProject(session.user.id)
-
-    if (!projectCheck.allowed) {
-      return NextResponse.json({
-        error: projectCheck.reason,
-        currentCount: projectCheck.currentCount,
-        limit: projectCheck.limit,
-      }, { status: 403 })
-    }
-
+    // TODO(C3): the plan's project limit is enforced by the `projects_enforce_limit` trigger on Supabase; the
+    // Prisma-side check went with the NextAuth helpers (this route only answers 401 now, see lib/api/legacy-auth.ts).
     const body = await request.json()
     const {
       name = 'Untitled Project',

@@ -1,9 +1,9 @@
-import { PlanType } from '@/lib/subscription'
+import type { Plan } from '@/core/billing'
 
-// Small pill showing the user's subscription tier, shared by the desktop
+// Small pill showing the user's effective plan, shared by the desktop
 // user menu and the mobile menu
-export default function PlanBadge({ planType }: { planType: PlanType }) {
-    switch (planType) {
+export default function PlanBadge({ plan }: { plan: Plan }) {
+    switch (plan) {
         case 'lifetime':
             return <span className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/30">LIFETIME</span>
         case 'studio':

@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { X, Check } from 'lucide-react'
-import Link from 'next/link'
+import type { CheckoutPlan, Plan } from '@/core/billing'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
-import { CreatorCard, StudioCard, PlanType } from '@/features/billing/PricingCards'
+import { CreatorCard, StudioCard } from '@/features/billing/PricingCards'
 import SignInModal from '@/features/account/SignInModal'
 import { flushDraftForSignIn } from '@/features/editor/hooks/useAutosave'
 
@@ -12,10 +12,10 @@ export default function ProFeatureModal() {
     const showProFeatureModal = useEditorUiStore(state => state.modal === 'proFeature')
     const closeModal = useEditorUiStore(state => state.closeModal)
 
-    const [isLoading, setIsLoading] = useState<PlanType | null>(null)
+    const [isLoading, setIsLoading] = useState<CheckoutPlan | null>(null)
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [showAlreadyProModal, setShowAlreadyProModal] = useState(false)
-    const [currentPlanType, setCurrentPlanType] = useState<string | null>(null)
+    const [currentPlan, setCurrentPlan] = useState<Plan | null>(null)
 
     if (!showProFeatureModal) return null
 
@@ -23,13 +23,13 @@ export default function ProFeatureModal() {
         setShowAuthModal(true)
     }
 
-    const handleAlreadyPro = (planType: string) => {
-        setCurrentPlanType(planType)
+    const handleAlreadyPro = (plan: Plan) => {
+        setCurrentPlan(plan)
         setShowAlreadyProModal(true)
     }
 
     const getAlreadyProMessage = () => {
-        switch (currentPlanType) {
+        switch (currentPlan) {
             case 'lifetime':
                 return "You have lifetime access with all premium features. Thank you for being an early supporter!"
             case 'studio':

@@ -1,26 +1,20 @@
 import { useMemo } from 'react'
-import { useSession } from 'next-auth/react'
-import { PLAN_LIMITS } from '@/core/billing'
 import { buildTargets, moveTo, type BuildGate } from '@/features/editor/store/buildNavigation'
 import { useBuildProgress } from '@/features/editor/hooks/useBuildProgress'
+import { useGate } from '@/features/editor/hooks/useGate'
 import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
-import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 
 /**
- * The row-limit gate for build navigation: signed-out users count as explorers; past the limit, anonymous
- * users are prompted to sign in and explorers to upgrade. C2 derives this from entitlements instead.
+ * The row-limit gate for build navigation (`moveTo` applies `rowLimitAllows`): past the limit, anonymous
+ * users are prompted to sign in and explorers get the limit modal.
  */
 export function useBuildGate(): BuildGate {
-    const { data: session } = useSession()
-    const openModal = useEditorUiStore(state => state.openModal)
-    return useMemo(() => {
-        const planType = session?.user?.planType || 'explorer'
-        return {
-            rowLimit: planType !== 'explorer' ? null : PLAN_LIMITS.explorer.builderRowLimit,
-            onBlocked: () => openModal(session?.user ? 'limit' : 'signIn'),
-        }
-    }, [session, openModal])
+    const { ent, gate } = useGate()
+    return useMemo(() => ({
+        rowLimit: ent.builderRowLimit,
+        onBlocked: () => { gate(false, { modal: 'limit' }) },
+    }), [ent.builderRowLimit, gate])
 }
 
 /** Build position, what is reachable from it and the bound navigation actions (see store/buildNavigation). */

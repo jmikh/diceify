@@ -34,6 +34,25 @@ curl -X POST http://127.0.0.1:54331/auth/v1/admin/users -H "apikey: $SERVICE_ROL
 
 Schema changes: never edit an applied migration; add a new one (`db:migration`), `db:reset`, then `db:types`.
 
+## Google OAuth (C2)
+
+Sign-in is `supabase.auth.signInWithOAuth({ provider: 'google' })` (PKCE; `lib/supabase/auth.ts`). One Google OAuth client
+(Google Cloud console → APIs & Services → Credentials, type "Web application") serves both environments; it needs no extra
+scopes (the old People API birthday scope is gone).
+
+- **Authorized redirect URIs** on the Google client — Google returns to Supabase Auth, never to the app:
+  - local: `http://127.0.0.1:54331/auth/v1/callback`
+  - hosted: `https://<project-ref>.supabase.co/auth/v1/callback`
+- **Credentials**: local → `supabase/.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`; `supabase/config.toml` reads them with
+  `env(...)`; `skip_nonce_check = true` is required for the supabase-js PKCE flow). A missing `supabase/.env` is silent — the
+  provider stays enabled with empty credentials and the sign-in lands on a GoTrue error page. Hosted → Dashboard → Authentication
+  → Providers → Google (same id/secret, "Skip nonce check" on).
+- **Redirect allow-list** (Supabase Auth → URL Configuration; local: `additional_redirect_urls` in `config.toml`): the app's
+  `redirectTo` is `${origin}/editor?restored=true`, so allow `http://localhost:3000/**` (local), `https://diceify.art/**` and
+  `https://*.diceify.pages.dev/**` (E1 previews). Site URL: `http://localhost:3000` local, `https://diceify.art` hosted.
+- Headless check without a browser: `SUPABASE_TEST=1 SUPABASE_SERVICE_ROLE_KEY=… npx vitest run lib/supabase/auth.integration.test.ts`
+  (password sign-in → own `profiles` row through RLS → plan change → entitlements).
+
 ## Hosted Supabase project (E1 / F2)
 
 TODO: `supabase link --project-ref <ref>`, `supabase db push`, `supabase functions deploy`, `supabase secrets set`,

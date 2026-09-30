@@ -5,6 +5,7 @@ import { X, Clock, Trash2, AlertCircle, Plus } from 'lucide-react'
 import { devLog } from '@/lib/utils/debug'
 import Logo from '@/components/Logo'
 import Image from 'next/image'
+import { useEntitlements } from '@/features/account/useUser'
 
 interface Project {
   id: string
@@ -23,7 +24,6 @@ interface ProjectSelectionModalProps {
   onDeleteProject?: (projectId: string) => void
   projects: Project[]
   hasCurrentState: boolean
-  maxProjects?: number
 }
 
 export default function ProjectSelectionModal({
@@ -34,8 +34,8 @@ export default function ProjectSelectionModal({
   onDeleteProject,
   projects,
   hasCurrentState,
-  maxProjects = 3
 }: ProjectSelectionModalProps) {
+  const { projectLimit } = useEntitlements()
   const [isDeleting, setIsDeleting] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
 
@@ -45,11 +45,11 @@ export default function ProjectSelectionModal({
       devLog('[DEBUG] ProjectSelectionModal opened with:')
       devLog('[DEBUG] - hasCurrentState:', hasCurrentState)
       devLog('[DEBUG] - projects count:', projects.length)
-      devLog('[DEBUG] - isAtCapacity:', projects.length >= maxProjects)
+      devLog('[DEBUG] - isAtCapacity:', projects.length >= projectLimit)
     }
-  }, [isOpen, hasCurrentState, projects.length, maxProjects])
+  }, [isOpen, hasCurrentState, projects.length, projectLimit])
 
-  const isAtCapacity = projects.length >= maxProjects
+  const isAtCapacity = projects.length >= projectLimit
 
   // Sort projects by most recently updated
   const sortedProjects = [...projects].sort((a, b) =>
@@ -150,7 +150,7 @@ export default function ProjectSelectionModal({
               <div className="flex flex-col items-center justify-center text-center gap-1.5 text-purple-300 text-sm bg-purple-500/10 p-4 rounded-xl border border-purple-500/20">
                 <div className="flex items-center gap-2 font-medium">
                   <AlertCircle size={16} />
-                  <span>Project limit reached ({maxProjects}/{maxProjects})</span>
+                  <span>Project limit reached ({projectLimit}/{projectLimit})</span>
                 </div>
                 <span className="opacity-80">Delete an existing project to create a new one.</span>
               </div>
@@ -167,7 +167,7 @@ export default function ProjectSelectionModal({
                 Recent Projects
               </h3>
               <span className="text-xs text-[var(--text-dim)]">
-                {sortedProjects.length} of {maxProjects} slots used
+                {sortedProjects.length} of {projectLimit} slots used
               </span>
             </div>
 

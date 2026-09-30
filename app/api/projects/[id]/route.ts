@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { auth } from '@/lib/api/legacy-auth' // TODO(C3): route deleted with the Prisma backend
 import { prisma } from '@/lib/prisma'
 import { devLog, devError } from '@/lib/utils/debug'
 

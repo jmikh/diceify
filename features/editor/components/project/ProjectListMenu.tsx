@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Plus, X, Check } from 'lucide-react'
+import { useEntitlements } from '@/features/account/useUser'
 import { useProjectStore, type ProjectSummary } from '@/features/editor/store/useProjectStore'
 
 export type Project = ProjectSummary
@@ -11,7 +12,6 @@ export interface ProjectListMenuProps {
     onSelectProject?: (projectId: string) => void
     onCreateNew?: (name: string) => void
     onDeleteProject?: (projectId: string) => void
-    maxProjects?: number
     /** Called after a project is selected or created, so the parent can close its menu */
     onClose?: () => void
 }
@@ -26,10 +26,10 @@ export default function ProjectListMenu({
     onSelectProject,
     onCreateNew,
     onDeleteProject,
-    maxProjects = 3,
     onClose
 }: ProjectListMenuProps) {
     const currentProjectId = useProjectStore(state => state.projectId)
+    const { projectLimit } = useEntitlements()
 
     // Inline Create state
     const [isCreating, setIsCreating] = useState(false)
@@ -117,7 +117,7 @@ export default function ProjectListMenu({
 
             {/* Footer Actions - Creating or Default */}
             <div className="p-3 border-t border-white/10 bg-white/5">
-                {onCreateNew && (projects.length < maxProjects ? (
+                {onCreateNew && (projects.length < projectLimit ? (
                     isCreating ? (
                         <div className="flex items-center gap-2 animate-in fade-in duration-200">
                             <input
@@ -159,7 +159,7 @@ export default function ProjectListMenu({
                     )
                 ) : (
                     <div className="text-center text-xs text-gray-500 py-1">
-                        Project limit reached ({projects.length}/{maxProjects})
+                        Project limit reached ({projects.length}/{projectLimit})
                     </div>
                 ))}
             </div>

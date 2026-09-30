@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { fromLegacyProjectRow, type LegacyProjectRow } from '@/core/dice'
+import { useUser } from '@/features/account/useUser'
 import { resetEditor } from '@/features/editor/store/editor'
 import { replaceDocument, useDocumentStore } from '@/features/editor/store/useDocumentStore'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
@@ -12,8 +12,14 @@ import { devLog, devError } from '@/lib/utils/debug'
 /** A full project row from GET /api/projects/[id] (the legacy Prisma columns). */
 type ProjectRow = ProjectSummary & LegacyProjectRow & { originalImage?: string | null }
 
+// TODO(C3): the Prisma project routes answer 401 now that NextAuth is gone (lib/api/legacy-auth.ts); every
+// call below degrades to "no projects" until C3 moves them to Supabase.
+function warnUnavailable(action: string, response: Response) {
+    console.warn(`[TODO(C3)] project API unavailable: ${action} → ${response.status}`)
+}
+
 export function useProjectManager() {
-    const { data: session } = useSession()
+    const userId = useUser().user?.id
     const router = useRouter()
 
     const projectId = useProjectStore(state => state.projectId)
@@ -39,7 +45,7 @@ export function useProjectManager() {
 
     // Fetch user projects
     const fetchUserProjects = useCallback(async (): Promise<ProjectSummary[]> => {
-        if (!session?.user?.id) return []
+        if (!userId) return []
 
         try {
             const response = await fetch('/api/projects')
@@ -48,11 +54,12 @@ export function useProjectManager() {
                 useProjectStore.getState().setProjects(projects)
                 return projects
             }
+            warnUnavailable('list', response)
         } catch (error) {
             devError('Failed to fetch projects:', error)
         }
         return []
-    }, [session])
+    }, [userId])
 
     const registerCreatedProject = useCallback(async (project: ProjectSummary) => {
         const store = useProjectStore.getState()
@@ -77,7 +84,7 @@ export function useProjectManager() {
             return null
         }
         if (!response.ok) {
-            devError('Failed to create project')
+            warnUnavailable('create', response)
             return null
         }
         return response.json()
@@ -85,7 +92,7 @@ export function useProjectManager() {
 
     // Create a new empty project (server defaults fill in the rest)
     const createProject = useCallback(async (name?: string) => {
-        if (!session?.user?.id || !name) return
+        if (!userId || !name) return
 
         // Push pending changes to the current project and detach the autosave
         // from it BEFORE resetting, so the reset can't be saved into it
@@ -103,11 +110,11 @@ export function useProjectManager() {
         } catch (error) {
             devError('Failed to create project:', error)
         }
-    }, [session, handleResetWorkflow, postProject, registerCreatedProject])
+    }, [userId, handleResetWorkflow, postProject, registerCreatedProject])
 
     // Create a project from the current (anonymous draft) state
     const createProjectFromCurrent = useCallback(async (name?: string) => {
-        if (!session?.user?.id) return
+        if (!userId) return
 
         let projectName = name
         if (!projectName) {
@@ -129,11 +136,11 @@ export function useProjectManager() {
         } catch (error) {
             devError('Failed to create project:', error)
         }
-    }, [session, imageSrc, postProject, registerCreatedProject])
+    }, [userId, imageSrc, postProject, registerCreatedProject])
 
     // Delete project
     const deleteProject = useCallback(async (id: string) => {
-        if (!session?.user?.id) return
+        if (!userId) return
 
         devLog(`[DB] Deleting project ${id}`)
         try {
@@ -149,11 +156,13 @@ export function useProjectManager() {
                     useProjectStore.getState().setProjectId(null)
                     updateURLWithProject(null)
                 }
+            } else {
+                warnUnavailable('delete', response)
             }
         } catch (error) {
             devError('Failed to delete project:', error)
         }
-    }, [session, projectId, fetchUserProjects, handleResetWorkflow, updateURLWithProject])
+    }, [userId, projectId, fetchUserProjects, handleResetWorkflow, updateURLWithProject])
 
     // Load a project
     const loadProject = useCallback(async (summary: ProjectSummary) => {
@@ -165,6 +174,8 @@ export function useProjectManager() {
             const response = await fetch(`/api/projects/${summary.id}`)
             if (response.ok) {
                 project = await response.json()
+            } else {
+                warnUnavailable('load', response)
             }
         } catch (error) {
             devError('Failed to fetch full project:', error)

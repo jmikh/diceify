@@ -1,27 +1,17 @@
 import { useCallback } from 'react'
-import { useSession } from 'next-auth/react'
 import { renderGridSvg } from '@/core/dice'
+import { useGate } from '@/features/editor/hooks/useGate'
 import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
-import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 
 /**
- * Download the full dice grid as an SVG blueprint (PRO feature).
- * Gated behind auth + subscription; shared by the desktop panel and
- * the mobile build controls.
+ * Download the full dice grid as an SVG blueprint (the `hasSvgExport` entitlement).
+ * Shared by the desktop panel and the mobile build controls.
  */
 export function useBlueprintDownload() {
-    const { data: session } = useSession()
+    const { ent, gate } = useGate()
 
     return useCallback(() => {
-        if (!session?.user) {
-            useEditorUiStore.getState().openModal('signIn', { message: "You must be logged in to download blueprint." })
-            return
-        }
-
-        if (!session.user.isPro) {
-            useEditorUiStore.getState().openModal('proFeature')
-            return
-        }
+        if (!gate(ent.hasSvgExport, { signInMessage: 'You must be logged in to download blueprint.' })) return
 
         const grid = useDerivedStore.getState().grid
         if (!grid) return
@@ -41,5 +31,5 @@ export function useBlueprintDownload() {
         } catch (error) {
             console.error('Error generating SVG:', error)
         }
-    }, [session])
+    }, [ent.hasSvgExport, gate])
 }

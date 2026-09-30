@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { Check, Loader2, Clock } from 'lucide-react'
-import { getSession } from 'next-auth/react'
 import { sendGAEvent } from '@next/third-parties/google'
+import type { CheckoutPlan, Plan } from '@/core/billing'
+import { useUser } from '@/features/account/useUser'
 
 // =============================================================================
 // PRICING CONFIGURATION - Single source of truth
@@ -52,7 +53,6 @@ export const STUDIO_YEARLY_SAVINGS_PERCENT = Math.round(
     (1 - (PRICING_CONFIG.studio.yearlyPrice / (PRICING_CONFIG.studio.monthlyPrice * 12))) * 100
 )
 
-export type PlanType = 'creator' | 'studio_monthly' | 'studio_yearly'
 export type CardVariant = 'compact' | 'full'
 
 // =============================================================================
@@ -61,9 +61,10 @@ export type CardVariant = 'compact' | 'full'
 interface PricingCardProps {
     source: string
     onAuthRequired: () => void
-    onAlreadyPro: (planType: string) => void
-    isLoading: PlanType | null
-    setIsLoading: (loading: PlanType | null) => void
+    /** The user already holds a plan this card cannot upgrade. */
+    onAlreadyPro: (plan: Plan) => void
+    isLoading: CheckoutPlan | null
+    setIsLoading: (loading: CheckoutPlan | null) => void
     variant?: CardVariant
     /** If true, renders only the card content (no wrapper). Used when parent provides wrapper. */
     contentOnly?: boolean
@@ -109,6 +110,21 @@ const variantStyles = {
     },
 }
 
+// TODO(D2): checkout moves to the `billing` edge function (lib/supabase/billing.ts). This POST hits the deleted
+// NextAuth-era route and fails with 401 until then.
+async function startCheckout(plan: CheckoutPlan): Promise<void> {
+    const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planType: plan }),
+    })
+    if (!response.ok) {
+        throw new Error(await response.text() || "Something went wrong")
+    }
+    const data = await response.json()
+    window.location.href = data.url
+}
+
 // =============================================================================
 // CREATOR CARD
 // =============================================================================
@@ -123,6 +139,7 @@ export function CreatorCard({
 }: PricingCardProps) {
     const styles = variantStyles[variant]
     const features = variant === 'full' ? PRICING_CONFIG.creator.landingFeatures : PRICING_CONFIG.creator.features
+    const { user, entitlements } = useUser()
 
     const onUpgrade = async () => {
         sendGAEvent('event', 'click_upgrade', {
@@ -130,41 +147,20 @@ export function CreatorCard({
             plan_type: 'creator'
         })
 
-        setIsLoading('creator')
-        const session = await getSession()
-
-        if (!session) {
-            setIsLoading(null)
+        if (!user) {
             onAuthRequired()
             return
         }
 
+        // Any active paid plan already covers what the pass offers
+        if (entitlements.isPro) {
+            onAlreadyPro(entitlements.plan)
+            return
+        }
+
+        setIsLoading('creator')
         try {
-            const statusResponse = await fetch("/api/user/subscription")
-            if (statusResponse.ok) {
-                const { isPro, planType: userPlanType } = await statusResponse.json()
-
-                if (isPro) {
-                    if (userPlanType === 'lifetime' || userPlanType === 'studio' || userPlanType === 'creator') {
-                        onAlreadyPro(userPlanType)
-                        setIsLoading(null)
-                        return
-                    }
-                }
-            }
-
-            const response = await fetch("/api/stripe/checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ planType: 'creator' }),
-            })
-
-            if (!response.ok) {
-                throw new Error(await response.text() || "Something went wrong")
-            }
-
-            const data = await response.json()
-            window.location.href = data.url
+            await startCheckout('creator')
         } catch (error) {
             console.error("Billing Error:", error)
             setIsLoading(null)
@@ -245,51 +241,30 @@ export function StudioCard({
     const [studioInterval, setStudioInterval] = useState<'monthly' | 'yearly'>('yearly')
     const styles = variantStyles[variant]
     const features = variant === 'full' ? PRICING_CONFIG.studio.landingFeatures : PRICING_CONFIG.studio.features
+    const { user, entitlements } = useUser()
 
     const onUpgrade = async () => {
-        const planType = studioInterval === 'monthly' ? 'studio_monthly' : 'studio_yearly'
+        const plan: CheckoutPlan = studioInterval === 'monthly' ? 'studio_monthly' : 'studio_yearly'
 
         sendGAEvent('event', 'click_upgrade', {
             source,
-            plan_type: planType
+            plan_type: plan
         })
 
-        setIsLoading(planType)
-        const session = await getSession()
-
-        if (!session) {
-            setIsLoading(null)
+        if (!user) {
             onAuthRequired()
             return
         }
 
+        // Studio/lifetime already have it; an active Creator pass may upgrade to Studio
+        if (entitlements.isPro && entitlements.plan !== 'creator') {
+            onAlreadyPro(entitlements.plan)
+            return
+        }
+
+        setIsLoading(plan)
         try {
-            const statusResponse = await fetch("/api/user/subscription")
-            if (statusResponse.ok) {
-                const { isPro, planType: userPlanType } = await statusResponse.json()
-
-                if (isPro) {
-                    if (userPlanType === 'lifetime' || userPlanType === 'studio') {
-                        onAlreadyPro(userPlanType)
-                        setIsLoading(null)
-                        return
-                    }
-                    // Allow Creator -> Studio upgrade
-                }
-            }
-
-            const response = await fetch("/api/stripe/checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ planType }),
-            })
-
-            if (!response.ok) {
-                throw new Error(await response.text() || "Something went wrong")
-            }
-
-            const data = await response.json()
-            window.location.href = data.url
+            await startCheckout(plan)
         } catch (error) {
             console.error("Billing Error:", error)
             setIsLoading(null)

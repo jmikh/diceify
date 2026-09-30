@@ -2,18 +2,28 @@
 import Link from 'next/link'
 import { Check, Sparkles } from 'lucide-react'
 import { useState } from 'react'
-import { SessionProvider } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
+import type { CheckoutPlan, Plan } from '@/core/billing'
+import { ProfileProvider } from '@/features/account/useUser'
 import SignInModal from '@/features/account/SignInModal'
 import CheckoutSuccessHandler from '@/features/billing/CheckoutSuccessHandler'
 import { sendGAEvent } from '@next/third-parties/google'
-import { CreatorCard, StudioCard, PlanType } from '@/features/billing/PricingCards'
+import { CreatorCard, StudioCard } from '@/features/billing/PricingCards'
 
+/** The landing pricing section. Provides the profile context its cards read (the only marketing consumer). */
 export default function Pricing() {
-    const [isLoading, setIsLoading] = useState<PlanType | null>(null)
+    return (
+        <ProfileProvider>
+            <PricingSection />
+        </ProfileProvider>
+    )
+}
+
+function PricingSection() {
+    const [isLoading, setIsLoading] = useState<CheckoutPlan | null>(null)
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [showAlreadyProModal, setShowAlreadyProModal] = useState(false)
-    const [currentPlanType, setCurrentPlanType] = useState<string | null>(null)
+    const [currentPlan, setCurrentPlan] = useState<Plan | null>(null)
     const [showSuccessModal, setShowSuccessModal] = useState(false)
 
     const searchParams = useSearchParams()
@@ -22,13 +32,13 @@ export default function Pricing() {
         setShowAuthModal(true)
     }
 
-    const handleAlreadyPro = (planType: string) => {
-        setCurrentPlanType(planType)
+    const handleAlreadyPro = (plan: Plan) => {
+        setCurrentPlan(plan)
         setShowAlreadyProModal(true)
     }
 
     const getAlreadyProMessage = () => {
-        switch (currentPlanType) {
+        switch (currentPlan) {
             case 'lifetime':
                 return "You have lifetime access with all premium features. Thank you for being an early supporter!"
             case 'studio':
@@ -43,9 +53,7 @@ export default function Pricing() {
     return (
         <section className="py-24 px-6 relative" id="pricing">
             {searchParams?.get('success') && (
-                <SessionProvider>
-                    <CheckoutSuccessHandler onComplete={() => setShowSuccessModal(true)} />
-                </SessionProvider>
+                <CheckoutSuccessHandler onComplete={() => setShowSuccessModal(true)} />
             )}
 
             <SignInModal

@@ -2,14 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useSession, signOut } from 'next-auth/react'
-import { Menu, Sparkles, LogOut, Home, CreditCard, Cloud, Undo2, Redo2 } from 'lucide-react'
+import { Menu, Sparkles, LogOut, Home, Cloud, Undo2, Redo2 } from 'lucide-react'
+import { useUser } from '@/features/account/useUser'
 import { useUndoRedo } from '@/features/editor/hooks/useUndoRedo'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import { formatSaveStatus } from '@/features/editor/components/project/saveStatus'
-import { openBillingPortal } from '@/features/billing/openBillingPortal'
-import { PlanType } from '@/lib/subscription'
 import PlanBadge from '@/features/billing/PlanBadge'
 import ProjectListMenu, { ProjectListMenuProps } from '@/features/editor/components/project/ProjectListMenu'
 
@@ -21,16 +19,13 @@ type MobileMenuProps = Omit<ProjectListMenuProps, 'onClose'>
  * it holds the project switcher, save status, upgrade/billing and sign-out.
  */
 export default function MobileMenu(projectProps: MobileMenuProps) {
-    const { data: session } = useSession()
+    const { user, entitlements: ent, signOut } = useUser()
     const openModal = useEditorUiStore(state => state.openModal)
     const saveStatus = useProjectStore(state => state.saveStatus)
     const lastSaved = useProjectStore(state => state.lastSaved)
     const { canUndo, canRedo, undo, redo } = useUndoRedo()
 
     const [open, setOpen] = useState(false)
-
-    const user = session?.user
-    const planType = ((user?.planType as PlanType) || 'explorer')
 
     const menuItemClass = 'w-full px-4 py-3 text-sm text-left text-white/80 active:bg-white/10 transition-colors flex items-center gap-3'
 
@@ -60,7 +55,7 @@ export default function MobileMenu(projectProps: MobileMenuProps) {
                                     <div className="text-sm font-medium text-white">{user.name || 'User'}</div>
                                     <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-2 min-w-0">
                                         <span className="truncate">{user.email}</span>
-                                        <PlanBadge planType={planType} />
+                                        <PlanBadge plan={ent.plan} />
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1.5 flex items-center gap-1.5">
                                         <Cloud size={12} />
@@ -72,18 +67,13 @@ export default function MobileMenu(projectProps: MobileMenuProps) {
                                 <ProjectListMenu {...projectProps} onClose={() => setOpen(false)} />
 
                                 {/* Plan actions */}
-                                {planType === 'explorer' && (
+                                {!ent.isPro && (
                                     <Link href="/#pricing" className={`${menuItemClass} border-t border-white/10 text-accent-pink-light`} onClick={() => setOpen(false)}>
                                         <Sparkles size={16} />
                                         Upgrade
                                     </Link>
                                 )}
-                                {planType === 'studio' && user.subscriptionStatus !== 'canceled' && (
-                                    <button onClick={openBillingPortal} className={`${menuItemClass} border-t border-white/10`}>
-                                        <CreditCard size={16} />
-                                        Manage subscription
-                                    </button>
-                                )}
+                                {/* TODO(D2): "Manage subscription" → /account when ent.canManageBilling */}
 
                                 <button
                                     onClick={() => {

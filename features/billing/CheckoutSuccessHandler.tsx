@@ -1,11 +1,13 @@
 'use client'
 
-import { useSession } from "next-auth/react"
 import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
+import { useUser } from "@/features/account/useUser"
 
+// TODO(D2): checkout returns to /account?checkout=success, which polls the billing sync until isPro flips;
+// this handler (mounted by the landing Pricing section on ?success=) goes away with it.
 export default function CheckoutSuccessHandler({ onComplete }: { onComplete: () => void }) {
-    const { update } = useSession()
+    const { refresh } = useUser()
     const router = useRouter()
 
     const hasUpdated = useRef(false)
@@ -20,17 +22,12 @@ export default function CheckoutSuccessHandler({ onComplete }: { onComplete: () 
         if (hasUpdated.current) return
         hasUpdated.current = true
 
-        // Force session update to fetch new data from DB
-        // This updates the JWT with the new claims (isPro: true)
-        update().then(() => {
-            // Remove the success param AND refresh server data
+        // Refetch the profile so the new plan is reflected, then drop the success param
+        refresh().then(() => {
             router.replace('/', { scroll: false })
-            router.refresh()
-            if (onCompleteRef.current) {
-                onCompleteRef.current()
-            }
+            onCompleteRef.current()
         })
-    }, [update, router])
+    }, [refresh, router])
 
     return null
 }

@@ -4,8 +4,8 @@ import { useMemo, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { RiProgress5Line, RiProgress8Line } from 'react-icons/ri'
-import { useSession } from 'next-auth/react'
 import { rasterSize, renderProgressSvg } from '@/core/dice'
+import { useEntitlements } from '@/features/account/useUser'
 import { rasterizeSvg } from '@/lib/image/rasterize'
 import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
@@ -19,7 +19,6 @@ const MAX_RASTER_SIZE = 1080 // Max pixels on longest side for free users
 const RASTER_PX_PER_DIE = 10
 
 export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPreviewModalProps) {
-    const { data: session } = useSession()
     const diceGrid = useDerivedStore(state => state.grid)
     const buildProgress = useDocumentStore(state => state.buildProgress)
 
@@ -29,7 +28,8 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
     // Rasterized image data URL for non-pro users
     const [rasterizedImage, setRasterizedImage] = useState<string | null>(null)
 
-    const isPro = session?.user?.isPro ?? false
+    // Vector output is the SVG-export entitlement; everyone else gets a capped raster
+    const isPro = useEntitlements().hasSvgExport
 
     // Free users get a raster capped at MAX_RASTER_SIZE (10 px per die below that)
     const raster = useMemo(() => {
