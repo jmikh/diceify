@@ -6,9 +6,7 @@ import { Upload, Image as ImageIcon } from 'lucide-react'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 import { persistImage } from '@/app/editor/hooks/useAutosave'
 
-interface UploadMainProps { }
-
-export default function UploadMain({ }: UploadMainProps) {
+export default function UploadMain() {
     const uploadImage = useEditorStore(state => state.uploadImage)
     const originalImage = useEditorStore(state => state.originalImage)
 

@@ -1,5 +1,5 @@
 import { DiceColor, DiceFace } from './types'
-import { DICE_RENDERING, getDotPositions } from './constants'
+import { DICE_RENDERING, getDotPositions } from '@/core/dice/geometry'
 
 interface DiceCache {
   black: Map<DiceFace, ImageBitmap>

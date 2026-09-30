@@ -29,7 +29,7 @@
  */
 
 import { DiceGrid, DiceColor, DiceFace } from './types'
-import { DICE_RENDERING } from './constants'
+import { DICE_RENDERING } from '@/core/dice/geometry'
 import { devWarn } from '../utils/debug'
 
 export class DiceSVGRenderer {

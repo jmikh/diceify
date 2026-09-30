@@ -1,0 +1,7 @@
+# Revamp — agent suggestions (out-of-scope findings; one bullet per finding, prefixed with the step that noticed it)
+
+- A1: `package-lock.json` had to be regenerated from scratch (npm 11.5.1 arborist crash: `Cannot read properties of null (reading 'edgesOut')`; no `@rolldown/binding-*` entries). Transitive deps moved within their semver ranges (e.g. `next` 14.2.32→14.2.35, `next-auth` beta.30→beta.32, `@vercel/analytics` 1.5.0→1.6.1). Worth a quick smoke test of sign-in + Stripe routes on `master`'s deploy path before cut-over, or diff the lockfile if anything regresses.
+- A1: vitest is pinned to `^3` because npm 11.5.1 cannot resolve vitest 4 (arborist crash on its circular optional peers; `--legacy-peer-deps` works around it) and vitest 5 needs rolldown platform bindings that npm did not install. Revisit after an npm upgrade (`npm i -g npm@latest`) — no code changes expected.
+- A1: 32 `react-hooks/rules-of-hooks` warnings, all in `components/Editor/Builder/BuilderMain.tsx` (hooks after `if (!grid) return null`). B2 fixes; then flip the rule to `error`.
+- A1: 3 `@next/next/no-img-element` warnings (`app/editor/page.tsx`, `components/Editor/UserMenu.tsx`, `components/ProgressPreviewModal.tsx`). With `images.unoptimized` and a static export, `<img>` is the right tag — consider turning the rule off in E3 rather than migrating to `next/image`.
+- A1: `lib/dice/svg-renderer.ts` re-derives the dot layout inline instead of calling `getDotPositions` (plan already dedupes this in A3 `core/dice/svg.ts`).

@@ -6,14 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test:visual": "node tests/visual/page-test.js",
-    "test:workflow": "node tests/visual/workflow-test.js",
-    "test:visual:clean": "rm -rf tests/screenshots/*"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit && tsc -p core"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
-    "@next/third-parties": "^16.0.8",
+    "@next/third-parties": "^14.2.35",
     "@prisma/client": "^6.15.0",
     "@types/node": "^22.14.0",
     "@types/react": "^18.3.18",
@@ -41,11 +41,12 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.42.0",
-    "@typescript-eslint/parser": "^8.42.0",
+    "@eslint/js": "^9.39.5",
+    "@next/eslint-plugin-next": "^15.5.0",
     "eslint": "^9.34.0",
-    "eslint-config-next": "^15.5.2",
-    "glob": "^11.0.3",
-    "puppeteer": "^24.19.0"
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^3.2.0"
   }
 }

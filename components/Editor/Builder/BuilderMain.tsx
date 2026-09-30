@@ -553,8 +553,8 @@ const BuildViewer = memo(function BuildViewer() {
                                 const showBadge = groupWidth > 1
 
                                 // Position badges
-                                let blueBadgeX = currentX + 0.5 // Center horizontally for blue badge
-                                let purpleBadgeX = startX + 0.5 // First dice position for purple badge
+                                const blueBadgeX = currentX + 0.5 // Center horizontally for blue badge
+                                const purpleBadgeX = startX + 0.5 // First dice position for purple badge
                                 let badgeY = totalRows - 1 - currentY - 0.32 // Above the dice
 
                                 // Adjust position if at edges
