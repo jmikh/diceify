@@ -8,6 +8,7 @@ import {
   computeBillingSnapshot,
   creatorExpiry,
   CREATOR_PASS_DAYS,
+  hasPaidAccess,
   pickSubscription,
   PRO_SUBSCRIPTION_STATUSES,
   type BillingSnapshot,
@@ -59,6 +60,42 @@ describe('mirrors of core/billing', () => {
   it('uses the same PRO statuses and creator pass length as the client', () => {
     expect([...PRO_SUBSCRIPTION_STATUSES].sort()).toEqual([...CORE_PRO_STATUSES].sort())
     expect(CREATOR_PASS_DAYS).toBe(PRICING.creator.accessDays)
+  })
+})
+
+describe('hasPaidAccess', () => {
+  it('equals deriveEntitlements().isPro for every plan/status/expiry combination', () => {
+    const future = iso(T0 + 1 * DAY)
+    const past = iso(T0 - 1 * DAY)
+    const plans = ['explorer', 'creator', 'studio', 'lifetime', 'bogus'] as const
+    const statuses = [null, 'active', 'trialing', 'past_due', 'canceled', 'unpaid', 'incomplete']
+    const expiries = [null, future, past, NOW.toISOString()]
+    let checked = 0
+    for (const plan of plans) {
+      for (const subscription_status of statuses) {
+        for (const plan_expires_at of expiries) {
+          const row = { plan, plan_expires_at, subscription_status }
+          const expected = deriveEntitlements(
+            {
+              plan: plan === 'bogus' ? 'explorer' : plan,
+              planExpiresAt: plan_expires_at,
+              subscriptionStatus: subscription_status,
+              currentPeriodEnd: null,
+              cancelAt: null,
+              hasStripeCustomer: true,
+            },
+            NOW,
+          ).isPro
+          expect(hasPaidAccess(row, NOW), JSON.stringify(row)).toBe(expected)
+          checked++
+        }
+      }
+    }
+    expect(checked).toBe(plans.length * statuses.length * expiries.length)
+    expect(hasPaidAccess({ plan: 'lifetime', plan_expires_at: null, subscription_status: 'canceled' }, NOW)).toBe(true)
+    expect(hasPaidAccess({ plan: 'studio', plan_expires_at: null, subscription_status: 'past_due' }, NOW)).toBe(true)
+    expect(hasPaidAccess({ plan: 'creator', plan_expires_at: future, subscription_status: null }, NOW)).toBe(true)
+    expect(hasPaidAccess({ plan: 'creator', plan_expires_at: past, subscription_status: 'active' }, NOW)).toBe(false)
   })
 })
 

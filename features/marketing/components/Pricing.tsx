@@ -1,12 +1,10 @@
 "use client"
 import Link from 'next/link'
-import { Check, Sparkles } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import type { CheckoutPlan, Plan } from '@/core/billing'
 import { ProfileProvider } from '@/features/account/useUser'
 import SignInModal from '@/features/account/SignInModal'
-import CheckoutSuccessHandler from '@/features/billing/CheckoutSuccessHandler'
 import { sendGAEvent } from '@next/third-parties/google'
 import { CreatorCard, StudioCard } from '@/features/billing/PricingCards'
 
@@ -24,9 +22,6 @@ function PricingSection() {
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [showAlreadyProModal, setShowAlreadyProModal] = useState(false)
     const [currentPlan, setCurrentPlan] = useState<Plan | null>(null)
-    const [showSuccessModal, setShowSuccessModal] = useState(false)
-
-    const searchParams = useSearchParams()
 
     const handleAuthRequired = () => {
         setShowAuthModal(true)
@@ -44,7 +39,7 @@ function PricingSection() {
             case 'studio':
                 return "You already have the Studio plan with all premium features."
             case 'creator':
-                return "You have an active Creator pass. Want more projects? Consider upgrading to Studio!"
+                return "You have an active Creator pass with all premium features. Studio is available once it ends."
             default:
                 return "You have an active plan with all premium features."
         }
@@ -52,10 +47,6 @@ function PricingSection() {
 
     return (
         <section className="py-24 px-6 relative" id="pricing">
-            {searchParams?.get('success') && (
-                <CheckoutSuccessHandler onComplete={() => setShowSuccessModal(true)} />
-            )}
-
             <SignInModal
                 open={showAuthModal}
                 onClose={() => setShowAuthModal(false)}
@@ -88,32 +79,6 @@ function PricingSection() {
                                     Go to Editor
                                 </Link>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Success Modal */}
-            {showSuccessModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-[#0f0f12] border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/10 to-accent-pink/10 pointer-events-none" />
-
-                        <div className="flex flex-col items-center text-center relative z-10">
-                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-accent-pink/20 to-purple-500/20 text-accent-pink-light flex items-center justify-center mb-6 animate-in zoom-in duration-300 delay-150">
-                                <Sparkles size={32} />
-                            </div>
-                            <h3 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 mb-2">You're all set!</h3>
-                            <p className="text-gray-400 mb-8 max-w-[280px]">
-                                Your purchase was successful. Enjoy all premium features!
-                            </p>
-
-                            <Link
-                                href="/editor"
-                                className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-accent-pink to-purple-600 hover:from-accent-pink-light hover:to-purple-500 text-white font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-purple-500/20 text-center"
-                            >
-                                Start Creating
-                            </Link>
                         </div>
                     </div>
                 </div>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, Sparkles, LogOut, Home, Cloud, Undo2, Redo2 } from 'lucide-react'
+import { Menu, Sparkles, LogOut, Home, Cloud, Undo2, Redo2, CreditCard } from 'lucide-react'
 import { useUser } from '@/features/account/useUser'
 import { useUndoRedo } from '@/features/editor/hooks/useUndoRedo'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
@@ -73,7 +73,10 @@ export default function MobileMenu(projectProps: MobileMenuProps) {
                                         Upgrade
                                     </Link>
                                 )}
-                                {/* TODO(D2): "Manage subscription" → /account when ent.canManageBilling */}
+                                <Link href="/account" className={`${menuItemClass} border-t border-white/5`} onClick={() => setOpen(false)}>
+                                    <CreditCard size={16} />
+                                    Account &amp; billing
+                                </Link>
 
                                 <button
                                     onClick={() => {

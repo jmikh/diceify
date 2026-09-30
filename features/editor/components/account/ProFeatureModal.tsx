@@ -35,7 +35,7 @@ export default function ProFeatureModal() {
             case 'studio':
                 return "You already have the Studio plan with all premium features."
             case 'creator':
-                return "You have an active Creator pass. Want more projects? Consider upgrading to Studio!"
+                return "You have an active Creator pass with all premium features. Studio is available once it ends."
             default:
                 return "You have an active plan with all premium features."
         }

@@ -82,6 +82,8 @@ Local testing (env, run order, cards, flows, hand-signed events): `docs/STRIPE_T
   `customer.subscription.paused`, `customer.subscription.resumed`, `invoice.paid`, `invoice.payment_failed`,
   `invoice.payment_action_required`. Copy the endpoint's signing secret into `STRIPE_WEBHOOK_SECRET`. Every event only names the
   customer; the function recomputes the whole snapshot from Stripe, so a missed or reordered event is harmless.
+- **Customer Portal** (live mode, once): dashboard → Settings → Billing → Customer portal → save a configuration (invoices, payment
+  method; cancellation may stay off — the app cancels through its own route). `POST /billing/portal` fails until it exists.
 - **Cut-over (F2)**: disable the old Vercel endpoint once this one is live; the customer ids carry over unchanged (the migration
   script copies `stripe_customer_id`, then `syncBillingFromStripe` fills the rest).
 

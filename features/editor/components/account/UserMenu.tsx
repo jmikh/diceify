@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { devError } from '@/lib/utils/debug'
 import { useUser } from '@/features/account/useUser'
 import PlanBadge from '@/features/billing/PlanBadge'
+import { formatBillingDate } from '@/features/billing/planCopy'
 
 // Avatar + account dropdown for the editor header (rendered only when signed in)
 export default function UserMenu() {
@@ -30,7 +32,7 @@ export default function UserMenu() {
     // A Creator pass and a cancelled Studio subscription both end on `accessUntil`; a renewing Studio shows nothing
     const canceled = ent.plan === 'studio' && ent.cancelAt !== null
     const expirationText = ent.accessUntil && (ent.plan === 'creator' || canceled)
-        ? `Expires on ${new Date(ent.accessUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+        ? `Expires on ${formatBillingDate(ent.accessUntil)}`
         : ''
 
     return (
@@ -82,7 +84,14 @@ export default function UserMenu() {
                             )}
                         </div>
 
-                        {/* TODO(D2): "Manage subscription" → /account (portal, cancel, resume) when ent.canManageBilling */}
+                        {/* Plan, cancel/resume, portal */}
+                        <Link
+                            href="/account"
+                            onClick={() => setShowMenu(false)}
+                            className="block w-full px-4 py-2 text-sm text-left text-white/90 hover:text-white hover:bg-white/10 transition-colors"
+                        >
+                            Account &amp; billing
+                        </Link>
 
                         {/* Sign Out */}
                         <button
@@ -90,7 +99,7 @@ export default function UserMenu() {
                                 setShowMenu(false)
                                 signOut()
                             }}
-                            className="w-full px-4 py-2 text-sm text-left text-white/90 hover:text-white hover:bg-white/10 transition-colors hover:rounded-b-lg"
+                            className="w-full px-4 py-2 text-sm text-left text-white/90 hover:text-white hover:bg-white/10 transition-colors hover:rounded-b-lg border-t border-white/5"
                         >
                             Sign out
                         </button>

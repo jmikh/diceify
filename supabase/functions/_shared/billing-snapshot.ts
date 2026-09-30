@@ -2,7 +2,8 @@
 // it runs under Deno (edge functions) and Node (vitest, the F1 migration script) unchanged.
 //
 // Mirrors (keep in sync, same rule as SQL `effective_plan`): PRO statuses = core/billing/entitlements.ts
-// `PRO_SUBSCRIPTION_STATUSES`; creator pass length = core/billing/plans.ts `PRICING.creator.accessDays`.
+// `PRO_SUBSCRIPTION_STATUSES`; creator pass length = core/billing/plans.ts `PRICING.creator.accessDays`;
+// `hasPaidAccess` = `deriveEntitlements().isPro`. The vitest suite pins all three against core.
 
 export type SnapshotPlan = 'explorer' | 'creator' | 'studio' | 'lifetime'
 
@@ -51,6 +52,24 @@ export interface BillingSnapshot {
   current_period_end: string | null
   cancel_at: string | null
   plan_expires_at: string | null
+}
+
+/** The profile columns `hasPaidAccess` reads. */
+export interface PaidAccessRow {
+  plan: string
+  plan_expires_at: string | null
+  subscription_status: string | null
+}
+
+/**
+ * Mirror of core/billing/entitlements.ts `deriveEntitlements().isPro` (and SQL `effective_plan() <> 'explorer'`):
+ * lifetime → studio with a PRO status → creator pass not yet expired (strict `>`). Same priority, same statuses.
+ */
+export function hasPaidAccess(row: PaidAccessRow, now: Date): boolean {
+  if (row.plan === 'lifetime') return true
+  if (row.plan === 'studio') return row.subscription_status !== null && PRO_SUBSCRIPTION_STATUSES.has(row.subscription_status)
+  if (row.plan === 'creator') return row.plan_expires_at !== null && Date.parse(row.plan_expires_at) > now.getTime()
+  return false
 }
 
 const toIso = (unixSeconds: number | null | undefined): string | null =>

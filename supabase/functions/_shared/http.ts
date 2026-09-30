@@ -9,6 +9,9 @@ export type ErrorCode =
   | 'NOT_FOUND'
   | 'ALREADY_SUBSCRIBED'
   | 'NO_SUBSCRIPTION'
+  | 'ALREADY_SCHEDULED'
+  | 'NOT_SCHEDULED'
+  | 'STALE'
   | 'INVALID_SIGNATURE'
   | 'INTERNAL'
 
@@ -27,6 +30,17 @@ export function json(data: unknown, status = 200): Response {
 
 export function error(code: ErrorCode, message: string, status: number, details?: unknown): Response {
   return json({ error: details === undefined ? { code, message } : { code, message, details } }, status)
+}
+
+/** The request body as JSON; an empty body is `{}` (a `POST` without payload), anything unparsable is `null`. */
+export async function readJsonBody(req: Request): Promise<unknown> {
+  const text = await req.text()
+  if (text.trim() === '') return {}
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
 }
 
 /** CORS preflight. */

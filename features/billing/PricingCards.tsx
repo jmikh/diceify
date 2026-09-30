@@ -5,6 +5,7 @@ import { Check, Loader2, Clock } from 'lucide-react'
 import { sendGAEvent } from '@next/third-parties/google'
 import type { CheckoutPlan, Plan } from '@/core/billing'
 import { useUser } from '@/features/account/useUser'
+import { BillingError, startCheckout } from '@/lib/supabase/billing'
 
 // =============================================================================
 // PRICING CONFIGURATION - Single source of truth
@@ -110,19 +111,23 @@ const variantStyles = {
     },
 }
 
-// TODO(D2): checkout moves to the `billing` edge function (lib/supabase/billing.ts). This POST hits the deleted
-// NextAuth-era route and fails with 401 until then.
-async function startCheckout(plan: CheckoutPlan): Promise<void> {
-    const response = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planType: plan }),
-    })
-    if (!response.ok) {
-        throw new Error(await response.text() || "Something went wrong")
+/**
+ * Sends the browser to Stripe Checkout. Resolves only on failure (the page leaves on success); a 409 from the
+ * function means the profile is already on a paid plan — reported through `onAlreadyPro`.
+ */
+async function goToCheckout(plan: CheckoutPlan, onAlreadyPro: () => void): Promise<boolean> {
+    try {
+        const { url } = await startCheckout(plan)
+        window.location.assign(url)
+        return true
+    } catch (error) {
+        if (error instanceof BillingError && error.code === 'ALREADY_SUBSCRIBED') {
+            onAlreadyPro()
+        } else {
+            console.error('Billing Error:', error)
+        }
+        return false
     }
-    const data = await response.json()
-    window.location.href = data.url
 }
 
 // =============================================================================
@@ -159,12 +164,7 @@ export function CreatorCard({
         }
 
         setIsLoading('creator')
-        try {
-            await startCheckout('creator')
-        } catch (error) {
-            console.error("Billing Error:", error)
-            setIsLoading(null)
-        }
+        if (!(await goToCheckout('creator', () => onAlreadyPro(entitlements.plan)))) setIsLoading(null)
     }
 
     const content = (
@@ -256,19 +256,14 @@ export function StudioCard({
             return
         }
 
-        // Studio/lifetime already have it; an active Creator pass may upgrade to Studio
-        if (entitlements.isPro && entitlements.plan !== 'creator') {
+        // Any active paid plan blocks a new purchase (no stacking; the function answers 409 as well)
+        if (entitlements.isPro) {
             onAlreadyPro(entitlements.plan)
             return
         }
 
         setIsLoading(plan)
-        try {
-            await startCheckout(plan)
-        } catch (error) {
-            console.error("Billing Error:", error)
-            setIsLoading(null)
-        }
+        if (!(await goToCheckout(plan, () => onAlreadyPro(entitlements.plan)))) setIsLoading(null)
     }
 
     const content = (
