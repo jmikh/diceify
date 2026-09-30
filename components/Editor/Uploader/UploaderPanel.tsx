@@ -1,10 +1,9 @@
 'use client'
 
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
 
 export default function UploaderPanel() {
-    const originalImage = useEditorStore(state => state.originalImage)
-    const setStep = useEditorStore(state => state.setStep)
+    const { canGoNext, goNext } = useStepNavigation()
 
     return (
         <>
@@ -22,11 +21,11 @@ export default function UploaderPanel() {
             {/* Navigation Buttons */}
             <div className="flex gap-3 mt-6 pt-6 border-t border-white/10 flex-shrink-0">
                 <button
-                    onClick={() => setStep('crop')}
-                    disabled={!originalImage}
+                    onClick={goNext}
+                    disabled={!canGoNext}
                     className={`
             flex-1 py-3.5 rounded-full font-semibold transition-all flex items-center justify-center gap-2 text-sm
-            ${originalImage
+            ${canGoNext
                             ? 'bg-pink-500 hover:bg-pink-600 text-white shadow-[0_0_20px_rgba(236,72,153,0.3)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)]'
                             : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/5'
                         }

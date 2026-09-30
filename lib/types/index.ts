@@ -4,6 +4,3 @@
  */
 
 export type { ColorMode, DiceParams, DiceStats, DiceGrid, AspectRatio } from '@/core/dice'
-
-// Workflow types
-export type WorkflowStep = 'upload' | 'crop' | 'tune' | 'build'

@@ -1,50 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
 import { Loader2 } from 'lucide-react'
 import DiceCanvas from './DiceCanvas'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
 
 export default function TunerMain() {
-    const params = useEditorStore(state => state.diceParams)
-    const processedImageUrl = useEditorStore(state => state.processedImageUrl)
-    const cropParams = useEditorStore(state => state.cropParams)
+    const isGenerating = useDerivedStore(state => state.isGenerating)
+    const previewUrl = useDerivedStore(state => state.previewUrl)
 
-    const [isLoading, setIsLoading] = useState(false)
-    const isFirstRender = useRef(true)
-    const prevParamsRef = useRef(params)
-
-    // Show loading immediately when params change (before debounce kicks in)
-    useEffect(() => {
-        // Skip the initial render
-        if (isFirstRender.current) {
-            isFirstRender.current = false
-            return
-        }
-
-        // Check if params actually changed
-        if (JSON.stringify(prevParamsRef.current) !== JSON.stringify(params)) {
-            setIsLoading(true)
-            prevParamsRef.current = params
-        }
-    }, [params])
-
-    // Also show loading when the crop changes (new crop area)
-    useEffect(() => {
-        if (cropParams && !isFirstRender.current) {
-            setIsLoading(true)
-        }
-    }, [cropParams])
-
-    // Hide loading when new processed image is ready
-    useEffect(() => {
-        if (processedImageUrl) {
-            setIsLoading(false)
-        }
-    }, [processedImageUrl])
-
-    // Show loading if no processed image exists yet
-    const showLoading = isLoading || !processedImageUrl
+    // The pipeline flags generation as soon as an input changes (before its
+    // debounce), so the spinner is immediate; also shown until the first preview
+    const showLoading = isGenerating || !previewUrl
 
     return (
         <div className="flex-1 relative w-full h-full flex items-center justify-center overflow-hidden">

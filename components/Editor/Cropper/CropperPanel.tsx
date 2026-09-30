@@ -2,8 +2,9 @@
 
 import { Proportions, RotateCw } from 'lucide-react'
 
-import { AspectRatio } from '@/lib/types'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { DEFAULT_ASPECT_RATIO, type AspectRatio } from '@/core/dice'
+import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
+import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 
 export interface AspectRatioOption {
     value: AspectRatio
@@ -77,28 +78,22 @@ export const aspectRatioOptions: AspectRatioOption[] = [
     },
 ]
 
+/** Ratio / rotation controls shared by the desktop panel and the mobile toolbar. */
+export function useCropControls() {
+    const crop = useDocumentStore(state => state.crop)
+    const updateCrop = useDocumentStore(state => state.updateCrop)
+    return {
+        selectedRatio: crop?.aspectRatio ?? DEFAULT_ASPECT_RATIO,
+        setSelectedRatio: (aspectRatio: AspectRatio) => updateCrop({ aspectRatio }),
+        rotate: () => updateCrop({ rotation: (crop?.rotation ?? 0) + 90 }),
+    }
+}
+
 export default function CropperPanel() {
-    // Store State
-    const selectedRatio = useEditorStore(state => state.selectedRatio)
-    const cropRotation = useEditorStore(state => state.cropRotation)
-
-    // Store Actions
-    const setSelectedRatio = useEditorStore(state => state.setSelectedRatio)
-    const setCropRotation = useEditorStore(state => state.setCropRotation)
-    const setStep = useEditorStore(state => state.setStep)
-
-
-    const handleRotate = () => {
-        setCropRotation(cropRotation + 90)
-    }
-
-    const handleBack = () => {
-        setStep('upload')
-    }
-
+    const { selectedRatio, setSelectedRatio, rotate } = useCropControls()
     // Progress invalidation is handled centrally: enterBuild() compares the
     // current params against the baseline the progress was built on
-    const handleContinue = () => setStep('tune')
+    const { canGoNext, goNext, goBack } = useStepNavigation()
 
     return (
         <>
@@ -147,7 +142,7 @@ export default function CropperPanel() {
             {/* Additional Controls */}
             <div className="flex flex-col gap-3">
                 <button
-                    onClick={handleRotate}
+                    onClick={rotate}
                     className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center gap-2 transition-colors text-sm font-medium text-gray-300"
                 >
                     <RotateCw className="w-4 h-4" />
@@ -164,14 +159,15 @@ export default function CropperPanel() {
             {/* Navigation Buttons */}
             <div className="flex gap-3 mt-6 pt-6 border-t border-white/10">
                 <button
-                    onClick={handleBack}
+                    onClick={goBack}
                     className="flex-1 py-3.5 rounded-full border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-semibold transition-all flex items-center justify-center gap-2 text-sm"
                 >
                     ← Back
                 </button>
 
                 <button
-                    onClick={handleContinue}
+                    onClick={goNext}
+                    disabled={!canGoNext}
                     className="
             flex-1 py-3.5 rounded-full
             bg-pink-500 hover:bg-pink-600

@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { theme } from '@/lib/theme'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { sendGAEvent } from '@next/third-parties/google'
 
 export default function BuilderLimitToast() {
@@ -19,13 +19,12 @@ export default function BuilderLimitToast() {
 
         // Check if logged in
         if (!session?.user) {
-            useEditorStore.getState().setAuthModalMessage("Sign in to upgrade your account")
-            useEditorStore.getState().setShowAuthModal(true)
+            useEditorUiStore.getState().openModal('signIn', { message: "Sign in to upgrade your account" })
             return
         }
 
         // User is logged in but not pro - show upgrade modal
-        useEditorStore.getState().setShowProFeatureModal(true)
+        useEditorUiStore.getState().openModal('proFeature')
     }
 
     return (

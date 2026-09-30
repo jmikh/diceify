@@ -19,8 +19,7 @@ export default function MobileBuildControls() {
     const {
         currentX,
         currentY,
-        totalDice,
-        currentIndex,
+        percent: percentage,
         navigatePrev,
         navigateNext,
         navigatePrevDiff,
@@ -31,8 +30,6 @@ export default function MobileBuildControls() {
     const [showProgressModal, setShowProgressModal] = useState(false)
     const [showMore, setShowMore] = useState(false)
     const handleDownloadSvg = useBlueprintDownload()
-
-    const percentage = totalDice > 0 ? (currentIndex / totalDice) * 100 : 0
 
     const secondaryButtonClass = 'flex-1 h-11 rounded-xl border border-white/10 active:bg-white/10 text-white/70 font-medium transition-all flex items-center justify-center gap-1.5 text-xs'
 

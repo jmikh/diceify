@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { theme } from '@/lib/theme'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 
 const rotatableDice = [
     { dice: 2 as const, glyph: '⚁', paramKey: 'rotate2' as const },
@@ -16,8 +16,8 @@ interface OrientationControlProps {
 }
 
 export default function OrientationControl({ large = false }: OrientationControlProps) {
-    const params = useEditorStore(state => state.diceParams)
-    const setDiceParams = useEditorStore(state => state.setDiceParams)
+    const params = useDocumentStore(state => state.dice)
+    const updateDice = useDocumentStore(state => state.updateDice)
 
     // Cumulative rotation angles so every tap animates another 90°
     const getInitialRotation = (isRotated: boolean) => isRotated ? 0 : 90
@@ -32,7 +32,7 @@ export default function OrientationControl({ large = false }: OrientationControl
             ...prev,
             [`dice${dice}`]: prev[`dice${dice}`] + 90
         }))
-        setDiceParams({ [paramKey]: !params[paramKey] })
+        updateDice({ [paramKey]: !params[paramKey] })
     }
 
     return (

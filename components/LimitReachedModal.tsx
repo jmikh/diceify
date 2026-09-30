@@ -3,20 +3,20 @@
 import { X } from 'lucide-react'
 import Image from 'next/image'
 import { UpgradeButton } from '@/components/UpgradeButton'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 
 export default function LimitReachedModal() {
-    const showLimitModal = useEditorStore(state => state.showLimitModal)
-    const setShowLimitModal = useEditorStore(state => state.setShowLimitModal)
+    const isOpen = useEditorUiStore(state => state.modal === 'limit')
+    const closeModal = useEditorUiStore(state => state.closeModal)
 
-    if (!showLimitModal) return null
+    if (!isOpen) return null
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-                onClick={() => setShowLimitModal(false)}
+                onClick={closeModal}
             />
 
             {/* Modal */}
@@ -27,7 +27,7 @@ export default function LimitReachedModal() {
 
                 {/* Close button */}
                 <button
-                    onClick={() => setShowLimitModal(false)}
+                    onClick={closeModal}
                     className="absolute top-4 right-4 p-2 rounded-full transition-all hover:bg-white/10 z-10"
                 >
                     <X size={20} className="text-white/60 hover:text-white transition-colors" />
@@ -69,7 +69,7 @@ export default function LimitReachedModal() {
                     <UpgradeButton source="limit_reached_100" className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 shadow-lg shadow-pink-500/20 text-white font-semibold transition-all hover:scale-[1.02]" />
 
                     <button
-                        onClick={() => setShowLimitModal(false)}
+                        onClick={closeModal}
                         className="mt-3 text-sm text-gray-500 hover:text-white transition-colors"
                     >
                         Maybe later

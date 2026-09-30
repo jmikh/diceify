@@ -2,25 +2,28 @@
 
 import { X } from 'lucide-react'
 import Image from 'next/image'
-import { buildIndex } from '@/core/dice'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useBuildProgress } from '@/features/editor/hooks/useBuildProgress'
+import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { ProgressBar } from './Editor/Builder/BuilderPanel'
 
-interface ResetProgressModalProps {
-    isOpen: boolean
-    onClose: () => void
-    onConfirm: () => void
-}
-
-export default function ResetProgressModal({ isOpen, onClose, onConfirm }: ResetProgressModalProps) {
-    const buildProgress = useEditorStore(state => state.buildProgress)
-    const diceGrid = useEditorStore(state => state.diceGrid)
+/**
+ * Confirmation shown when leaving the build step with progress (opened by
+ * useStepNavigation with the step to enter once confirmed).
+ */
+export default function ResetProgressModal() {
+    const isOpen = useEditorUiStore(state => state.modal === 'resetProgress')
+    const pendingStep = useEditorUiStore(state => state.pendingStep)
+    const closeModal = useEditorUiStore(state => state.closeModal)
+    const setStep = useEditorUiStore(state => state.setStep)
+    const { percent: percentage } = useBuildProgress()
 
     if (!isOpen) return null
 
-    const totalDice = (diceGrid?.width || 0) * (diceGrid?.height || 0)
-    const currentIndex = buildIndex(buildProgress, diceGrid?.width || 0)
-    const percentage = totalDice > 0 ? (currentIndex / totalDice) * 100 : 0
+    const onClose = closeModal
+    const onConfirm = () => {
+        closeModal()
+        if (pendingStep) setStep(pendingStep)
+    }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

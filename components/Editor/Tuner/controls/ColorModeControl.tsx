@@ -2,7 +2,7 @@
 
 import { ColorMode } from '@/lib/types'
 import { theme } from '@/lib/theme'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 
 const options: { mode: ColorMode; tooltip: string; swatch: JSX.Element }[] = [
     {
@@ -35,8 +35,8 @@ interface ColorModeControlProps {
 }
 
 export default function ColorModeControl({ large = false }: ColorModeControlProps) {
-    const colorMode = useEditorStore(state => state.diceParams.colorMode)
-    const setDiceParams = useEditorStore(state => state.setDiceParams)
+    const colorMode = useDocumentStore(state => state.dice.colorMode)
+    const updateDice = useDocumentStore(state => state.updateDice)
 
     return (
         <div
@@ -49,7 +49,7 @@ export default function ColorModeControl({ large = false }: ColorModeControlProp
             {options.map((option, index) => (
                 <button
                     key={option.mode}
-                    onClick={() => setDiceParams({ colorMode: option.mode })}
+                    onClick={() => updateDice({ colorMode: option.mode })}
                     // Round the outer corners of the edge buttons so the inset
                     // selection ring follows the container's rounded corners
                     className={`flex-1 ${large ? 'h-12' : 'h-10'} flex items-center justify-center transition-all relative group ${index === 0 ? 'rounded-l-lg' : ''} ${index === options.length - 1 ? 'rounded-r-lg' : ''}`}

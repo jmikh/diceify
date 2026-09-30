@@ -1,34 +1,22 @@
 'use client'
 
-import { useEffect, useState, memo } from 'react'
-import { WorkflowStep } from '@/lib/types'
-import styles from './DiceStepper.module.css'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { memo } from 'react'
+import { STEP_LABELS, STEPS, stepIndex } from '@/features/editor/steps'
+import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 
-interface DiceStepperProps {
-  vertical?: boolean
-}
-
-export const steps: { id: WorkflowStep; label: string }[] = [
-  { id: 'upload', label: 'Upload' },
-  { id: 'crop', label: 'Crop' },
-  { id: 'tune', label: 'Tune' },
-  { id: 'build', label: 'Build' },
-]
-
-const DiceStepper = memo(function DiceStepper({ vertical = false }: DiceStepperProps) {
-  const step = useEditorStore(state => state.step)
+const DiceStepper = memo(function DiceStepper() {
+  const step = useEditorUiStore(state => state.step)
+  const activeIndex = stepIndex(step)
 
   return (
     <div className="flex items-center justify-center w-full max-w-full overflow-x-auto py-2">
       <div className="flex items-center min-w-max px-2">
-        {steps.map((s, index) => {
-          const isActive = s.id === step
-          const isCompleted = steps.findIndex(st => st.id === step) > index
-          const isInactive = !isActive && !isCompleted
+        {STEPS.map((s, index) => {
+          const isActive = s === step
+          const isCompleted = activeIndex > index
 
           return (
-            <div key={s.id} className="flex items-center">
+            <div key={s} className="flex items-center">
               {/* Step Element */}
               <div
                 className={`
@@ -58,12 +46,12 @@ const DiceStepper = memo(function DiceStepper({ vertical = false }: DiceStepperP
 
                 {/* Label - Hide inactive labels on mobile to save space */}
                 <span className={`text-sm font-medium ${isActive ? 'text-pink-100 block' : 'hidden sm:block'}`}>
-                  {s.label}
+                  {STEP_LABELS[s]}
                 </span>
               </div>
 
               {/* Connecting Line (if not last) */}
-              {index < steps.length - 1 && (
+              {index < STEPS.length - 1 && (
                 <div className={`w-8 h-[1px] mx-2 ${isCompleted ? 'bg-white/20' : 'bg-white/5'}`} />
               )}
             </div>

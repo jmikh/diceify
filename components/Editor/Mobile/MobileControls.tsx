@@ -1,6 +1,6 @@
 'use client'
 
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import MobileCropControls from './MobileCropControls'
 import MobileTuneControls from './MobileTuneControls'
 import MobileBuildControls from './MobileBuildControls'
@@ -11,7 +11,7 @@ import MobileBuildControls from './MobileBuildControls'
  * the upload target).
  */
 export default function MobileControls() {
-    const step = useEditorStore(state => state.step)
+    const step = useEditorUiStore(state => state.step)
 
     if (step === 'upload') return null
 

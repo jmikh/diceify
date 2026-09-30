@@ -1,6 +1,8 @@
 // Human-readable autosave status, shared by the desktop project selector
 // tooltip and the mobile menu
 
+export type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
+
 function formatSaveTime(date: Date): string {
     const now = new Date()
     const diff = now.getTime() - date.getTime()
@@ -15,8 +17,9 @@ function formatSaveTime(date: Date): string {
     return date.toLocaleDateString()
 }
 
-export function formatSaveStatus(isSaving: boolean, lastSaved: Date | null | undefined): string {
-    if (isSaving) return 'Saving...'
+export function formatSaveStatus(status: SaveStatus, lastSaved: Date | null | undefined): string {
+    if (status === 'saving') return 'Saving...'
+    if (status === 'error') return 'Save failed'
     if (!lastSaved) return 'Not saved'
     return `Saved ${formatSaveTime(lastSaved)}`
 }

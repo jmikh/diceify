@@ -1,7 +1,8 @@
 import { useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { useEditorStore } from '@/lib/store/useEditorStore'
 import { renderGridSvg } from '@/core/dice'
+import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
+import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 
 /**
  * Download the full dice grid as an SVG blueprint (PRO feature).
@@ -13,17 +14,16 @@ export function useBlueprintDownload() {
 
     return useCallback(() => {
         if (!session?.user) {
-            useEditorStore.getState().setAuthModalMessage("You must be logged in to download blueprint.")
-            useEditorStore.getState().setShowAuthModal(true)
+            useEditorUiStore.getState().openModal('signIn', { message: "You must be logged in to download blueprint." })
             return
         }
 
         if (!session.user.isPro) {
-            useEditorStore.getState().setShowProFeatureModal(true)
+            useEditorUiStore.getState().openModal('proFeature')
             return
         }
 
-        const grid = useEditorStore.getState().diceGrid
+        const grid = useDerivedStore.getState().grid
         if (!grid) return
 
         try {

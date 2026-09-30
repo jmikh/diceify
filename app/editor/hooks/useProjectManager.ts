@@ -1,34 +1,24 @@
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { fromLegacyProjectRow, type LegacyProjectRow } from '@/core/dice'
+import { resetEditor } from '@/features/editor/store/editor'
+import { replaceDocument, useDocumentStore } from '@/features/editor/store/useDocumentStore'
+import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
+import { useProjectStore, type ProjectSummary } from '@/features/editor/store/useProjectStore'
 import { buildProjectPayload, markSnapshotClean, clearLocalDraft, flushSave } from './useAutosave'
 import { devLog, devError } from '@/lib/utils/debug'
+
+/** A full project row from GET /api/projects/[id] (the legacy Prisma columns). */
+type ProjectRow = ProjectSummary & LegacyProjectRow & { originalImage?: string | null }
 
 export function useProjectManager() {
     const { data: session } = useSession()
     const router = useRouter()
 
-    // Store state
-    const currentProjectId = useEditorStore(state => state.currentProjectId)
-    const originalImage = useEditorStore(state => state.originalImage)
-
-    // Store actions
-    const setCurrentProjectId = useEditorStore(state => state.setCurrentProjectId)
-    const setProjectName = useEditorStore(state => state.setProjectName)
-    const setLastSaved = useEditorStore(state => state.setLastSaved)
-    const setShowProjectModal = useEditorStore(state => state.setShowProjectModal)
-    const setStep = useEditorStore(state => state.setStep)
-    const setOriginalImage = useEditorStore(state => state.setOriginalImage)
-    const setCropParams = useEditorStore(state => state.setCropParams)
-    const setProcessedImageUrl = useEditorStore(state => state.setProcessedImageUrl)
-    const setDiceParams = useEditorStore(state => state.setDiceParams)
-    const setDiceStats = useEditorStore(state => state.setDiceStats)
-    const setBuildProgress = useEditorStore(state => state.setBuildProgress)
-    const resetWorkflow = useEditorStore(state => state.resetWorkflow)
-
-    // Local state
-    const [userProjects, setUserProjects] = useState<any[]>([])
+    const projectId = useProjectStore(state => state.projectId)
+    const imageSrc = useProjectStore(state => state.imageSrc)
+    const projects = useProjectStore(state => state.projects)
 
     // Update URL with project ID
     const updateURLWithProject = useCallback((projectId: string | null) => {
@@ -43,19 +33,19 @@ export function useProjectManager() {
     }, [router])
 
     const handleResetWorkflow = useCallback(() => {
-        resetWorkflow()
+        resetEditor()
         clearLocalDraft()
-    }, [resetWorkflow])
+    }, [])
 
     // Fetch user projects
-    const fetchUserProjects = useCallback(async () => {
+    const fetchUserProjects = useCallback(async (): Promise<ProjectSummary[]> => {
         if (!session?.user?.id) return []
 
         try {
             const response = await fetch('/api/projects')
             if (response.ok) {
-                const projects = await response.json()
-                setUserProjects(projects)
+                const projects: ProjectSummary[] = await response.json()
+                useProjectStore.getState().setProjects(projects)
                 return projects
             }
         } catch (error) {
@@ -64,17 +54,18 @@ export function useProjectManager() {
         return []
     }, [session])
 
-    const registerCreatedProject = useCallback(async (project: any) => {
-        setCurrentProjectId(project.id)
-        setProjectName(project.name)
+    const registerCreatedProject = useCallback(async (project: ProjectSummary) => {
+        const store = useProjectStore.getState()
+        useDocumentStore.getState().setName(project.name)
+        store.setProjectId(project.id)
         updateURLWithProject(project.id)
-        setLastSaved(new Date())
-        setShowProjectModal(false)
+        store.setLastSaved(new Date())
+        useEditorUiStore.getState().closeModal()
         markSnapshotClean()
         await fetchUserProjects()
-    }, [setCurrentProjectId, setProjectName, updateURLWithProject, setLastSaved, setShowProjectModal, fetchUserProjects])
+    }, [updateURLWithProject, fetchUserProjects])
 
-    const postProject = useCallback(async (payload: object) => {
+    const postProject = useCallback(async (payload: object): Promise<ProjectSummary | null> => {
         const response = await fetch('/api/projects', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -99,7 +90,7 @@ export function useProjectManager() {
         // Push pending changes to the current project and detach the autosave
         // from it BEFORE resetting, so the reset can't be saved into it
         await flushSave()
-        setCurrentProjectId(null)
+        useProjectStore.getState().setProjectId(null)
         handleResetWorkflow()
 
         devLog(`[DB] Creating new empty project: ${name}`)
@@ -107,12 +98,12 @@ export function useProjectManager() {
             const project = await postProject({ name })
             if (project) {
                 await registerCreatedProject(project)
-                setStep('upload')
+                useEditorUiStore.getState().setStep('upload')
             }
         } catch (error) {
             devError('Failed to create project:', error)
         }
-    }, [session, handleResetWorkflow, postProject, registerCreatedProject, setStep, setCurrentProjectId])
+    }, [session, handleResetWorkflow, postProject, registerCreatedProject])
 
     // Create a project from the current (anonymous draft) state
     const createProjectFromCurrent = useCallback(async (name?: string) => {
@@ -129,48 +120,49 @@ export function useProjectManager() {
             const project = await postProject({
                 ...buildProjectPayload(),
                 name: projectName,
-                originalImage,
+                originalImage: imageSrc,
             })
             if (project) {
-                // The draft is cleared by the page effect once currentProjectId is set
+                // The draft is cleared by the page effect once projectId is set
                 await registerCreatedProject(project)
             }
         } catch (error) {
             devError('Failed to create project:', error)
         }
-    }, [session, originalImage, postProject, registerCreatedProject])
+    }, [session, imageSrc, postProject, registerCreatedProject])
 
     // Delete project
-    const deleteProject = useCallback(async (projectId: string) => {
+    const deleteProject = useCallback(async (id: string) => {
         if (!session?.user?.id) return
 
-        devLog(`[DB] Deleting project ${projectId}`)
+        devLog(`[DB] Deleting project ${id}`)
         try {
-            const response = await fetch(`/api/projects/${projectId}`, {
+            const response = await fetch(`/api/projects/${id}`, {
                 method: 'DELETE'
             })
 
             if (response.ok) {
                 await fetchUserProjects()
                 // If we deleted the current project, reset the editor
-                if (projectId === currentProjectId) {
+                if (id === projectId) {
                     handleResetWorkflow()
-                    setCurrentProjectId(null)
+                    useProjectStore.getState().setProjectId(null)
                     updateURLWithProject(null)
                 }
             }
         } catch (error) {
             devError('Failed to delete project:', error)
         }
-    }, [session, currentProjectId, fetchUserProjects, handleResetWorkflow, setCurrentProjectId, updateURLWithProject])
+    }, [session, projectId, fetchUserProjects, handleResetWorkflow, updateURLWithProject])
 
     // Load a project
-    const loadProject = useCallback(async (project: any) => {
-        devLog('[CLIENT] Loading project:', project.name)
+    const loadProject = useCallback(async (summary: ProjectSummary) => {
+        devLog('[CLIENT] Loading project:', summary.name)
 
         // Always fetch the latest full project data (the list omits large fields)
+        let project = summary as ProjectRow
         try {
-            const response = await fetch(`/api/projects/${project.id}`)
+            const response = await fetch(`/api/projects/${summary.id}`)
             if (response.ok) {
                 project = await response.json()
             }
@@ -178,83 +170,32 @@ export function useProjectManager() {
             devError('Failed to fetch full project:', error)
         }
 
-        // Clear derived state
-        setOriginalImage(null)
-        setCropParams(null)
-        setProcessedImageUrl(null)
+        let doc
+        try {
+            doc = fromLegacyProjectRow(project)
+        } catch (error) {
+            devError('[CLIENT] Project row is not a valid document:', error)
+            return
+        }
 
-        // Project metadata
-        setCurrentProjectId(project.id)
-        setProjectName(project.name)
+        // The image and the derived grid/preview are regenerated by the dice pipeline
+        replaceDocument(doc, project.name)
+        const store = useProjectStore.getState()
+        store.setImageSrc(project.originalImage ?? null)
+        useEditorUiStore.getState().setStep(project.originalImage ? doc.step : 'upload')
+
+        store.setProjectId(project.id)
         updateURLWithProject(project.id)
         if (project.updatedAt) {
-            setLastSaved(new Date(project.updatedAt))
-        }
-
-        if (project.originalImage) {
-            setOriginalImage(project.originalImage)
-        }
-
-        // Crop params - the cropped image itself is derived state that the
-        // dice pipeline (useDiceGeneration) regenerates automatically
-        if (project.cropX !== null && project.cropY !== null && project.cropWidth && project.cropHeight) {
-            const params = {
-                x: project.cropX,
-                y: project.cropY,
-                width: project.cropWidth,
-                height: project.cropHeight,
-                rotation: project.cropRotation || 0
-            }
-            setCropParams(params)
-            // Keep the cropper widget's rotation in sync with the restored params
-            useEditorStore.getState().setCropRotation(params.rotation)
-        }
-
-        // Tune params
-        const diceParams = {
-            numRows: project.numRows || 30,
-            colorMode: project.colorMode || 'both',
-            contrast: project.contrast || 0,
-            gamma: project.gamma || 1.0,
-            edgeSharpening: project.edgeSharpening || 0,
-            rotate2: project.rotate2 || false,
-            rotate3: project.rotate3 || false,
-            rotate6: project.rotate6 || false
-        }
-        setDiceParams(diceParams)
-        // The loaded progress belongs to the loaded params
-        useEditorStore.getState().setBuildBaseline()
-
-        // Black/white split is recomputed when the grid regenerates
-        if (project.totalDice) {
-            setDiceStats({
-                blackCount: 0,
-                whiteCount: 0,
-                totalCount: project.totalDice
-            })
-        }
-
-        setBuildProgress({
-            x: project.currentX || 0,
-            y: project.currentY || 0
-        })
-
-        if (project.originalImage) {
-            if (project.currentX > 0 || project.currentY > 0) {
-                setStep('build')
-            } else {
-                setStep('tune')
-            }
-        } else {
-            setStep('upload')
+            store.setLastSaved(new Date(project.updatedAt))
         }
 
         // Everything just loaded is by definition saved
         markSnapshotClean()
-    }, [setCurrentProjectId, setProjectName, updateURLWithProject, setLastSaved, setOriginalImage, setCropParams, setProcessedImageUrl, setDiceStats, setDiceParams, setBuildProgress, setStep])
+    }, [updateURLWithProject])
 
     return {
-        userProjects,
+        projects,
         fetchUserProjects,
         createProject,
         createProjectFromCurrent,

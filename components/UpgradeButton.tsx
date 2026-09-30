@@ -1,7 +1,7 @@
 "use client"
 
 import { sendGAEvent } from '@next/third-parties/google'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 
 interface UpgradeButtonProps {
     className?: string
@@ -9,7 +9,7 @@ interface UpgradeButtonProps {
 }
 
 export const UpgradeButton = ({ className, source }: UpgradeButtonProps) => {
-    const setShowProFeatureModal = useEditorStore(state => state.setShowProFeatureModal)
+    const openModal = useEditorUiStore(state => state.openModal)
 
     const onUpgrade = () => {
         // Track the click event
@@ -18,7 +18,7 @@ export const UpgradeButton = ({ className, source }: UpgradeButtonProps) => {
         })
 
         // Open the upgrade modal
-        setShowProFeatureModal(true)
+        openModal('proFeature')
     }
 
     return (

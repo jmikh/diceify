@@ -7,7 +7,7 @@ import { devLog } from '@/lib/utils/debug'
 import { sendGAEvent } from '@next/third-parties/google'
 import Image from 'next/image'
 import Logo from '@/components/Logo'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import { flushSave, persistImage } from '@/app/editor/hooks/useAutosave'
 
 interface AuthModalProps {
@@ -32,11 +32,11 @@ export default function AuthModal({
     try {
       // OAuth redirects away from the page - make sure the local draft
       // (which the editor autosaves continuously) is fully written first
-      const state = useEditorStore.getState()
+      const { imageSrc, projectId } = useProjectStore.getState()
       devLog('[AUTH] Flushing draft before OAuth redirect')
       await flushSave()
-      if (state.originalImage && !state.currentProjectId) {
-        await persistImage(state.originalImage)
+      if (imageSrc && !projectId) {
+        await persistImage(imageSrc)
       }
 
       // For OAuth providers, we must redirect to the provider's auth page

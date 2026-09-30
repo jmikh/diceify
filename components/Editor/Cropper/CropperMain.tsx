@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { FixedCropper, FixedCropperRef, ImageRestriction, Coordinates } from 'react-advanced-cropper'
+import { FixedCropper, FixedCropperRef, ImageRestriction } from 'react-advanced-cropper'
 import 'react-advanced-cropper/dist/style.css'
 import 'react-advanced-cropper/dist/themes/corners.css'
 import styles from './Cropper.module.css'
 import { devLog, devError } from '@/lib/utils/debug'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { DEFAULT_ASPECT_RATIO } from '@/core/dice'
+import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
+import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import { aspectRatioOptions } from './CropperPanel'
-import { AspectRatio } from '@/lib/types'
 
 interface CropperMainProps {
     windowSize: { width: number; height: number }
@@ -17,15 +18,14 @@ interface CropperMainProps {
 export default function CropperMain({
     windowSize
 }: CropperMainProps) {
-    const imageUrl = useEditorStore(state => state.originalImage)
-    const cropRotation = useEditorStore(state => state.cropRotation)
-    const selectedRatio = useEditorStore(state => state.selectedRatio)
+    const imageUrl = useProjectStore(state => state.imageSrc)
+    const cropParams = useDocumentStore(state => state.crop)
+    const setCrop = useDocumentStore(state => state.setCrop)
 
-    // Store Actions
-    const setCropParams = useEditorStore(state => state.setCropParams)
-
-    // Store State
-    const cropParams = useEditorStore(state => state.cropParams)
+    // The crop is the single source for the preset and rotation; before the
+    // first report (a few ms after mount) the defaults apply
+    const selectedRatio = cropParams?.aspectRatio ?? DEFAULT_ASPECT_RATIO
+    const cropRotation = cropParams?.rotation ?? 0
 
     // Local State
     const fixedCropperRef = useRef<FixedCropperRef>(null)
@@ -104,17 +104,18 @@ export default function CropperMain({
             const state = cropper.getState()
 
             // Round to 2 decimal places to prevent floating point precision differences
-            setCropParams({
+            setCrop({
                 x: Math.round((coordinates?.left || 0) * 100) / 100,
                 y: Math.round((coordinates?.top || 0) * 100) / 100,
                 width: Math.round((coordinates?.width || 0) * 100) / 100,
                 height: Math.round((coordinates?.height || 0) * 100) / 100,
-                rotation: Math.round((state?.transforms?.rotate || 0) * 100) / 100
+                rotation: Math.round((state?.transforms?.rotate || 0) * 100) / 100,
+                aspectRatio: selectedRatio,
             })
         } catch (error) {
             devError('Error reading crop coordinates:', error)
         }
-    }, [setCropParams])
+    }, [setCrop, selectedRatio])
 
     const handleCropperChange = useCallback(() => {
         if (cropChangeTimeoutRef.current) {

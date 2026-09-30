@@ -4,7 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import { Menu, Sparkles, LogOut, Home, CreditCard, Cloud } from 'lucide-react'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
+import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import { formatSaveStatus } from '@/lib/utils/saveStatus'
 import { openBillingPortal } from '@/lib/utils/billing'
 import { PlanType } from '@/lib/subscription'
@@ -20,9 +21,9 @@ type MobileMenuProps = Omit<ProjectListMenuProps, 'onClose'>
  */
 export default function MobileMenu(projectProps: MobileMenuProps) {
     const { data: session } = useSession()
-    const setShowAuthModal = useEditorStore(state => state.setShowAuthModal)
-    const isSaving = useEditorStore(state => state.isSaving)
-    const lastSaved = useEditorStore(state => state.lastSaved)
+    const openModal = useEditorUiStore(state => state.openModal)
+    const saveStatus = useProjectStore(state => state.saveStatus)
+    const lastSaved = useProjectStore(state => state.lastSaved)
 
     const [open, setOpen] = useState(false)
 
@@ -61,7 +62,7 @@ export default function MobileMenu(projectProps: MobileMenuProps) {
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1.5 flex items-center gap-1.5">
                                         <Cloud size={12} />
-                                        {formatSaveStatus(isSaving, lastSaved)}
+                                        {formatSaveStatus(saveStatus, lastSaved)}
                                     </div>
                                 </div>
 
@@ -101,7 +102,7 @@ export default function MobileMenu(projectProps: MobileMenuProps) {
                                 <button
                                     onClick={() => {
                                         setOpen(false)
-                                        setShowAuthModal(true)
+                                        openModal('signIn')
                                     }}
                                     className="w-full py-3 rounded-full bg-pink-500 active:bg-pink-600 text-white text-sm font-semibold shadow-[0_0_15px_rgba(236,72,153,0.3)] transition-all"
                                 >

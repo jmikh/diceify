@@ -15,6 +15,9 @@ import { DEFAULT_DICE_PARAMS, type DiceParams, type GridPos } from './types'
 export type AspectRatio = (typeof ASPECT_RATIOS)[number]
 export type DocumentStep = 'crop' | 'tune' | 'build'
 
+/** The crop preset used before the user picks one (and for degenerate legacy crops). */
+export const DEFAULT_ASPECT_RATIO: AspectRatio = '1:1'
+
 /** Crop box in downscaled-image coordinates. */
 export interface CropParams {
   x: number
@@ -200,10 +203,10 @@ const ratioOf = (aspect: AspectRatio): number => {
   return w / h
 }
 
-/** The preset closest to w/h; '1:1' (the store default) for degenerate input. */
+/** The preset closest to w/h; `DEFAULT_ASPECT_RATIO` for degenerate input. */
 export function nearestAspectRatio(width: number, height: number): AspectRatio {
   const ratio = width / height
-  if (!Number.isFinite(ratio) || ratio <= 0) return '1:1'
+  if (!Number.isFinite(ratio) || ratio <= 0) return DEFAULT_ASPECT_RATIO
   let best: AspectRatio = ASPECT_RATIOS[0]
   let bestDistance = Infinity
   for (const aspect of ASPECT_RATIOS) {

@@ -2,14 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Plus, X, Check } from 'lucide-react'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useProjectStore, type ProjectSummary } from '@/features/editor/store/useProjectStore'
 
-export interface Project {
-    id: string
-    name: string
-    updatedAt: string | Date
-    percentComplete?: number
-}
+export type Project = ProjectSummary
 
 export interface ProjectListMenuProps {
     projects?: Project[]
@@ -34,7 +29,7 @@ export default function ProjectListMenu({
     maxProjects = 3,
     onClose
 }: ProjectListMenuProps) {
-    const currentProjectId = useEditorStore(state => state.currentProjectId)
+    const currentProjectId = useProjectStore(state => state.projectId)
 
     // Inline Create state
     const [isCreating, setIsCreating] = useState(false)

@@ -8,7 +8,8 @@ import { useSession } from 'next-auth/react'
 import { rasterSize, renderProgressSvg } from '@/core/dice'
 import { rasterizeSvg } from '@/lib/image/rasterize'
 import { theme } from '@/lib/theme'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
+import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 
 interface ProgressPreviewModalProps {
     isOpen: boolean
@@ -20,8 +21,8 @@ const RASTER_PX_PER_DIE = 10
 
 export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPreviewModalProps) {
     const { data: session } = useSession()
-    const diceGrid = useEditorStore(state => state.diceGrid)
-    const buildProgress = useEditorStore(state => state.buildProgress)
+    const diceGrid = useDerivedStore(state => state.grid)
+    const buildProgress = useDocumentStore(state => state.buildProgress)
 
     // Toggle between progress view and final art view
     const [showFinalArt, setShowFinalArt] = useState(false)

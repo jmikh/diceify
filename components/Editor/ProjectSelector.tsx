@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { theme } from '@/lib/theme'
 import { Cloud, ChevronDown } from 'lucide-react'
 import { devError } from '@/lib/utils/debug'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
+import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import ProjectListMenu, { Project } from './ProjectListMenu'
 import { formatSaveStatus } from '@/lib/utils/saveStatus'
 
@@ -24,11 +25,12 @@ export default function ProjectSelector({
   maxProjects = 3
 }: ProjectSelectorProps) {
   // Get state directly from Zustand instead of props
-  const currentProject = useEditorStore(state => state.projectName)
-  const currentProjectId = useEditorStore(state => state.currentProjectId)
-  const lastSaved = useEditorStore(state => state.lastSaved)
-  const isSaving = useEditorStore(state => state.isSaving)
-  const setProjectName = useEditorStore(state => state.setProjectName)
+  const currentProject = useDocumentStore(state => state.name)
+  const setProjectName = useDocumentStore(state => state.setName)
+  const currentProjectId = useProjectStore(state => state.projectId)
+  const lastSaved = useProjectStore(state => state.lastSaved)
+  const saveStatus = useProjectStore(state => state.saveStatus)
+  const isSaving = saveStatus === 'saving'
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(currentProject)
   const [isCloudHovering, setIsCloudHovering] = useState(false)
@@ -189,7 +191,7 @@ export default function ProjectSelector({
                   color: theme.colors.text.primary
                 }}
               >
-                {formatSaveStatus(isSaving, lastSaved)}
+                {formatSaveStatus(saveStatus, lastSaved)}
               </div>
             )}
           </div>

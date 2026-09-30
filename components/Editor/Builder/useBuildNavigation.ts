@@ -10,22 +10,23 @@ import {
     rowLimitAllows,
     type GridPos,
 } from '@/core/dice'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useBuildProgress } from '@/features/editor/hooks/useBuildProgress'
+import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
+import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
+import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 
 export function useBuildNavigation() {
     const { data: session } = useSession()
-    const diceGrid = useEditorStore(state => state.diceGrid)
-    const buildProgress = useEditorStore(state => state.buildProgress)
-    const setBuildProgress = useEditorStore(state => state.setBuildProgress)
-    const setShowAuthModal = useEditorStore(state => state.setShowAuthModal)
-    const setShowLimitModal = useEditorStore(state => state.setShowLimitModal)
+    const diceGrid = useDerivedStore(state => state.grid)
+    const buildProgress = useDocumentStore(state => state.buildProgress)
+    const setBuildProgress = useDocumentStore(state => state.setBuildProgress)
+    const openModal = useEditorUiStore(state => state.openModal)
+    const { currentIndex, totalDice, percent } = useBuildProgress()
 
     const currentX = buildProgress.x
     const currentY = buildProgress.y
     const totalCols = diceGrid?.width || 0
     const totalRows = diceGrid?.height || 0
-    const totalDice = totalCols * totalRows
-    const currentIndex = buildIndex(buildProgress, totalCols)
 
     // Rows a user may build; null = unlimited (any paid plan). Signed-out users
     // count as explorers. C2 derives this from entitlements instead of the session.
@@ -43,13 +44,9 @@ export function useBuildNavigation() {
     // move is allowed.
     const enforceLimit = useCallback((target: GridPos) => {
         if (rowLimitAllows(target, rowLimit)) return true
-        if (!session?.user) {
-            setShowAuthModal(true)
-        } else {
-            setShowLimitModal(true)
-        }
+        openModal(session?.user ? 'limit' : 'signIn')
         return false
-    }, [rowLimit, session, setShowAuthModal, setShowLimitModal])
+    }, [rowLimit, session, openModal])
 
     const navigatePrev = useCallback(() => {
         const target = prevPosition(buildProgress, totalCols)
@@ -125,5 +122,6 @@ export function useBuildNavigation() {
         totalRows,
         totalDice,
         currentIndex,
+        percent,
     }
 }

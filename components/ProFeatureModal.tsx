@@ -3,13 +3,13 @@
 import { useState } from 'react'
 import { X, Check } from 'lucide-react'
 import Link from 'next/link'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { CreatorCard, StudioCard, PlanType } from '@/components/PricingCards'
 import AuthModal from '@/components/AuthModal'
 
 export default function ProFeatureModal() {
-    const showProFeatureModal = useEditorStore(state => state.showProFeatureModal)
-    const setShowProFeatureModal = useEditorStore(state => state.setShowProFeatureModal)
+    const showProFeatureModal = useEditorUiStore(state => state.modal === 'proFeature')
+    const closeModal = useEditorUiStore(state => state.closeModal)
 
     const [isLoading, setIsLoading] = useState<PlanType | null>(null)
     const [showAuthModal, setShowAuthModal] = useState(false)
@@ -46,7 +46,7 @@ export default function ProFeatureModal() {
                 {/* Backdrop */}
                 <div
                     className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-                    onClick={() => setShowProFeatureModal(false)}
+                    onClick={closeModal}
                 />
 
                 {/* Modal */}
@@ -57,7 +57,7 @@ export default function ProFeatureModal() {
 
                     {/* Close button */}
                     <button
-                        onClick={() => setShowProFeatureModal(false)}
+                        onClick={closeModal}
                         className="absolute top-4 right-4 p-2 rounded-full transition-all hover:bg-white/10 z-10"
                     >
                         <X size={20} className="text-white/60 hover:text-white transition-colors" />
@@ -91,7 +91,7 @@ export default function ProFeatureModal() {
 
                     {/* Maybe later link */}
                     <button
-                        onClick={() => setShowProFeatureModal(false)}
+                        onClick={closeModal}
                         className="mt-4 text-sm text-gray-500 hover:text-white transition-colors text-center relative z-10"
                     >
                         Maybe later
@@ -122,7 +122,7 @@ export default function ProFeatureModal() {
                                 <button
                                     onClick={() => {
                                         setShowAlreadyProModal(false)
-                                        setShowProFeatureModal(false)
+                                        closeModal()
                                     }}
                                     className="flex-1 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors"
                                 >
@@ -131,7 +131,7 @@ export default function ProFeatureModal() {
                                 <button
                                     onClick={() => {
                                         setShowAlreadyProModal(false)
-                                        setShowProFeatureModal(false)
+                                        closeModal()
                                     }}
                                     className="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-medium transition-all text-center"
                                 >

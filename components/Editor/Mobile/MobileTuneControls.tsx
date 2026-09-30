@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { BarChart3, Palette, RotateCw, LucideIcon } from 'lucide-react'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 import DiceStatsCard from '@/components/Editor/DiceStatsCard'
 import ColorModeControl from '@/components/Editor/Tuner/controls/ColorModeControl'
 import OrientationControl from '@/components/Editor/Tuner/controls/OrientationControl'
@@ -27,8 +27,8 @@ const tools: { key: ToolKey; icon: LucideIcon; label: string }[] = [
  * visible while adjusting.
  */
 export default function MobileTuneControls() {
-    const params = useEditorStore(state => state.diceParams)
-    const setDiceParams = useEditorStore(state => state.setDiceParams)
+    const params = useDocumentStore(state => state.dice)
+    const updateDice = useDocumentStore(state => state.updateDice)
 
     const [activeTool, setActiveTool] = useState<ToolKey | null>('numRows')
 
@@ -51,7 +51,7 @@ export default function MobileTuneControls() {
                             max={activeSlider.max}
                             step={activeSlider.step}
                             value={params[activeSlider.key]}
-                            onChange={(value) => setDiceParams({ [activeSlider.key]: value })}
+                            onChange={(value) => updateDice({ [activeSlider.key]: value })}
                             formatValue={activeSlider.formatValue}
                         />
                     )}

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Check, Loader2, Clock } from 'lucide-react'
 import { getSession } from 'next-auth/react'
 import { sendGAEvent } from '@next/third-parties/google'
-import { useEditorStore } from '@/lib/store/useEditorStore'
 
 // =============================================================================
 // PRICING CONFIGURATION - Single source of truth

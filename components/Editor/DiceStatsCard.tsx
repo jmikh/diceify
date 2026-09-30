@@ -3,7 +3,7 @@
 import { useRef, useEffect } from 'react'
 import CountUp from 'react-countup'
 import { theme } from '@/lib/theme'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
 
 // Ease-out cubic function for smooth deceleration
 const easeOutCubic = (t: number, b: number, c: number, d: number) => {
@@ -16,7 +16,7 @@ const easeOutCubic = (t: number, b: number, c: number, d: number) => {
  * `compact` renders a two-line variant sized for the mobile toolbar.
  */
 export default function DiceStatsCard({ compact = false }: { compact?: boolean }) {
-    const diceStats = useEditorStore(state => state.diceStats)
+    const diceStats = useDerivedStore(state => state.stats)
     const { blackCount, whiteCount, totalCount } = diceStats
 
     // Track previous values for smooth transitions

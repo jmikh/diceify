@@ -1,18 +1,14 @@
 'use client'
 
 import { RotateCw } from 'lucide-react'
-import { useEditorStore } from '@/lib/store/useEditorStore'
-import { aspectRatioOptions } from '@/components/Editor/Cropper/CropperPanel'
+import { aspectRatioOptions, useCropControls } from '@/components/Editor/Cropper/CropperPanel'
 
 /**
  * Mobile crop toolbar: aspect-ratio pills plus a rotate button, so the
  * cropper itself can fill the screen.
  */
 export default function MobileCropControls() {
-    const selectedRatio = useEditorStore(state => state.selectedRatio)
-    const cropRotation = useEditorStore(state => state.cropRotation)
-    const setSelectedRatio = useEditorStore(state => state.setSelectedRatio)
-    const setCropRotation = useEditorStore(state => state.setCropRotation)
+    const { selectedRatio, setSelectedRatio, rotate } = useCropControls()
 
     return (
         <div className="bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 flex items-center gap-2">
@@ -35,7 +31,7 @@ export default function MobileCropControls() {
             </div>
 
             <button
-                onClick={() => setCropRotation(cropRotation + 90)}
+                onClick={rotate}
                 className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-gray-300 active:bg-white/10 transition-colors"
                 aria-label="Rotate 90°"
             >

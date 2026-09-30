@@ -1,10 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
-import { useEditorStore } from '@/lib/store/useEditorStore'
-import { steps } from '@/components/Editor/DiceStepper'
-import ResetProgressModal from '@/components/ResetProgressModal'
+import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
+import { STEP_LABELS, STEPS, stepIndex as indexOfStep } from '@/features/editor/steps'
 import MobileMenu from './MobileMenu'
 import { ProjectListMenuProps } from '@/components/Editor/ProjectListMenu'
 
@@ -18,41 +16,10 @@ type MobileBottomBarProps = Omit<ProjectListMenuProps, 'onClose'>
  * screens.
  */
 export default function MobileBottomBar(projectProps: MobileBottomBarProps) {
-    const step = useEditorStore(state => state.step)
-    const originalImage = useEditorStore(state => state.originalImage)
-    const buildProgress = useEditorStore(state => state.buildProgress)
-    const setStep = useEditorStore(state => state.setStep)
+    // Leaving the build step with progress opens the reset confirmation (mounted in the page)
+    const { step, canGoNext, canGoBack, goNext, goBack } = useStepNavigation()
 
-    // Leaving the build step resets progress, so it needs a confirmation
-    const [showResetModal, setShowResetModal] = useState(false)
-
-    const stepIndex = steps.findIndex(s => s.id === step)
-
-    const handleBack = () => {
-        if (step === 'crop') {
-            setStep('upload')
-        } else if (step === 'tune') {
-            setStep('crop')
-        } else if (step === 'build') {
-            if (buildProgress.x !== 0 || buildProgress.y !== 0) {
-                setShowResetModal(true)
-            } else {
-                setStep('tune')
-            }
-        }
-    }
-
-    const handleNext = () => {
-        if (step === 'upload') {
-            setStep('crop')
-        } else if (step === 'crop') {
-            setStep('tune')
-        } else if (step === 'tune') {
-            useEditorStore.getState().enterBuild()
-        }
-    }
-
-    const nextDisabled = step === 'upload' && !originalImage
+    const stepIndex = indexOfStep(step)
     const showNext = step !== 'build'
 
     return (
@@ -60,8 +27,8 @@ export default function MobileBottomBar(projectProps: MobileBottomBarProps) {
             {/* Center cluster: back · step title/dots · next */}
             <div className="flex items-center gap-4">
                 <button
-                    onClick={handleBack}
-                    disabled={step === 'upload'}
+                    onClick={goBack}
+                    disabled={!canGoBack}
                     className="w-11 h-11 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-white/70 active:bg-white/10 transition-colors disabled:opacity-0 disabled:pointer-events-none"
                     aria-label="Back"
                 >
@@ -70,12 +37,12 @@ export default function MobileBottomBar(projectProps: MobileBottomBarProps) {
 
                 <div className="flex flex-col items-center min-w-[4.5rem]">
                     <span className="text-sm font-semibold text-white leading-tight">
-                        {steps[stepIndex]?.label}
+                        {STEP_LABELS[step]}
                     </span>
                     <div className="flex items-center gap-1.5 mt-1.5">
-                        {steps.map((s, i) => (
+                        {STEPS.map((s, i) => (
                             <div
-                                key={s.id}
+                                key={s}
                                 className={`h-1.5 rounded-full transition-all ${i === stepIndex
                                     ? 'w-4 bg-pink-500'
                                     : `w-1.5 ${i < stepIndex ? 'bg-white/40' : 'bg-white/15'}`
@@ -87,8 +54,8 @@ export default function MobileBottomBar(projectProps: MobileBottomBarProps) {
 
                 {showNext ? (
                     <button
-                        onClick={handleNext}
-                        disabled={nextDisabled}
+                        onClick={goNext}
+                        disabled={!canGoNext}
                         className="h-11 px-5 rounded-full bg-pink-500 active:bg-pink-600 text-white text-sm font-semibold shadow-[0_0_15px_rgba(236,72,153,0.3)] transition-all disabled:opacity-30 disabled:shadow-none"
                     >
                         Next
@@ -105,15 +72,6 @@ export default function MobileBottomBar(projectProps: MobileBottomBarProps) {
             <div className="absolute right-0 inset-y-0 flex items-center z-20">
                 <MobileMenu {...projectProps} />
             </div>
-
-            <ResetProgressModal
-                isOpen={showResetModal}
-                onClose={() => setShowResetModal(false)}
-                onConfirm={() => {
-                    setShowResetModal(false)
-                    setStep('tune')
-                }}
-            />
         </div>
     )
 }

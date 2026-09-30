@@ -30,10 +30,12 @@ import Logo from '@/components/Logo'
 import AuthModal from '@/components/AuthModal'
 import LimitReachedModal from '@/components/LimitReachedModal'
 import ProFeatureModal from '@/components/ProFeatureModal'
+import ResetProgressModal from '@/components/ResetProgressModal'
 import Footer from '@/components/Footer'
 import { devLog, devError } from '@/lib/utils/debug'
 
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
+import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import { useProjectManager } from './hooks/useProjectManager'
 import { useAutosave, flushSave, hydrateFromLocalDraft, clearLocalDraft } from './hooks/useAutosave'
 import { useDiceGeneration } from './hooks/useDiceGeneration'
@@ -46,7 +48,7 @@ function EditorContent() {
 
   // Custom Hooks
   const {
-    userProjects,
+    projects,
     fetchUserProjects,
     createProject,
     createProjectFromCurrent,
@@ -69,22 +71,16 @@ function EditorContent() {
 
 
   // Store state
-  const step = useEditorStore(state => state.step)
+  const step = useEditorUiStore(state => state.step)
+  const modal = useEditorUiStore(state => state.modal)
+  const signInMessage = useEditorUiStore(state => state.signInMessage)
+  const openModal = useEditorUiStore(state => state.openModal)
+  const closeModal = useEditorUiStore(state => state.closeModal)
 
-  const showAuthModal = useEditorStore(state => state.showAuthModal)
-  const authModalMessage = useEditorStore(state => state.authModalMessage)
-  const showProjectModal = useEditorStore(state => state.showProjectModal)
-  const showLimitModal = useEditorStore(state => state.showLimitModal)
-
-  const originalImage = useEditorStore(state => state.originalImage)
-  const currentProjectId = useEditorStore(state => state.currentProjectId)
-  const isInitializing = useEditorStore(state => state.isInitializing)
-
-  // Store actions
-  const setShowAuthModal = useEditorStore(state => state.setShowAuthModal)
-  const setAuthModalMessage = useEditorStore(state => state.setAuthModalMessage)
-  const setShowProjectModal = useEditorStore(state => state.setShowProjectModal)
-  const setIsInitializing = useEditorStore(state => state.setIsInitializing)
+  const imageSrc = useProjectStore(state => state.imageSrc)
+  const currentProjectId = useProjectStore(state => state.projectId)
+  const boot = useProjectStore(state => state.boot)
+  const setBoot = useProjectStore(state => state.setBoot)
 
   // Local UI state
   const [redditBannerDismissed, setRedditBannerDismissed] = useState(() => {
@@ -161,14 +157,6 @@ function EditorContent() {
     }
   }, [status, currentProjectId, searchParams, router])
 
-  // Ensure projects are always fetched when authenticated
-  // This handles the case where state is preserved (currentProjectId exists) but local hook state (userProjects) is reset on remount
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user?.id) {
-      fetchUserProjects()
-    }
-  }, [status, session?.user?.id, fetchUserProjects])
-
   // Restore the anonymous draft from localStorage.
   // Two entry points share the same draft: a plain visit while logged out, and
   // the return from an OAuth redirect (?restored=true) where the pre-login
@@ -185,9 +173,9 @@ function EditorContent() {
     } else if (!session?.user?.id && !currentProjectId) {
       hasHydratedRef.current = true
       hydrateFromLocalDraft()
-      setIsInitializing(false)
+      setBoot('ready')
     }
-  }, [status, session?.user?.id, currentProjectId, searchParams, setIsInitializing])
+  }, [status, session?.user?.id, currentProjectId, searchParams, setBoot])
 
   // Handle user login - offer to save local work, or load the most recent project
   useEffect(() => {
@@ -197,29 +185,28 @@ function EditorContent() {
       fetchUserProjects().then((projects) => {
         // Read fresh from the store: the draft may have been hydrated after
         // this effect's render (e.g. right after an OAuth redirect)
-        const { originalImage, processedImageUrl } = useEditorStore.getState()
-        const hasWorkInProgress = !!(originalImage || processedImageUrl)
+        const hasWorkInProgress = !!useProjectStore.getState().imageSrc
 
         // If a project is in the URL, the URL effect above will load it
         if (!searchParams.get('project')) {
           if (hasWorkInProgress) {
             // Local work in progress - show the dashboard so it can be saved
-            setShowProjectModal(true)
+            openModal('projects')
           } else if (projects.length > 0) {
             // Projects are sorted by updatedAt desc - load the most recent
             loadProject(projects[0])
           } else {
             // First visit - show the dashboard to create a project
-            setShowProjectModal(true)
+            openModal('projects')
           }
         }
-        setIsInitializing(false)
+        setBoot('ready')
       }).catch(err => {
         devError('[LOGIN] Failed to fetch projects:', err)
-        setIsInitializing(false)
+        setBoot('ready')
       })
     } else if (!session?.user?.id || currentProjectId) {
-      setIsInitializing(false)
+      setBoot('ready')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session?.user?.id, currentProjectId, searchParams, loadProject])
@@ -232,7 +219,7 @@ function EditorContent() {
   }, [currentProjectId])
 
   // Show loading screen while initializing or session is loading
-  if (isInitializing || status === 'loading') {
+  if (boot === 'booting' || status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
         {/* Background Elements */}
@@ -253,7 +240,7 @@ function EditorContent() {
   // Switch projects, pushing any pending autosave to the current one first.
   // Shared by the desktop project selector and the mobile menu.
   const handleSelectProject = async (projectId: string) => {
-    const project = userProjects.find(p => p.id === projectId)
+    const project = projects.find(p => p.id === projectId)
     if (!project) return
 
     try {
@@ -306,7 +293,7 @@ function EditorContent() {
               <div className="absolute left-1/2 top-4 transform -translate-x-1/2 py-2">
                 {session?.user && (
                   <ProjectSelector
-                    projects={userProjects}
+                    projects={projects}
                     onSelectProject={handleSelectProject}
                     onCreateNew={createProject}
                     onDeleteProject={deleteProject}
@@ -321,7 +308,7 @@ function EditorContent() {
                   <UserMenu />
                 ) : (
                   <button
-                    onClick={() => setShowAuthModal(true)}
+                    onClick={() => openModal('signIn')}
                     className="px-4 py-2 text-sm font-medium text-white/90 hover:text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-colors"
                   >
                     Sign in
@@ -350,7 +337,7 @@ function EditorContent() {
           <MobileControls />
 
           <MobileBottomBar
-            projects={userProjects}
+            projects={projects}
             onSelectProject={handleSelectProject}
             onCreateNew={createProject}
             onDeleteProject={deleteProject}
@@ -419,45 +406,38 @@ function EditorContent() {
       )}
 
       {/* Auth Modal */}
-      < AuthModal
-        isOpen={showAuthModal}
-        onClose={() => {
-          setShowAuthModal(false)
-          setAuthModalMessage(null)
-          // User can continue exploring up to x=3
-        }}
-        message={authModalMessage || "To continue using the builder you must be signed in"}
+      <AuthModal
+        isOpen={modal === 'signIn'}
+        onClose={closeModal}
+        message={signInMessage || "To continue using the builder you must be signed in"}
       />
 
       {/* Project Capacity Modal - only shown when at capacity */}
       <ProjectSelectionModal
-        isOpen={showProjectModal}
-
+        isOpen={modal === 'projects'}
         onCreateNew={(name) => {
-          if (originalImage) {
+          if (imageSrc) {
             createProjectFromCurrent(name)
           } else {
             createProject(name)
           }
         }}
         onSelectProject={(projectId) => {
-          const project = userProjects.find(p => p.id === projectId)
+          const project = projects.find(p => p.id === projectId)
           if (project) {
             loadProject(project)
-            setShowProjectModal(false)
+            closeModal()
           }
         }}
         onDeleteProject={deleteProject}
-        projects={userProjects}
-        hasCurrentState={!!originalImage}
+        projects={projects}
+        hasCurrentState={!!imageSrc}
         maxProjects={maxProjects}
       />
 
-
-
-      {/* Limit Reached Modal */}
       <LimitReachedModal />
       <ProFeatureModal />
+      <ResetProgressModal />
 
       {/* Footer - desktop only; the mobile shell is a fixed viewport */}
       {!isMobile && <Footer />}

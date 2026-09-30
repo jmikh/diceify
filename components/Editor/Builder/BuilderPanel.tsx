@@ -5,13 +5,12 @@ import { theme } from '@/lib/theme'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download } from 'lucide-react'
 import { RiProgress5Line } from 'react-icons/ri'
 import { FaAmazon } from 'react-icons/fa'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
 import { useBuildNavigation } from './useBuildNavigation'
 import { useBlueprintDownload } from './useBlueprintDownload'
 import { DICE_PURCHASE_URL } from './constants'
 import { sendGAEvent } from '@next/third-parties/google'
 import DiceStatsCard from '../DiceStatsCard'
-import ResetProgressModal from '@/components/ResetProgressModal'
 import ProgressPreviewModal from '@/components/ProgressPreviewModal'
 
 // --- ProgressBar Component (Exported for reuse) ---
@@ -50,8 +49,7 @@ export default function BuilderPanel() {
     const {
         currentX,
         currentY,
-        totalDice,
-        currentIndex,
+        percent,
         navigatePrev,
         navigateNext,
         navigatePrevDiff,
@@ -59,29 +57,13 @@ export default function BuilderPanel() {
         canNavigate
     } = useBuildNavigation()
 
-    const setStep = useEditorStore(state => state.setStep)
-    const buildProgress = useEditorStore(state => state.buildProgress)
+    // Leaving with progress goes through the reset confirmation (mounted in the page)
+    const { goBack } = useStepNavigation()
 
-    // Modal state for reset progress warning
-    const [showResetModal, setShowResetModal] = useState(false)
     // Modal state for progress preview
     const [showProgressModal, setShowProgressModal] = useState(false)
 
     const handleDownloadSvg = useBlueprintDownload()
-
-    const handleBack = () => {
-        // Check if user has made progress
-        if (buildProgress.x !== 0 || buildProgress.y !== 0) {
-            setShowResetModal(true)
-            return
-        }
-        setStep('tune')
-    }
-
-    const handleConfirmReset = () => {
-        setShowResetModal(false)
-        setStep('tune')
-    }
 
     return (
         <>
@@ -201,7 +183,7 @@ export default function BuilderPanel() {
                         </div>
                         {/* Progress Bar */}
                         <div className="pt-2">
-                            <ProgressBar percentage={totalDice > 0 ? (currentIndex / totalDice) * 100 : 0} />
+                            <ProgressBar percentage={percent} />
                         </div>
 
                         {/* View Progress Button */}
@@ -259,19 +241,12 @@ export default function BuilderPanel() {
             {/* Navigation Buttons */}
             <div className="flex gap-3 mt-6 pt-6 border-t border-white/10 flex-shrink-0">
                 <button
-                    onClick={handleBack}
+                    onClick={goBack}
                     className="w-full py-3.5 rounded-full border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-semibold transition-all flex items-center justify-center gap-2 text-sm"
                 >
                     ← Back
                 </button>
             </div>
-
-            {/* Reset Progress Modal */}
-            <ResetProgressModal
-                isOpen={showResetModal}
-                onClose={() => setShowResetModal(false)}
-                onConfirm={handleConfirmReset}
-            />
 
             {/* Progress Preview Modal */}
             <ProgressPreviewModal

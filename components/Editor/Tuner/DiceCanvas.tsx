@@ -1,14 +1,14 @@
 'use client'
 
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
 
 /**
  * Displays the rasterized dice art preview. Generation happens in the
  * useDiceGeneration pipeline (mounted once in the editor page), which
- * writes processedImageUrl to the store.
+ * writes previewUrl to the derived store.
  */
 export default function DiceCanvas() {
-    const processedImageUrl = useEditorStore(state => state.processedImageUrl)
+    const processedImageUrl = useDerivedStore(state => state.previewUrl)
 
     if (!processedImageUrl) return null
 

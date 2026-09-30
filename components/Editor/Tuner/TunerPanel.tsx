@@ -13,7 +13,8 @@
 
 import { RotateCw, Palette } from 'lucide-react'
 import { theme } from '@/lib/theme'
-import { useEditorStore } from '@/lib/store/useEditorStore'
+import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
+import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 import DiceStatsCard from '../DiceStatsCard'
 import ColorModeControl from './controls/ColorModeControl'
 import OrientationControl from './controls/OrientationControl'
@@ -22,9 +23,9 @@ import { tunerSliders } from './controls/sliderConfigs'
 import styles from './TunerPanel.module.css'
 
 export default function TunerPanel() {
-  const params = useEditorStore(state => state.diceParams)
-  const setDiceParams = useEditorStore(state => state.setDiceParams)
-  const setStep = useEditorStore(state => state.setStep)
+  const params = useDocumentStore(state => state.dice)
+  const updateDice = useDocumentStore(state => state.updateDice)
+  const { goNext, goBack } = useStepNavigation()
 
   return (
     <>
@@ -60,7 +61,7 @@ export default function TunerPanel() {
             max={config.max}
             step={config.step}
             value={params[config.key]}
-            onChange={(value) => setDiceParams({ [config.key]: value })}
+            onChange={(value) => updateDice({ [config.key]: value })}
             formatValue={config.formatValue}
           />
         ))}
@@ -69,14 +70,14 @@ export default function TunerPanel() {
       {/* Navigation Buttons */}
       <div className="flex gap-3 mt-6 pt-6 border-t border-white/10 flex-shrink-0">
         <button
-          onClick={() => setStep('crop')}
+          onClick={goBack}
           className="flex-1 py-3.5 rounded-full border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-semibold transition-all flex items-center justify-center gap-2 text-sm"
         >
           ← Back
         </button>
 
         <button
-          onClick={() => useEditorStore.getState().enterBuild()}
+          onClick={goNext}
           className="
             flex-1 py-3.5 rounded-full
             bg-pink-500 hover:bg-pink-600
