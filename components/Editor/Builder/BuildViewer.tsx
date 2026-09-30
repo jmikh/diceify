@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo, memo, type MouseEvent } from 'react'
+import { useState, useRef, useCallback, useMemo, memo, type MouseEvent } from 'react'
 import { Plus, Minus } from 'lucide-react'
 import { findRun, gridRowFromSvg, svgRow, type DiceGrid } from '@/core/dice'
 import { theme } from '@/lib/theme'
@@ -22,17 +22,9 @@ const zoomButtonClass =
 
 /** The zoomable dice viewer for the build step. `grid` is never null: BuilderMain gates on it. */
 const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
-    const {
-        currentX,
-        currentY,
-        navigatePrev,
-        navigateNext,
-        navigatePrevDiff,
-        navigateNextDiff,
-        navigateTo,
-        canNavigate,
-        currentDice,
-    } = useBuildNavigation()
+    // Arrow-key navigation lives in useEditorShortcuts (page level)
+    const { current, currentDie, navigateTo } = useBuildNavigation()
+    const { x: currentX, y: currentY } = current
     const { width: cols, height: rows } = grid
 
     const containerRef = useRef<HTMLDivElement>(null)
@@ -46,7 +38,7 @@ const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
     const { svgContent, ensureRendered } = useBuildWindow(grid)
     useBuildViewBox({
         svgRef,
-        current: { x: currentX, y: currentY },
+        current,
         cols,
         rows,
         zoomLevel,
@@ -56,8 +48,8 @@ const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
 
     // The run of identical dice the selector is in (group rectangle + badges)
     const run = useMemo(
-        () => (currentDice ? findRun(grid.rows[currentY], currentX) : null),
-        [grid, currentDice, currentX, currentY]
+        () => (currentDie ? findRun(grid.rows[currentY], currentX) : null),
+        [grid, currentDie, currentX, currentY]
     )
     const currentSvgY = svgRow(currentY, rows)
 
@@ -97,31 +89,6 @@ const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
     }, [cellFromEvent])
 
     const handleSvgMouseLeave = useCallback(() => setHoverCell(null), [])
-
-    // Keyboard navigation (B4 moves this into useEditorShortcuts)
-    useEffect(() => {
-        const handleKeyPress = (e: KeyboardEvent) => {
-            switch (e.key) {
-                case 'ArrowLeft':
-                    if (e.shiftKey && canNavigate.prevDiff) {
-                        navigatePrevDiff()
-                    } else if (canNavigate.prev) {
-                        navigatePrev()
-                    }
-                    break
-                case 'ArrowRight':
-                    if (e.shiftKey && canNavigate.nextDiff) {
-                        navigateNextDiff()
-                    } else if (canNavigate.next) {
-                        navigateNext()
-                    }
-                    break
-            }
-        }
-
-        window.addEventListener('keydown', handleKeyPress)
-        return () => window.removeEventListener('keydown', handleKeyPress)
-    }, [canNavigate, navigatePrev, navigateNext, navigatePrevDiff, navigateNextDiff])
 
     return (
         <div className="flex w-full h-full justify-center items-center" data-testid="build-viewer">
@@ -208,7 +175,7 @@ const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
                                 }}
                             />
 
-                            {run && <RunBadges run={run} current={{ x: currentX, y: currentY }} rows={rows} />}
+                            {run && <RunBadges run={run} current={current} rows={rows} />}
                         </svg>
                     </div>
 

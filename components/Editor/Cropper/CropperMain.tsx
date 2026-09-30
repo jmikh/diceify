@@ -6,45 +6,59 @@ import 'react-advanced-cropper/dist/style.css'
 import 'react-advanced-cropper/dist/themes/corners.css'
 import styles from './Cropper.module.css'
 import { devLog, devError } from '@/lib/utils/debug'
-import { DEFAULT_ASPECT_RATIO } from '@/core/dice'
+import { cropParamsEqual, DEFAULT_ASPECT_RATIO, type CropParams } from '@/core/dice'
+import { useDocumentHistoryBatcher } from '@/features/editor/store/historyBatcher'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import { aspectRatioOptions } from './CropperPanel'
+import { setCropperHandle } from './cropperHandle'
 
 interface CropperMainProps {
     windowSize: { width: number; height: number }
 }
 
+// The widget reconciles in bursts (mount, ratio change, boundary refresh); one report per burst
+const REPORT_DELAY_MS = 100
+
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+/** The widget's crop box in the rotated image's space (what the dice pipeline consumes). */
+function readCrop(cropper: FixedCropperRef, aspectRatio: CropParams['aspectRatio']): CropParams | null {
+    const coordinates = cropper.getCoordinates()
+    if (!coordinates) return null
+    return {
+        x: round2(coordinates.left),
+        y: round2(coordinates.top),
+        width: round2(coordinates.width),
+        height: round2(coordinates.height),
+        rotation: round2(cropper.getState()?.transforms?.rotate ?? 0),
+        aspectRatio,
+    }
+}
+
+/**
+ * The crop widget. The document's `crop` is the source of truth: user gestures report into it as one history
+ * entry each (`onInteractionStart/End`), while everything the widget does on its own (reconciling to the stencil
+ * ratio, following an undo via the sync effect) is written back untracked, so it neither adds undo steps nor
+ * drops the redo stack.
+ */
 export default function CropperMain({
     windowSize
 }: CropperMainProps) {
     const imageUrl = useProjectStore(state => state.imageSrc)
-    const cropParams = useDocumentStore(state => state.crop)
+    const crop = useDocumentStore(state => state.crop)
     const setCrop = useDocumentStore(state => state.setCrop)
+    const { untracked } = useDocumentHistoryBatcher()
 
     // The crop is the single source for the preset and rotation; before the
     // first report (a few ms after mount) the defaults apply
-    const selectedRatio = cropParams?.aspectRatio ?? DEFAULT_ASPECT_RATIO
-    const cropRotation = cropParams?.rotation ?? 0
+    const selectedRatio = crop?.aspectRatio ?? DEFAULT_ASPECT_RATIO
+    const cropRotation = crop?.rotation ?? 0
 
-    // Local State
-    const fixedCropperRef = useRef<FixedCropperRef>(null)
+    const cropperRef = useRef<FixedCropperRef>(null)
     const [imageLoaded, setImageLoaded] = useState(false)
-    const cropChangeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-    // Rotation synchronization
-    const prevRotationRef = useRef(cropRotation)
-
-    // Sync rotation from store to cropper
-    useEffect(() => {
-        const cropper = fixedCropperRef.current
-        if (cropper && prevRotationRef.current !== cropRotation) {
-            const delta = cropRotation - prevRotationRef.current
-            cropper.rotateImage(delta)
-            prevRotationRef.current = cropRotation
-            devLog('[CROP] Synced rotation:', { delta, newRotation: cropRotation })
-        }
-    }, [cropRotation])
+    const reportTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const interactingRef = useRef(false)
 
     const selectedOption = aspectRatioOptions.find(opt => opt.value === selectedRatio) || aspectRatioOptions[2]
 
@@ -85,71 +99,94 @@ export default function CropperMain({
     const stencilSize = getStencilSize()
 
     // Create default coordinates from saved params
-    const defaultCoordinates = cropParams ? {
-        left: cropParams.x,
-        top: cropParams.y,
-        width: cropParams.width,
-        height: cropParams.height
+    const defaultCoordinates = crop ? {
+        left: crop.x,
+        top: crop.y,
+        width: crop.width,
+        height: crop.height
     } : undefined
 
+    const cancelPendingReport = useCallback(() => {
+        if (reportTimerRef.current) {
+            clearTimeout(reportTimerRef.current)
+            reportTimerRef.current = null
+        }
+    }, [])
 
-    // Report the crop coordinates (in the rotated image's space) - the dice
-    // pipeline derives the cropped pixels from originalImage + cropParams
-    const reportCrop = useCallback(() => {
+    // Write the widget's crop into the document. Tracked = a user gesture (one undo entry);
+    // untracked = the widget catching up with props or the store.
+    const report = useCallback((tracked: boolean) => {
+        cancelPendingReport()
+        const cropper = cropperRef.current
+        if (!cropper) return
         try {
-            const cropper = fixedCropperRef.current
-            if (!cropper) return
-
-            const coordinates = cropper.getCoordinates()
-            const state = cropper.getState()
-
-            // Round to 2 decimal places to prevent floating point precision differences
-            setCrop({
-                x: Math.round((coordinates?.left || 0) * 100) / 100,
-                y: Math.round((coordinates?.top || 0) * 100) / 100,
-                width: Math.round((coordinates?.width || 0) * 100) / 100,
-                height: Math.round((coordinates?.height || 0) * 100) / 100,
-                rotation: Math.round((state?.transforms?.rotate || 0) * 100) / 100,
-                aspectRatio: selectedRatio,
-            })
+            const aspectRatio = useDocumentStore.getState().crop?.aspectRatio ?? DEFAULT_ASPECT_RATIO
+            const next = readCrop(cropper, aspectRatio)
+            if (!next) return
+            if (tracked) setCrop(next)
+            else untracked(() => setCrop(next))
         } catch (error) {
             devError('Error reading crop coordinates:', error)
         }
-    }, [setCrop, selectedRatio])
+    }, [cancelPendingReport, setCrop, untracked])
 
-    const handleCropperChange = useCallback(() => {
-        if (cropChangeTimeoutRef.current) {
-            clearTimeout(cropChangeTimeoutRef.current)
-        }
-        cropChangeTimeoutRef.current = setTimeout(() => {
-            reportCrop()
-        }, 500)
-    }, [reportCrop])
+    const scheduleUntrackedReport = useCallback(() => {
+        cancelPendingReport()
+        reportTimerRef.current = setTimeout(() => report(false), REPORT_DELAY_MS)
+    }, [cancelPendingReport, report])
 
-    // Auto-crop when image is ready or when aspect ratio changes
+    // Every state change fires onChange; only the ones outside a gesture are the widget's own doing
+    const handleChange = useCallback(() => {
+        if (!interactingRef.current) scheduleUntrackedReport()
+    }, [scheduleUntrackedReport])
+
+    const handleInteractionStart = useCallback(() => {
+        interactingRef.current = true
+        cancelPendingReport()
+    }, [cancelPendingReport])
+
+    const handleInteractionEnd = useCallback(() => {
+        interactingRef.current = false
+        report(true)
+    }, [report])
+
+    // Store → widget: after undo/redo (or any external change) rotate and re-position the widget to match.
+    // Its onChange then writes back whatever it could apply, untracked and within tolerance, so this settles.
     useEffect(() => {
-        if (imageLoaded) {
-            const timeout = setTimeout(() => {
-                reportCrop()
-            }, 100)
-            return () => clearTimeout(timeout)
-        }
-    }, [imageLoaded, selectedRatio, reportCrop])
+        const cropper = cropperRef.current
+        if (!cropper || !crop || !imageLoaded) return
+        const current = readCrop(cropper, crop.aspectRatio)
+        if (!current) return
 
-    // Cleanup timeouts
-    useEffect(() => {
-        return () => {
-            if (cropChangeTimeoutRef.current) {
-                clearTimeout(cropChangeTimeoutRef.current)
-            }
+        if (Math.abs(current.rotation - crop.rotation) > 0.01) {
+            cropper.rotateImage(crop.rotation - current.rotation)
+            devLog('[CROP] Synced rotation:', { from: current.rotation, to: crop.rotation })
         }
-    }, [])
+        const rotated = readCrop(cropper, crop.aspectRatio)
+        if (rotated && !cropParamsEqual(rotated, crop)) {
+            cropper.setCoordinates({ left: crop.x, top: crop.y, width: crop.width, height: crop.height })
+            devLog('[CROP] Synced coordinates:', crop)
+        }
+    }, [crop, imageLoaded])
+
+    // Panel rotate: through the widget, so the one history entry carries the rotated coordinates
+    useEffect(() => {
+        setCropperHandle({
+            rotate: (degrees) => {
+                cropperRef.current?.rotateImage(degrees)
+                report(true)
+            },
+        })
+        return () => setCropperHandle(null)
+    }, [report])
+
+    useEffect(() => cancelPendingReport, [cancelPendingReport])
 
     if (!imageUrl) return null
 
     return (
         <FixedCropper
-            ref={fixedCropperRef}
+            ref={cropperRef}
             src={imageUrl}
             className={`h-full ${styles.cropper}`}
             stencilProps={{
@@ -171,19 +208,13 @@ export default function CropperMain({
             onReady={() => {
                 devLog('Cropper onReady fired')
                 setImageLoaded(true)
-
-                if (fixedCropperRef.current) {
-                    const state = fixedCropperRef.current.getState()
-                    devLog('Cropper state on ready:', {
-                        state: state,
-                        coordinates: fixedCropperRef.current.getCoordinates()
-                    })
-
-                    // Refresh to ensure proper sizing
-                    fixedCropperRef.current.refresh()
-                }
+                // Refresh to ensure proper sizing; the first crop is reported by the change this triggers
+                cropperRef.current?.refresh()
+                scheduleUntrackedReport()
             }}
-            onChange={handleCropperChange}
+            onChange={handleChange}
+            onInteractionStart={handleInteractionStart}
+            onInteractionEnd={handleInteractionEnd}
         />
     )
 }

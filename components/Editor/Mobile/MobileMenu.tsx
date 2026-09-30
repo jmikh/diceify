@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
-import { Menu, Sparkles, LogOut, Home, CreditCard, Cloud } from 'lucide-react'
+import { Menu, Sparkles, LogOut, Home, CreditCard, Cloud, Undo2, Redo2 } from 'lucide-react'
+import { useUndoRedo } from '@/features/editor/hooks/useUndoRedo'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import { formatSaveStatus } from '@/lib/utils/saveStatus'
@@ -24,6 +25,7 @@ export default function MobileMenu(projectProps: MobileMenuProps) {
     const openModal = useEditorUiStore(state => state.openModal)
     const saveStatus = useProjectStore(state => state.saveStatus)
     const lastSaved = useProjectStore(state => state.lastSaved)
+    const { canUndo, canRedo, undo, redo } = useUndoRedo()
 
     const [open, setOpen] = useState(false)
 
@@ -110,6 +112,18 @@ export default function MobileMenu(projectProps: MobileMenuProps) {
                                 </button>
                             </div>
                         )}
+
+                        {/* Undo / redo - the header buttons are desktop only */}
+                        <div className="flex border-t border-white/10">
+                            <button onClick={undo} disabled={!canUndo} className={`${menuItemClass} flex-1 justify-center disabled:opacity-30`}>
+                                <Undo2 size={16} />
+                                Undo
+                            </button>
+                            <button onClick={redo} disabled={!canRedo} className={`${menuItemClass} flex-1 justify-center border-l border-white/10 disabled:opacity-30`}>
+                                <Redo2 size={16} />
+                                Redo
+                            </button>
+                        </div>
 
                         {/* Home link - the logo is hidden on mobile */}
                         <Link

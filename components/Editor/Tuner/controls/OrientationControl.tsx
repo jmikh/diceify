@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { theme } from '@/lib/theme'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 
@@ -19,22 +18,6 @@ export default function OrientationControl({ large = false }: OrientationControl
     const params = useDocumentStore(state => state.dice)
     const updateDice = useDocumentStore(state => state.updateDice)
 
-    // Cumulative rotation angles so every tap animates another 90°
-    const getInitialRotation = (isRotated: boolean) => isRotated ? 0 : 90
-    const [rotations, setRotations] = useState({
-        dice2: getInitialRotation(params.rotate2),
-        dice3: getInitialRotation(params.rotate3),
-        dice6: getInitialRotation(params.rotate6)
-    })
-
-    const handleDiceRotation = (dice: 2 | 3 | 6, paramKey: 'rotate2' | 'rotate3' | 'rotate6') => {
-        setRotations(prev => ({
-            ...prev,
-            [`dice${dice}`]: prev[`dice${dice}`] + 90
-        }))
-        updateDice({ [paramKey]: !params[paramKey] })
-    }
-
     return (
         <div
             className="flex w-full rounded-lg overflow-hidden border"
@@ -46,16 +29,17 @@ export default function OrientationControl({ large = false }: OrientationControl
             {rotatableDice.map((option, index) => (
                 <button
                     key={option.dice}
-                    onClick={() => handleDiceRotation(option.dice, option.paramKey)}
+                    onClick={() => updateDice({ [option.paramKey]: !params[option.paramKey] })}
                     className={`flex-1 ${large ? 'h-12' : 'h-10'} flex items-center justify-center transition-all hover:bg-white/10 relative group`}
                     style={{
                         borderRight: index < rotatableDice.length - 1 ? `1px solid ${theme.colors.glass.border}` : undefined
                     }}
                 >
+                    {/* Orientation derived from the document so undo/redo animate the glyph too */}
                     <span
                         className="inline-block transition-transform"
                         style={{
-                            transform: `rotate(${rotations[`dice${option.dice}`]}deg)`,
+                            transform: `rotate(${params[option.paramKey] ? 0 : 90}deg)`,
                             transformOrigin: 'center',
                             transition: 'transform 0.3s ease',
                             color: theme.colors.text.secondary,

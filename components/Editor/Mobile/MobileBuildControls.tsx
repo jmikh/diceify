@@ -17,8 +17,7 @@ import ProgressPreviewModal from '@/components/ProgressPreviewModal'
  */
 export default function MobileBuildControls() {
     const {
-        currentX,
-        currentY,
+        current,
         percent: percentage,
         navigatePrev,
         navigateNext,
@@ -73,9 +72,9 @@ export default function MobileBuildControls() {
             {/* Position + progress readout */}
             <div className="flex items-center gap-3 px-1">
                 <span className="text-xs text-white/60 whitespace-nowrap tabular-nums">
-                    Col <span className="text-white font-semibold" data-testid="build-pos-x">{currentX + 1}</span>
+                    Col <span className="text-white font-semibold" data-testid="build-pos-x">{current.x + 1}</span>
                     {' · '}
-                    Row <span className="text-white font-semibold" data-testid="build-pos-y">{currentY + 1}</span>
+                    Row <span className="text-white font-semibold" data-testid="build-pos-y">{current.y + 1}</span>
                 </span>
                 <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-white/10">
                     <div

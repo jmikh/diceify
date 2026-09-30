@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { DEFAULT_DICE_PARAMS, type CropParams, type ProjectDocument } from '@/core/dice'
+import { resetEditor, uploadImage } from './editor'
 import { useDerivedStore } from './useDerivedStore'
 import { buildDocument, replaceDocument, useDocumentStore } from './useDocumentStore'
 import { useEditorUiStore } from './useEditorUiStore'
@@ -117,5 +118,27 @@ describe('history', () => {
     expect(store().name).toBe('after')
     history().redo()
     expect(store().dice.contrast).toBe(30)
+  })
+})
+
+describe('history is cleared by every document replacement', () => {
+  it('uploadImage: a new image is not undoable back to the previous crop', () => {
+    store().setCrop(crop)
+    store().updateDice({ contrast: 10 })
+    expect(history().pastStates.length).toBe(2)
+    uploadImage('data:image/png;base64,new')
+    expect(history().pastStates.length).toBe(0)
+    expect(history().futureStates.length).toBe(0)
+    expect(store().crop).toBeNull()
+    expect(store().dice.contrast).toBe(10)
+  })
+
+  it('resetEditor clears past and future states', () => {
+    store().updateDice({ contrast: 10 })
+    history().undo()
+    expect(history().futureStates.length).toBe(1)
+    resetEditor()
+    expect(history().pastStates.length).toBe(0)
+    expect(history().futureStates.length).toBe(0)
   })
 })

@@ -3,6 +3,7 @@
 import { Proportions, RotateCw } from 'lucide-react'
 
 import { DEFAULT_ASPECT_RATIO, type AspectRatio } from '@/core/dice'
+import { rotateCrop } from './cropperHandle'
 import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 
@@ -85,7 +86,7 @@ export function useCropControls() {
     return {
         selectedRatio: crop?.aspectRatio ?? DEFAULT_ASPECT_RATIO,
         setSelectedRatio: (aspectRatio: AspectRatio) => updateCrop({ aspectRatio }),
-        rotate: () => updateCrop({ rotation: (crop?.rotation ?? 0) + 90 }),
+        rotate: () => rotateCrop(90),
     }
 }
 

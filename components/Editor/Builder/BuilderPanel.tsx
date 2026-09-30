@@ -47,8 +47,7 @@ export function ProgressBar({ percentage, showComplete = true, className = '' }:
 
 export default function BuilderPanel() {
     const {
-        currentX,
-        currentY,
+        current,
         percent,
         navigatePrev,
         navigateNext,
@@ -106,7 +105,7 @@ export default function BuilderPanel() {
                                     Col
                                 </legend>
                                 <span className="text-white text-2xl font-bold" data-testid="build-pos-x">
-                                    {currentX + 1}
+                                    {current.x + 1}
                                 </span>
                             </fieldset>
 
@@ -138,7 +137,7 @@ export default function BuilderPanel() {
                                     Row
                                 </legend>
                                 <span className="text-white text-2xl font-bold" data-testid="build-pos-y">
-                                    {currentY + 1}
+                                    {current.y + 1}
                                 </span>
                             </fieldset>
                         </div>

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { ImReddit } from 'react-icons/im'
 import UserMenu from '@/components/Editor/UserMenu'
+import HistoryButtons from '@/components/Editor/HistoryButtons'
 import UploaderPanel from '@/components/Editor/Uploader/UploaderPanel'
 import UploadMain from '@/components/Editor/Uploader/UploadMain'
 import CropperPanel from '@/components/Editor/Cropper/CropperPanel'
@@ -34,6 +35,7 @@ import ResetProgressModal from '@/components/ResetProgressModal'
 import Footer from '@/components/Footer'
 import { devLog, devError } from '@/lib/utils/debug'
 
+import { useEditorShortcuts } from '@/features/editor/hooks/useEditorShortcuts'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import { useProjectManager } from './hooks/useProjectManager'
@@ -64,6 +66,9 @@ function EditorContent() {
   // Dice derivation pipeline: crop -> grid/stats -> preview image. Runs
   // independently of the visible step so restored states always regenerate.
   useDiceGeneration()
+
+  // Global keyboard shortcuts: undo/redo everywhere, arrow keys on the build step
+  useEditorShortcuts()
 
   // Calculate limits based on subscription plan
   const planType = (session?.user?.planType as PlanType) || 'explorer'
@@ -302,8 +307,9 @@ function EditorContent() {
                 )}
               </div>
 
-              {/* Auth Button - always on right */}
-              <div className="ml-auto flex-shrink-0">
+              {/* Undo/redo + auth - always on right */}
+              <div className="ml-auto flex-shrink-0 flex items-center gap-4">
+                <HistoryButtons />
                 {status === 'authenticated' && session ? (
                   <UserMenu />
                 ) : (

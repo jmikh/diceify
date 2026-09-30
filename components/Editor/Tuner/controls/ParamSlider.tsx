@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { LucideIcon } from 'lucide-react'
 import { theme } from '@/lib/theme'
+import { useDocumentHistoryBatcher } from '@/features/editor/store/historyBatcher'
 import styles from './ParamSlider.module.css'
 
 interface ParamSliderProps {
@@ -29,10 +30,21 @@ export default function ParamSlider({
     formatValue,
     large = false
 }: ParamSliderProps) {
+    // A pointer drag is one history entry (the batcher collapses every onChange in between)
+    const { startInteraction, endInteraction, batchAction } = useDocumentHistoryBatcher()
     const [isDragging, setIsDragging] = useState(false)
 
     const percent = ((value - min) / (max - min)) * 100
     const display = formatValue ? formatValue(value) : String(value)
+
+    const handlePointerDown = () => {
+        setIsDragging(true)
+        startInteraction()
+    }
+    const handlePointerUp = () => {
+        setIsDragging(false)
+        endInteraction()
+    }
 
     const input = (
         <input
@@ -41,11 +53,13 @@ export default function ParamSlider({
             max={max}
             step={step}
             value={value}
-            onChange={(e) => onChange(parseFloat(e.target.value))}
-            onMouseDown={() => setIsDragging(true)}
-            onMouseUp={() => setIsDragging(false)}
-            onTouchStart={() => setIsDragging(true)}
-            onTouchEnd={() => setIsDragging(false)}
+            onChange={(e) => {
+                const next = parseFloat(e.target.value)
+                batchAction(() => onChange(next))
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
             className={`w-full rounded-lg cursor-pointer ${styles.slider} ${large ? `${styles.sliderLg} h-3` : 'h-2'}`}
             style={{
                 background: `linear-gradient(to right, rgba(236, 72, 153, 0.5) 0%, rgba(236, 72, 153, 0.5) ${percent}%, ${theme.colors.glass.border} ${percent}%, ${theme.colors.glass.border} 100%)`
