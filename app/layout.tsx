@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Outfit, Syne } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import { GoogleAnalytics } from '@next/third-parties/google'
 import '@/styles/base.css'
 
@@ -53,7 +52,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/opengraph-image',
+        url: '/images/og-card.jpg',
         width: 1200,
         height: 630,
         alt: 'Diceify — Free Dice Art Generator for Portraits & Mosaics',
@@ -64,7 +63,14 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Diceify — Free Dice Art Generator for Portraits & Mosaics',
     description: 'Create dice art portraits and mosaics from any photo. Free generator with contrast tuning and a step-by-step builder.',
-    images: ['/twitter-image'],
+    images: [
+      {
+        url: '/images/og-card.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Diceify — Free Dice Art Generator for Portraits & Mosaics',
+      }
+    ],
     creator: '@diceify',
   },
   robots: {
@@ -169,7 +175,6 @@ export default function RootLayout({
         />
         {children}
         <GoogleAnalytics gaId="G-BDR76Z4JEE" />
-        <Analytics />
       </body>
     </html>
   )
