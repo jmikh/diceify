@@ -1,0 +1,11 @@
+{
+  "imports": {
+    "stripe": "npm:stripe@20.4.1",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
+    "zod": "npm:zod@4"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true
+  }
+}

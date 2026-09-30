@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@/features/account/useUser"
+import { syncBilling } from "@/lib/supabase/billing"
 
 // TODO(D2): checkout returns to /account?checkout=success, which polls the billing sync until isPro flips;
 // this handler (mounted by the landing Pricing section on ?success=) goes away with it.
@@ -22,11 +23,15 @@ export default function CheckoutSuccessHandler({ onComplete }: { onComplete: () 
         if (hasUpdated.current) return
         hasUpdated.current = true
 
-        // Refetch the profile so the new plan is reflected, then drop the success param
-        refresh().then(() => {
-            router.replace('/', { scroll: false })
-            onCompleteRef.current()
-        })
+        // Pull the snapshot from Stripe (the webhook may not have landed yet), refetch the profile so the new
+        // plan is reflected, then drop the success param. D2 adds polling until isPro flips.
+        syncBilling()
+            .catch((error) => console.warn('[billing] sync after checkout failed:', error))
+            .then(() => refresh())
+            .then(() => {
+                router.replace('/', { scroll: false })
+                onCompleteRef.current()
+            })
     }, [refresh, router])
 
     return null

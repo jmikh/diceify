@@ -407,8 +407,12 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
 
-# Stripe webhook edge function (D1). Uncomment together with supabase/functions/stripe-webhook/index.ts:
-# with the entry but no function folder, `supabase start` still boots but logs
-# "WARN: failed to read file: .../functions/stripe-webhook/index.ts" on every start.
-# [functions.stripe-webhook]
-# verify_jwt = false
+# Edge functions (D1). Both read supabase/functions/deno.json for their npm imports.
+# Stripe signs its requests and carries no Supabase JWT, so the gateway must not require one here.
+[functions.stripe-webhook]
+verify_jwt = false
+
+# The gateway rejects requests without a valid Supabase JWT (anon key or user token); the function itself
+# then requires a signed-in user.
+[functions.billing]
+verify_jwt = true

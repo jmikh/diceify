@@ -23,7 +23,7 @@ Env files (all gitignored except `.env.example`):
   `NEXT_PUBLIC_SENTRY_DSN` (copy from `.env.example`; local values are printed by `db:status`).
 - `supabase/.env` — `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, read by `env(...)` in `supabase/config.toml`. Add
   `http://127.0.0.1:54331/auth/v1/callback` as an authorized redirect URI on the Google OAuth client for local sign-in.
-- `supabase/functions/.env` — Stripe secrets for `supabase functions serve` (D1).
+- `supabase/functions/.env` — Stripe secrets for `npm run functions:serve` (template `supabase/functions/.env.example`; `docs/STRIPE_TESTING.md`).
 
 Test users: auth users cannot be seeded; create them with the Admin API against the local stack:
 
@@ -66,8 +66,24 @@ TODO: project setup (build `npm run build`, output `out`, Node 20), env vars (`N
 
 ## Stripe (D1)
 
-TODO: products/prices, webhook endpoint `https://<ref>.supabase.co/functions/v1/stripe-webhook` (pinned API version),
-`supabase secrets set STRIPE_*`, local `stripe listen` — see `docs/STRIPE_TESTING.md`.
+Local testing (env, run order, cards, flows, hand-signed events): `docs/STRIPE_TESTING.md`. Deploying the functions:
+`npm run functions:deploy` (= `supabase functions deploy`, after `supabase link`); `config.toml` carries `verify_jwt = false` for
+`stripe-webhook` and `true` for `billing`.
+
+- **Products/prices** (live mode): Creator $19 one-time, Studio $9/month and $36/year. Their ids go into the secrets below; the
+  one-time checkout must carry `metadata.plan = 'creator'` (D2 sets it) — that is how the sync recognises a creator purchase.
+- **Secrets** (hosted): `supabase secrets set --env-file supabase/functions/.env.production` with `STRIPE_SECRET_KEY` (`sk_live_`),
+  `STRIPE_WEBHOOK_SECRET`, the three `STRIPE_*_PRICE_ID`s and `APP_URL=https://diceify.art`. The functions refuse an `sk_test_` key
+  outside the local stack. `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` are injected.
+- **Webhook endpoint** (dashboard → Developers → Webhooks → Add endpoint): URL
+  `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`; **API version `2026-02-25.clover`** — the version pinned in
+  `supabase/functions/_shared/stripe.ts` (`STRIPE_API_VERSION`, the `stripe@20.4.1` SDK's own pin; change both together). Events:
+  `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`,
+  `customer.subscription.paused`, `customer.subscription.resumed`, `invoice.paid`, `invoice.payment_failed`,
+  `invoice.payment_action_required`. Copy the endpoint's signing secret into `STRIPE_WEBHOOK_SECRET`. Every event only names the
+  customer; the function recomputes the whole snapshot from Stripe, so a missed or reordered event is harmless.
+- **Cut-over (F2)**: disable the old Vercel endpoint once this one is live; the customer ids carry over unchanged (the migration
+  script copies `stripe_customer_id`, then `syncBillingFromStripe` fills the rest).
 
 ## Cut-over (F2)
 
