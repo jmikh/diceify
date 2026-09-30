@@ -78,7 +78,7 @@ export function useBuildNavigation() {
         setPosition(x, y)
     }, [totalCols, totalRows, currentIndex, enforceLimit, setPosition])
 
-    const currentDice = useMemo(() => diceGrid?.dice[currentX]?.[currentY] || null, [diceGrid, currentX, currentY])
+    const currentDice = useMemo(() => diceGrid?.rows[currentY]?.[currentX] || null, [diceGrid, currentX, currentY])
 
     const navigatePrevDiff = useCallback(() => {
         if (!diceGrid) return
@@ -88,7 +88,7 @@ export function useBuildNavigation() {
 
         // Find previous different dice on same row first
         for (let x = currentX - 1; x >= 0; x--) {
-            const dice = diceGrid.dice[x][currentY]
+            const dice = diceGrid.rows[currentY][x]
             if (dice.face !== currentFace || dice.color !== currentColor) {
                 setPosition(x, currentY)
                 return
@@ -109,7 +109,7 @@ export function useBuildNavigation() {
 
         // Find next different dice on same row first
         for (let x = currentX + 1; x < totalCols; x++) {
-            const dice = diceGrid.dice[x][currentY]
+            const dice = diceGrid.rows[currentY][x]
             if (dice.face !== currentFace || dice.color !== currentColor) {
                 // Check the landing index, not the current one - a long run of
                 // identical dice must not jump past the limit
@@ -135,7 +135,7 @@ export function useBuildNavigation() {
         const prevDiff = (() => {
             // Check if there's a different dice on the same row backward
             for (let x = currentX - 1; x >= 0; x--) {
-                const dice = diceGrid.dice[x]?.[currentY]
+                const dice = diceGrid.rows[currentY]?.[x]
                 if (dice && (dice.face !== currentFace || dice.color !== currentColor)) {
                     return true
                 }
@@ -147,7 +147,7 @@ export function useBuildNavigation() {
         const nextDiff = (() => {
             // Check if there's a different dice on the same row forward
             for (let x = currentX + 1; x < totalCols; x++) {
-                const dice = diceGrid.dice[x]?.[currentY]
+                const dice = diceGrid.rows[currentY]?.[x]
                 if (dice && (dice.face !== currentFace || dice.color !== currentColor)) {
                     return true
                 }

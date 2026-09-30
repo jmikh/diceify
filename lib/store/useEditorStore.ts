@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { WorkflowStep, DiceParams, DiceStats, DiceGrid, ColorMode, AspectRatio } from '@/lib/types'
+import { WorkflowStep, DiceParams, DiceStats, DiceGrid, AspectRatio } from '@/lib/types'
+import { DEFAULT_DICE_PARAMS } from '@/core/dice'
 import { devLog } from '@/lib/utils/debug'
 
 interface CropParams {
@@ -54,7 +55,6 @@ interface EditorState {
 
   // Editor Data
   originalImage: string | null
-  croppedImage: string | null
   processedImageUrl: string | null
   cropParams: CropParams | null
 
@@ -81,7 +81,6 @@ interface EditorState {
 
   showLimitModal: boolean
   showProFeatureModal: boolean
-  showCommissionModal: boolean
 
   // Build State
   buildProgress: BuildProgress
@@ -94,7 +93,6 @@ interface EditorState {
   setStep: (step: WorkflowStep) => void
 
   setOriginalImage: (url: string | null) => void
-  setCroppedImage: (url: string | null) => void
   setProcessedImageUrl: (url: string | null) => void
   setCropParams: (params: CropParams | null) => void
   setDiceParams: (params: Partial<DiceParams>) => void
@@ -116,7 +114,6 @@ interface EditorState {
 
   setShowLimitModal: (show: boolean) => void
   setShowProFeatureModal: (show: boolean) => void
-  setShowCommissionModal: (show: boolean) => void
 
   setBuildProgress: (progress: BuildProgress | ((prev: BuildProgress) => BuildProgress)) => void
   setSelectedRatio: (ratio: AspectRatio) => void
@@ -124,20 +121,8 @@ interface EditorState {
 
   // Complex Actions
   uploadImage: (url: string) => void
-  updateCrop: (croppedImageUrl: string, crop: CropParams) => void
   enterBuild: () => void
   resetWorkflow: () => void
-}
-
-const DEFAULT_DICE_PARAMS: DiceParams = {
-  numRows: 30,
-  colorMode: 'both',
-  contrast: 0,
-  gamma: 1.0,
-  edgeSharpening: 0,
-  rotate6: false,
-  rotate3: false,
-  rotate2: false,
 }
 
 export const DEFAULT_DICE_STATS: DiceStats = {
@@ -152,7 +137,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
 
   originalImage: null,
-  croppedImage: null,
   processedImageUrl: null,
   cropParams: null,
   buildBaseline: null,
@@ -175,7 +159,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   showLimitModal: false,
   showProFeatureModal: false,
-  showCommissionModal: false,
 
   buildProgress: { x: 0, y: 0 },
 
@@ -187,7 +170,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
 
   setOriginalImage: (url) => set({ originalImage: url }),
-  setCroppedImage: (url) => set({ croppedImage: url }),
   setProcessedImageUrl: (url) => set({ processedImageUrl: url }),
 
   // Note: the jsonEquals guards below aren't just an optimization — canvas
@@ -226,7 +208,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setShowLimitModal: (show) => set({ showLimitModal: show }),
   setShowProFeatureModal: (show) => set({ showProFeatureModal: show }),
-  setShowCommissionModal: (show) => set({ showCommissionModal: show }),
 
   setBuildProgress: (progress) => set((state) => {
     const newProgress = typeof progress === 'function' ? progress(state.buildProgress) : progress
@@ -241,8 +222,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({
       originalImage: url,
       step: 'crop',
-
-      croppedImage: null,
       processedImageUrl: null,
       diceGrid: null,
       cropParams: null,
@@ -253,18 +232,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       buildProgress: { x: 0, y: 0 }
     })
   },
-
-  updateCrop: (croppedImageUrl: string, crop: CropParams) => set((state) => {
-    // Skip only when nothing would change. croppedImage can be missing while
-    // cropParams are set (restored draft/project) - always store the image then,
-    // or later steps have nothing to generate dice from.
-    if (state.croppedImage && jsonEquals(state.cropParams, crop)) return state
-    return {
-      croppedImage: croppedImageUrl,
-      cropParams: crop,
-      // Don't change step here
-    }
-  }),
 
   // The single gateway into the build step. If crop/tune params changed since
   // the progress was made, the progress is for a different grid — reset it.
@@ -279,7 +246,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({
       step: 'upload',
       originalImage: null,
-      croppedImage: null,
       cropParams: null,
       processedImageUrl: null,
       diceParams: DEFAULT_DICE_PARAMS,

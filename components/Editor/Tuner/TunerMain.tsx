@@ -8,7 +8,7 @@ import { useEditorStore } from '@/lib/store/useEditorStore'
 export default function TunerMain() {
     const params = useEditorStore(state => state.diceParams)
     const processedImageUrl = useEditorStore(state => state.processedImageUrl)
-    const croppedImage = useEditorStore(state => state.croppedImage)
+    const cropParams = useEditorStore(state => state.cropParams)
 
     const [isLoading, setIsLoading] = useState(false)
     const isFirstRender = useRef(true)
@@ -29,12 +29,12 @@ export default function TunerMain() {
         }
     }, [params])
 
-    // Also show loading when croppedImage changes (new crop area)
+    // Also show loading when the crop changes (new crop area)
     useEffect(() => {
-        if (croppedImage && !isFirstRender.current) {
+        if (cropParams && !isFirstRender.current) {
             setIsLoading(true)
         }
-    }, [croppedImage])
+    }, [cropParams])
 
     // Hide loading when new processed image is ready
     useEffect(() => {

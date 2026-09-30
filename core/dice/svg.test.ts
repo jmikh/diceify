@@ -1,9 +1,6 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-// Output comparison against the legacy renderer; both imports go away with lib/dice in B1.
-// eslint-disable-next-line no-restricted-imports
-import { DiceSVGRenderer } from '@/lib/dice/svg-renderer'
-// eslint-disable-next-line no-restricted-imports
-import type { DiceGrid as LegacyGrid } from '@/lib/dice/types'
 import { countCompleted } from './build'
 import {
   placedDiceCount,
@@ -26,21 +23,12 @@ const grid: DiceGrid = {
   ],
 }
 
-/** Same dice in the legacy column-major layout (`dice[x][y]`). */
-function toLegacy(g: DiceGrid): LegacyGrid {
-  const dice: LegacyGrid['dice'] = []
-  for (let x = 0; x < g.width; x++) {
-    dice.push(g.rows.map((row, y) => ({ ...row[x], x, y })))
-  }
-  return { width: g.width, height: g.height, dice }
-}
-
-const normalize = (svg: string) => svg.replace(/\s+/g, ' ').replace(/\s*>/g, '>').replace(/>\s+</g, '><').trim()
-
 describe('renderGridSvg', () => {
-  it('matches the legacy DiceSVGRenderer.render output', () => {
-    const legacy = new DiceSVGRenderer().render(toLegacy(grid))
-    expect(normalize(renderGridSvg(grid))).toBe(normalize(legacy))
+  // Frozen in A3/B1 while the legacy `DiceSVGRenderer.render` still existed: the two matched after whitespace
+  // normalisation, so this snapshot carries that guarantee forward. Regenerate only when changing the markup on purpose.
+  it('matches the frozen 3x2 snapshot (equal to the legacy renderer output)', () => {
+    const expected = readFileSync(path.join(__dirname, '__fixtures__', 'svg-3x2.svg'), 'utf8')
+    expect(renderGridSvg(grid)).toBe(expected)
   })
 
   it('emits a sized header instead of the fill-the-box style when width/height are given', () => {

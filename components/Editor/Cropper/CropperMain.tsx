@@ -22,7 +22,7 @@ export default function CropperMain({
     const selectedRatio = useEditorStore(state => state.selectedRatio)
 
     // Store Actions
-    const updateCrop = useEditorStore(state => state.updateCrop)
+    const setCropParams = useEditorStore(state => state.setCropParams)
 
     // Store State
     const cropParams = useEditorStore(state => state.cropParams)
@@ -93,55 +93,47 @@ export default function CropperMain({
     } : undefined
 
 
-    const performAutoCrop = useCallback(async () => {
+    // Report the crop coordinates (in the rotated image's space) - the dice
+    // pipeline derives the cropped pixels from originalImage + cropParams
+    const reportCrop = useCallback(() => {
         try {
             const cropper = fixedCropperRef.current
             if (!cropper) return
 
-            const canvas = cropper.getCanvas({
-                width: 2048,
-                height: (!selectedOption.ratio) ? 2048 : 2048 / selectedOption.ratio,
+            const coordinates = cropper.getCoordinates()
+            const state = cropper.getState()
+
+            // Round to 2 decimal places to prevent floating point precision differences
+            setCropParams({
+                x: Math.round((coordinates?.left || 0) * 100) / 100,
+                y: Math.round((coordinates?.top || 0) * 100) / 100,
+                width: Math.round((coordinates?.width || 0) * 100) / 100,
+                height: Math.round((coordinates?.height || 0) * 100) / 100,
+                rotation: Math.round((state?.transforms?.rotate || 0) * 100) / 100
             })
-
-            if (canvas) {
-                const coordinates = cropper.getCoordinates()
-                const state = cropper.getState()
-                const croppedImage = canvas.toDataURL('image/jpeg', 0.95)
-
-                // Round to 2 decimal places to prevent floating point precision differences
-                const cropData = {
-                    x: Math.round((coordinates?.left || 0) * 100) / 100,
-                    y: Math.round((coordinates?.top || 0) * 100) / 100,
-                    width: Math.round((coordinates?.width || 0) * 100) / 100,
-                    height: Math.round((coordinates?.height || 0) * 100) / 100,
-                    rotation: Math.round((state?.transforms?.rotate || 0) * 100) / 100
-                }
-
-                updateCrop(croppedImage, cropData)
-            }
         } catch (error) {
-            devError('Error auto-cropping image:', error)
+            devError('Error reading crop coordinates:', error)
         }
-    }, [selectedOption.ratio, updateCrop])
+    }, [setCropParams])
 
     const handleCropperChange = useCallback(() => {
         if (cropChangeTimeoutRef.current) {
             clearTimeout(cropChangeTimeoutRef.current)
         }
         cropChangeTimeoutRef.current = setTimeout(() => {
-            performAutoCrop()
+            reportCrop()
         }, 500)
-    }, [performAutoCrop])
+    }, [reportCrop])
 
     // Auto-crop when image is ready or when aspect ratio changes
     useEffect(() => {
         if (imageLoaded) {
             const timeout = setTimeout(() => {
-                performAutoCrop()
+                reportCrop()
             }, 100)
             return () => clearTimeout(timeout)
         }
-    }, [imageLoaded, selectedRatio, performAutoCrop])
+    }, [imageLoaded, selectedRatio, reportCrop])
 
     // Cleanup timeouts
     useEffect(() => {

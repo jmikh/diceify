@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, memo, type MouseEven
 import { animate } from 'motion'
 import { useGesture } from '@use-gesture/react'
 import { Plus, Minus, Loader2 } from 'lucide-react'
-import { DiceSVGRenderer } from '@/lib/dice/svg-renderer'
+import { renderWindowSvg } from '@/core/dice'
 import { theme } from '@/lib/theme'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 import { useBuildNavigation } from './useBuildNavigation'
@@ -41,7 +41,6 @@ const BuildViewer = memo(function BuildViewer() {
     const lastTimeRef = useRef(performance.now())
 
     const [zoomLevel, setZoomLevel] = useState(8) // Number of dice to show horizontally
-    const svgRendererRef = useRef<DiceSVGRenderer>()
     const [svgContent, setSvgContent] = useState<string>('')
 
     // Track viewBox with ref only - no React state to avoid re-renders
@@ -70,10 +69,6 @@ const BuildViewer = memo(function BuildViewer() {
     // rendered window's edge; the buffer (one full viewport on each side)
     // provides hysteresis so single-step pans never touch the DOM.
     const ensureRendered = useCallback((viewX: number, viewY: number, viewW: number, viewH: number) => {
-        if (!svgRendererRef.current) {
-            svgRendererRef.current = new DiceSVGRenderer()
-        }
-
         const margin = 1
         const needX0 = Math.max(0, Math.floor(viewX) - margin)
         const needX1 = Math.min(totalCols - 1, Math.ceil(viewX + viewW) + margin)
@@ -93,7 +88,7 @@ const BuildViewer = memo(function BuildViewer() {
         const y1 = Math.min(totalRows - 1, Math.ceil(viewY + viewH) + bufferY)
 
         renderedWindowRef.current = { x0, x1, y0, y1 }
-        setSvgContent(svgRendererRef.current.renderWindow(grid, x0, x1, y0, y1))
+        setSvgContent(renderWindowSvg(grid, { x0, x1, y0, y1 }))
     }, [grid, totalCols, totalRows])
 
     // Calculate and animate viewBox transition
@@ -440,7 +435,7 @@ const BuildViewer = memo(function BuildViewer() {
                                 // Count backward
                                 let startX = currentX
                                 for (let x = currentX - 1; x >= 0; x--) {
-                                    const dice = grid.dice[x][currentY]
+                                    const dice = grid.rows[currentY][x]
                                     if (dice.face === currentFace && dice.color === currentColor) {
                                         startX = x
                                     } else {
@@ -451,7 +446,7 @@ const BuildViewer = memo(function BuildViewer() {
                                 // Count forward
                                 let endX = currentX
                                 for (let x = currentX + 1; x < totalCols; x++) {
-                                    const dice = grid.dice[x][currentY]
+                                    const dice = grid.rows[currentY][x]
                                     if (dice.face === currentFace && dice.color === currentColor) {
                                         endX = x
                                     } else {
@@ -526,7 +521,7 @@ const BuildViewer = memo(function BuildViewer() {
                                 // Count backward to get total group width
                                 let startX = currentX
                                 for (let x = currentX - 1; x >= 0; x--) {
-                                    const dice = grid.dice[x][currentY]
+                                    const dice = grid.rows[currentY][x]
                                     if (dice.face === currentFace && dice.color === currentColor) {
                                         startX = x
                                     } else {
@@ -538,7 +533,7 @@ const BuildViewer = memo(function BuildViewer() {
                                 let endX = currentX
                                 let consecutiveForward = 0
                                 for (let x = currentX + 1; x < totalCols; x++) {
-                                    const dice = grid.dice[x][currentY]
+                                    const dice = grid.rows[currentY][x]
                                     if (dice.face === currentFace && dice.color === currentColor) {
                                         endX = x
                                         consecutiveForward++

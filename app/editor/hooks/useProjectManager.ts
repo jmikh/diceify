@@ -20,7 +20,6 @@ export function useProjectManager() {
     const setShowProjectModal = useEditorStore(state => state.setShowProjectModal)
     const setStep = useEditorStore(state => state.setStep)
     const setOriginalImage = useEditorStore(state => state.setOriginalImage)
-    const setCroppedImage = useEditorStore(state => state.setCroppedImage)
     const setCropParams = useEditorStore(state => state.setCropParams)
     const setProcessedImageUrl = useEditorStore(state => state.setProcessedImageUrl)
     const setDiceParams = useEditorStore(state => state.setDiceParams)
@@ -181,7 +180,6 @@ export function useProjectManager() {
 
         // Clear derived state
         setOriginalImage(null)
-        setCroppedImage(null)
         setCropParams(null)
         setProcessedImageUrl(null)
 
@@ -253,7 +251,7 @@ export function useProjectManager() {
 
         // Everything just loaded is by definition saved
         markSnapshotClean()
-    }, [setCurrentProjectId, setProjectName, updateURLWithProject, setLastSaved, setOriginalImage, setCroppedImage, setCropParams, setProcessedImageUrl, setDiceStats, setDiceParams, setBuildProgress, setStep])
+    }, [setCurrentProjectId, setProjectName, updateURLWithProject, setLastSaved, setOriginalImage, setCropParams, setProcessedImageUrl, setDiceStats, setDiceParams, setBuildProgress, setStep])
 
     return {
         userProjects,

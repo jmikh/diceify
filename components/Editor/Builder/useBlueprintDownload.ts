@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useEditorStore } from '@/lib/store/useEditorStore'
-import { DiceSVGRenderer } from '@/lib/dice/svg-renderer'
+import { renderGridSvg } from '@/core/dice'
 
 /**
  * Download the full dice grid as an SVG blueprint (PRO feature).
@@ -27,8 +27,7 @@ export function useBlueprintDownload() {
         if (!grid) return
 
         try {
-            const renderer = new DiceSVGRenderer()
-            const svgString = renderer.render(grid)
+            const svgString = renderGridSvg(grid)
 
             const blob = new Blob([svgString], { type: 'image/svg+xml' })
             const url = URL.createObjectURL(blob)

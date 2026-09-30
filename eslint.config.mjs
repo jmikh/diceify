@@ -60,7 +60,7 @@ export default defineConfig(
   },
   {
     // Core source may import only `core` (relative paths) and `zod`. Tests are exempt: they import
-    // vitest, node:* and, for output comparisons, the legacy app modules.
+    // vitest and node:*.
     files: ['core/**/*.ts'],
     ignores: ['core/**/*.test.ts'],
     rules: {

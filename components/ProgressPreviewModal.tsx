@@ -1,13 +1,14 @@
 'use client'
 
-import { useRef, useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { RiProgress5Line, RiProgress8Line } from 'react-icons/ri'
 import { useSession } from 'next-auth/react'
+import { rasterSize, renderProgressSvg } from '@/core/dice'
+import { rasterizeSvg } from '@/lib/image/rasterize'
 import { theme } from '@/lib/theme'
 import { useEditorStore } from '@/lib/store/useEditorStore'
-import { DiceSVGRenderer } from '@/lib/dice/svg-renderer'
 
 interface ProgressPreviewModalProps {
     isOpen: boolean
@@ -15,12 +16,12 @@ interface ProgressPreviewModalProps {
 }
 
 const MAX_RASTER_SIZE = 1080 // Max pixels on longest side for free users
+const RASTER_PX_PER_DIE = 10
 
 export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPreviewModalProps) {
     const { data: session } = useSession()
     const diceGrid = useEditorStore(state => state.diceGrid)
     const buildProgress = useEditorStore(state => state.buildProgress)
-    const svgRendererRef = useRef<DiceSVGRenderer>()
 
     // Toggle between progress view and final art view
     const [showFinalArt, setShowFinalArt] = useState(false)
@@ -30,120 +31,36 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
 
     const isPro = session?.user?.isPro ?? false
 
-    // Generate SVG content showing only completed dice (or all dice if showFinalArt)
-    const progressSvgContent = useMemo(() => {
+    // Free users get a raster capped at MAX_RASTER_SIZE (10 px per die below that)
+    const raster = useMemo(() => {
+        if (!diceGrid) return null
+        const longSide = Math.min(Math.max(diceGrid.width, diceGrid.height) * RASTER_PX_PER_DIE, MAX_RASTER_SIZE)
+        return rasterSize(diceGrid.width, diceGrid.height, longSide)
+    }, [diceGrid])
+
+    // Standalone SVG showing only the placed dice (or all dice if showFinalArt)
+    const progressSvg = useMemo(() => {
         if (!diceGrid) return ''
-
-        if (!svgRendererRef.current) {
-            svgRendererRef.current = new DiceSVGRenderer()
-        }
-
-        const cols = diceGrid.width
-        const rows = diceGrid.height
-        const svgElements: string[] = []
-
-        // Track the current position in the build order
-        // Build order: row by row from bottom (y=0) to top, left (x=0) to right
-        const progressX = buildProgress.x
-        const progressY = buildProgress.y
-
-        // Iterate through all dice positions
-        for (let x = 0; x < cols; x++) {
-            for (let y = 0; y < rows; y++) {
-                const dice = diceGrid.dice[x][y]
-                // SVG Y coordinate needs to be flipped (SVG 0 is top, our 0 is bottom)
-                const svgY = rows - 1 - y
-
-                // Determine if this dice should be rendered as completed
-                // A dice is completed if:
-                // 1. It's in a row below the current progress row (y < progressY), OR
-                // 2. It's in the current row AND at or before the current X position (y === progressY && x <= progressX)
-                const isCompleted = showFinalArt || y < progressY || (y === progressY && x <= progressX)
-
-                if (isCompleted) {
-                    // Render the actual dice
-                    const renderer = svgRendererRef.current!
-                    const diceSvg = (renderer as any).getSvgDice(dice.face, dice.color, dice.rotate90 || false)
-                    svgElements.push(
-                        `<svg x='${x}' y='${svgY}' width='1' height='1' viewBox='0 0 100 100'>${diceSvg}</svg>`
-                    )
-                } else {
-                    // Render a placeholder (light beige background)
-                    svgElements.push(
-                        `<rect x='${x}' y='${svgY}' width='1' height='1' fill='#eae3d2' stroke='#dcd3bd' stroke-width='0.02' />`
-                    )
-                }
-            }
-        }
-
-        return svgElements.join('\n')
-    }, [diceGrid, buildProgress.x, buildProgress.y, showFinalArt])
+        return renderProgressSvg(diceGrid, buildProgress, { showAll: showFinalArt, ...(isPro ? {} : raster) })
+    }, [diceGrid, buildProgress, showFinalArt, isPro, raster])
 
     // Rasterize SVG to canvas for non-pro users
     useEffect(() => {
-        if (!isOpen || !diceGrid || isPro) {
+        if (!isOpen || !progressSvg || !raster || isPro) {
             setRasterizedImage(null)
             return
         }
-
-        const cols = diceGrid.width
-        const rows = diceGrid.height
-
-        // Calculate raster dimensions maintaining aspect ratio, max 1080px on longest side
-        let rasterWidth: number
-        let rasterHeight: number
-
-        if (cols >= rows) {
-            rasterWidth = Math.min(cols * 10, MAX_RASTER_SIZE) // 10px per dice unit, capped
-            rasterHeight = Math.round(rasterWidth * (rows / cols))
-        } else {
-            rasterHeight = Math.min(rows * 10, MAX_RASTER_SIZE)
-            rasterWidth = Math.round(rasterHeight * (cols / rows))
-        }
-
-        // Create full SVG string
-        const viewBox = `0 0 ${cols} ${rows}`
-        const fullSvg = `
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="${rasterWidth}" height="${rasterHeight}">
-                <rect width="${cols}" height="${rows}" fill="#eae3d2" />
-                ${progressSvgContent}
-            </svg>
-        `
-
-        // Convert SVG to image
-        const img = new Image()
-        const blob = new Blob([fullSvg], { type: 'image/svg+xml' })
-        const url = URL.createObjectURL(blob)
-
-        img.onload = () => {
-            // Draw to canvas at fixed resolution
-            const canvas = document.createElement('canvas')
-            canvas.width = rasterWidth
-            canvas.height = rasterHeight
-            const ctx = canvas.getContext('2d')
-            if (ctx) {
-                ctx.drawImage(img, 0, 0, rasterWidth, rasterHeight)
-                setRasterizedImage(canvas.toDataURL('image/png'))
-            }
-            URL.revokeObjectURL(url)
-        }
-
-        img.onerror = () => {
-            URL.revokeObjectURL(url)
-        }
-
-        img.src = url
-
-        return () => {
-            URL.revokeObjectURL(url)
-        }
-    }, [isOpen, diceGrid, progressSvgContent, isPro])
+        let cancelled = false
+        rasterizeSvg(progressSvg, raster)
+            .then(url => { if (!cancelled) setRasterizedImage(url) })
+            .catch(error => console.error('[PREVIEW] Rasterize failed:', error))
+        return () => { cancelled = true }
+    }, [isOpen, progressSvg, raster, isPro])
 
     if (!isOpen || !diceGrid) return null
 
     const cols = diceGrid.width
     const rows = diceGrid.height
-    const viewBox = `0 0 ${cols} ${rows}`
 
     // Calculate aspect ratio for proper sizing
     const aspectRatio = cols / rows
@@ -217,24 +134,8 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
                     }}
                 >
                     {isPro ? (
-                        // Pro users get full vector SVG
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox={viewBox}
-                            preserveAspectRatio="xMidYMid meet"
-                            style={{
-                                display: 'block',
-                                width: '100%',
-                                height: '100%',
-                                imageRendering: 'crisp-edges'
-                            }}
-                        >
-                            {/* Light beige background for entire canvas */}
-                            <rect width={cols} height={rows} fill="#eae3d2" />
-
-                            {/* Render dice content */}
-                            <g dangerouslySetInnerHTML={{ __html: progressSvgContent }} />
-                        </svg>
+                        // Pro users get the full vector SVG (it fills its box)
+                        <div className="w-full h-full leading-none" dangerouslySetInnerHTML={{ __html: progressSvg }} />
                     ) : (
                         // Free users get rasterized image (max 1080px)
                         rasterizedImage ? (
