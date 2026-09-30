@@ -5,3 +5,6 @@
 - A1: 32 `react-hooks/rules-of-hooks` warnings, all in `components/Editor/Builder/BuilderMain.tsx` (hooks after `if (!grid) return null`). B2 fixes; then flip the rule to `error`.
 - A1: 3 `@next/next/no-img-element` warnings (`app/editor/page.tsx`, `components/Editor/UserMenu.tsx`, `components/ProgressPreviewModal.tsx`). With `images.unoptimized` and a static export, `<img>` is the right tag — consider turning the rule off in E3 rather than migrating to `next/image`.
 - A1: `lib/dice/svg-renderer.ts` re-derives the dot layout inline instead of calling `getDotPositions` (plan already dedupes this in A3 `core/dice/svg.ts`).
+- A2: `public/demo-portrait.jpg` is a 329-byte text placeholder ("Placeholder for Mona Lisa Image"), not a JPEG; nothing in `app/ components/ lib/` references it. Delete it in the E3 sweep (fixtures use `public/images/monalisa.webp`).
+- A2: root `tsconfig.json` has no `target`, so `tsc --noEmit` type-checks against ES5 semantics (`for…of` over a typed array is TS2802 even though `lib` is esnext). Consider `target: "es2022"` in E3; Next ignores it for bundling.
+- A2: `lib/dice/generator.ts` `generateGrayscalePreview` duplicates the whole gamma/contrast/sharpen pipeline for the tune-step preview; B1's `useDicePipeline` should derive the preview from the core's downsampled gray image instead of re-running it in a canvas.
