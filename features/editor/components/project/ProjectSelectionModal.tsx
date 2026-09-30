@@ -1,28 +1,21 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { X, Clock, Trash2, AlertCircle, Plus } from 'lucide-react'
-import { devLog } from '@/lib/utils/debug'
 import Logo from '@/components/Logo'
 import Image from 'next/image'
 import { useEntitlements } from '@/features/account/useUser'
-
-interface Project {
-  id: string
-  name: string
-  updatedAt: string
-  originalImage?: string | null
-  croppedImage?: string | null
-  percentComplete?: number
-}
+import type { ProjectSummary } from '@/features/editor/store/useProjectStore'
 
 interface ProjectSelectionModalProps {
   isOpen: boolean
   onClose?: () => void
+  /** Create with this name: from the current draft when there is one, otherwise a fresh upload step. */
   onCreateNew: (name: string) => void
   onSelectProject: (projectId: string) => void
   onDeleteProject?: (projectId: string) => void
-  projects: Project[]
+  projects: ProjectSummary[]
+  /** A draft (image + document) is waiting to be saved as a project. */
   hasCurrentState: boolean
 }
 
@@ -38,16 +31,6 @@ export default function ProjectSelectionModal({
   const { projectLimit } = useEntitlements()
   const [isDeleting, setIsDeleting] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
-
-  // Debug logging
-  useEffect(() => {
-    if (isOpen) {
-      devLog('[DEBUG] ProjectSelectionModal opened with:')
-      devLog('[DEBUG] - hasCurrentState:', hasCurrentState)
-      devLog('[DEBUG] - projects count:', projects.length)
-      devLog('[DEBUG] - isAtCapacity:', projects.length >= projectLimit)
-    }
-  }, [isOpen, hasCurrentState, projects.length, projectLimit])
 
   const isAtCapacity = projects.length >= projectLimit
 
@@ -129,7 +112,7 @@ export default function ProjectSelectionModal({
             <div className="flex gap-3">
               <input
                 type="text"
-                placeholder="Enter project name..."
+                placeholder={hasCurrentState ? 'Name your project to save it...' : 'Enter project name...'}
                 value={newProjectName}
                 onChange={(e) => setNewProjectName(e.target.value)}
                 disabled={isAtCapacity}
@@ -141,7 +124,7 @@ export default function ProjectSelectionModal({
                 className="px-6 py-3 rounded-xl bg-[var(--pink)] text-white font-medium hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 shadow-[0_0_20px_var(--pink-glow)]"
               >
                 <Plus size={18} />
-                Create
+                {hasCurrentState ? 'Save' : 'Create'}
               </button>
             </div>
 
@@ -188,12 +171,10 @@ export default function ProjectSelectionModal({
                           <Clock size={12} />
                           {new Date(project.updatedAt).toLocaleDateString()}
                         </span>
-                        {project.percentComplete !== undefined && (
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-1 h-1 rounded-full bg-[var(--text-dim)]" />
-                            {project.percentComplete.toFixed(0)}%
-                          </span>
-                        )}
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-[var(--text-dim)]" />
+                          {project.percentComplete.toFixed(0)}%
+                        </span>
                       </div>
                     </div>
 

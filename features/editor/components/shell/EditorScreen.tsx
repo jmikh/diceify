@@ -1,5 +1,6 @@
 'use client'
 
+import { Toaster } from 'sonner'
 import BackgroundOrbs from '@/components/BackgroundOrbs'
 import Footer from '@/components/Footer'
 import { useMediaQuery } from '@/lib/media-query'
@@ -7,8 +8,8 @@ import { useUser } from '@/features/account/useUser'
 
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
-import { useProjectManager } from '@/features/editor/hooks/useProjectManager'
-import { useAutosave, flushSave } from '@/features/editor/hooks/useAutosave'
+import { useProjects } from '@/features/editor/hooks/useProjects'
+import { useAutosave } from '@/features/editor/hooks/useAutosave'
 import { useDicePipeline } from '@/features/editor/hooks/useDicePipeline'
 import { useEditorShortcuts } from '@/features/editor/hooks/useEditorShortcuts'
 import { useEditorBootstrap } from '@/features/editor/hooks/useEditorBootstrap'
@@ -52,11 +53,10 @@ function LoadingScreen() {
 export default function EditorScreen() {
   const { status } = useUser()
 
-  const projectManager = useProjectManager()
-  const { projects, createProject, createProjectFromCurrent, deleteProject, loadProject } = projectManager
+  const { projects, load, createFromDraft, startNewProject, remove } = useProjects()
 
   // Single autosave pipeline: watches the store, persists the snapshot
-  // (DB when a project is loaded, localStorage draft otherwise)
+  // (project row when a project is loaded, local draft otherwise)
   useAutosave()
 
   // Dice derivation pipeline: crop -> grid/stats -> preview image. Runs
@@ -67,14 +67,14 @@ export default function EditorScreen() {
   useEditorShortcuts()
 
   // Session / URL / draft arrival sequence; flips boot to 'ready'
-  useEditorBootstrap(projectManager)
+  useEditorBootstrap()
 
   // Store state
   const step = useEditorUiStore(state => state.step)
   const modal = useEditorUiStore(state => state.modal)
   const closeModal = useEditorUiStore(state => state.closeModal)
 
-  const imageSrc = useProjectStore(state => state.imageSrc)
+  const hasDraft = useProjectStore(state => state.imageBlob !== null && state.projectId === null)
   const boot = useProjectStore(state => state.boot)
 
   const isMobile = useMediaQuery(MOBILE_QUERY)
@@ -84,26 +84,17 @@ export default function EditorScreen() {
     return <LoadingScreen />
   }
 
-  // Switch projects, pushing any pending autosave to the current one first.
-  // Shared by the desktop project selector and the mobile menu.
-  const handleSelectProject = async (projectId: string) => {
-    const project = projects.find(p => p.id === projectId)
-    if (!project) return
-
-    try {
-      await flushSave()
-    } catch (err) {
-      console.error('Failed to auto-save before switch:', err)
-    }
-
-    loadProject(project)
+  // "Create" with a name: save the waiting draft as that project, or start a fresh one on the upload step
+  const handleCreateNew = (name: string) => {
+    if (hasDraft) createFromDraft(name)
+    else startNewProject(name)
   }
 
   const projectProps = {
     projects,
-    onSelectProject: handleSelectProject,
-    onCreateNew: createProject,
-    onDeleteProject: deleteProject,
+    onSelectProject: load,
+    onCreateNew: handleCreateNew,
+    onDeleteProject: remove,
   }
 
   // Render main content based on current step. Steps render their own
@@ -169,26 +160,15 @@ export default function EditorScreen() {
 
       <EditorSignInModal />
 
-      {/* Project Capacity Modal - only shown when at capacity */}
+      {/* Projects dashboard: opened on arrival (save the draft / pick a project) and on the plan limit */}
       <ProjectSelectionModal
         isOpen={modal === 'projects'}
-        onCreateNew={(name) => {
-          if (imageSrc) {
-            createProjectFromCurrent(name)
-          } else {
-            createProject(name)
-          }
-        }}
-        onSelectProject={(projectId) => {
-          const project = projects.find(p => p.id === projectId)
-          if (project) {
-            loadProject(project)
-            closeModal()
-          }
-        }}
-        onDeleteProject={deleteProject}
+        onClose={closeModal}
+        onCreateNew={handleCreateNew}
+        onSelectProject={load}
+        onDeleteProject={remove}
         projects={projects}
-        hasCurrentState={!!imageSrc}
+        hasCurrentState={hasDraft}
       />
 
       <LimitReachedModal />
@@ -197,6 +177,8 @@ export default function EditorScreen() {
 
       {/* Footer - desktop only; the mobile shell is a fixed viewport */}
       {!isMobile && <Footer />}
+
+      <Toaster theme="dark" position="bottom-center" closeButton />
     </div>
   )
 }

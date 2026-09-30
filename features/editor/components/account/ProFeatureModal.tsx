@@ -6,7 +6,7 @@ import type { CheckoutPlan, Plan } from '@/core/billing'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { CreatorCard, StudioCard } from '@/features/billing/PricingCards'
 import SignInModal from '@/features/account/SignInModal'
-import { flushDraftForSignIn } from '@/features/editor/hooks/useAutosave'
+import { flushSave } from '@/features/editor/store/autosave'
 
 export default function ProFeatureModal() {
     const showProFeatureModal = useEditorUiStore(state => state.modal === 'proFeature')
@@ -105,7 +105,7 @@ export default function ProFeatureModal() {
                 open={showAuthModal}
                 onClose={() => setShowAuthModal(false)}
                 message="Sign in to upgrade and unlock premium features."
-                onBeforeSignIn={flushDraftForSignIn}
+                onBeforeSignIn={flushSave}
             />
 
             {/* Already Pro Modal */}

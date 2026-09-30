@@ -1,7 +1,7 @@
 'use client'
 
 import SignInModal from '@/features/account/SignInModal'
-import { flushDraftForSignIn } from '@/features/editor/hooks/useAutosave'
+import { flushSave } from '@/features/editor/store/autosave'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 
 const DEFAULT_MESSAGE = 'To continue using the builder you must be signed in'
@@ -17,7 +17,7 @@ export default function EditorSignInModal() {
       open={open}
       onClose={closeModal}
       message={message || DEFAULT_MESSAGE}
-      onBeforeSignIn={flushDraftForSignIn}
+      onBeforeSignIn={flushSave}
     />
   )
 }

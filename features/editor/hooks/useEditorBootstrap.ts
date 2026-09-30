@@ -1,129 +1,93 @@
 import { useEffect, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { devLog, devError } from '@/lib/utils/debug'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { useUser } from '@/features/account/useUser'
+import { markClean } from '@/features/editor/store/autosave'
+import { readDraft, readDraftImage } from '@/features/editor/store/draft'
+import { clearProject, loadDraftIntoEditor, resetEditor } from '@/features/editor/store/editor'
+import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
-import { hydrateFromLocalDraft, clearLocalDraft } from './useAutosave'
-import type { useProjectManager } from './useProjectManager'
+import { loadProject, refreshProjects } from './useProjects'
 
-type ProjectManager = Pick<ReturnType<typeof useProjectManager>, 'fetchUserProjects' | 'loadProject' | 'updateURLWithProject'>
+/** Restore the local draft into the stores. False when there is none (a document without its image is no draft). */
+async function hydrateDraft(): Promise<boolean> {
+  const draft = readDraft(useDocumentStore.getState().name)
+  if (!draft) return false
+  const blob = await readDraftImage()
+  if (!blob) return false
+  loadDraftIntoEditor(draft.doc, draft.name, blob)
+  return true
+}
+
+function editorUrl(projectId: string | null): string {
+  return projectId ? `/editor?project=${encodeURIComponent(projectId)}` : '/editor'
+}
 
 /**
- * Decides what the editor shows on arrival: the project in the URL, the anonymous draft (also after the OAuth
- * round trip, `?restored=true`), the most recent project, or the projects dashboard. Ends with `boot = 'ready'`.
- * Moved as-is from the editor page; C3 rewrites the sequence on Supabase.
+ * Decides what the editor shows on arrival (plans/revamp/revamp-step-C3.md → "Hooks"):
+ *   anonymous  → a `?project=` is stripped; the local draft is restored
+ *   signed in  → the local draft is restored (back from OAuth with `?restored=true`, or left over from a failed save);
+ *                `?project=` is opened (or reported and stripped); otherwise the list decides: a draft to save →
+ *                projects modal, else the most recent project, else the modal
+ * Ends with `markClean()` + `boot = 'ready'`. Afterwards `?project=` follows the current project id.
  */
-export function useEditorBootstrap({ fetchUserProjects, loadProject, updateURLWithProject }: ProjectManager) {
-  const { user, status } = useUser()
-  const userId = user?.id
+export function useEditorBootstrap() {
+  const { status } = useUser()
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const startedRef = useRef(false)
 
-  const openModal = useEditorUiStore(state => state.openModal)
-  const currentProjectId = useProjectStore(state => state.projectId)
-  const setBoot = useProjectStore(state => state.setBoot)
-
-  // Handle project loading from URL
   useEffect(() => {
-    const projectId = searchParams.get('project')
+    if (status === 'loading' || startedRef.current) return
+    startedRef.current = true
 
-    // Redirect if unauthenticated
-    if (projectId && status === 'anon') {
-      devLog('[URL] Unauthenticated user accessing project, redirecting...')
-      router.replace('/editor')
-      return
-    }
+    const params = new URLSearchParams(window.location.search)
+    const projectParam = params.get('project')
 
-    if (projectId && userId && !currentProjectId) {
-      devLog('[URL] Loading project from URL:', projectId)
-      // Fetch and load the specific project
-      fetch(`/api/projects/${projectId}`)
-        .then(response => {
-          if (response.ok) {
-            return response.json()
+    const boot = async () => {
+      // A draft is offered to a signed-in user too (not only on `?restored=true`): it exists after sign-in and
+      // after a failed "save as project" (plan limit, offline), and opening a project would discard it.
+      await hydrateDraft()
+      if (status === 'authed') {
+        if (projectParam) await loadProject(projectParam)
+        if (!useProjectStore.getState().projectId) {
+          let projects: Awaited<ReturnType<typeof refreshProjects>> = []
+          try {
+            projects = await refreshProjects()
+          } catch (error) {
+            console.error('[bootstrap] project list failed:', error)
+            toast.error('Could not load your projects.')
           }
-          throw new Error('Project not found')
-        })
-        .then(project => {
-          devLog('[URL] Project loaded from URL')
-          loadProject(project)
-        })
-        .catch(error => {
-          devError('[URL] Failed to load project from URL:', error)
-          // Clear invalid project ID from URL
-          updateURLWithProject(null)
-        })
-    }
-  }, [searchParams, status, userId, currentProjectId, loadProject, updateURLWithProject, router])
-
-  // Handle missing project ID in URL when state is loaded (e.g. back navigation)
-  useEffect(() => {
-    // Only check if we're logged in and have a project loaded in state
-    if (status === 'authed' && currentProjectId && !searchParams.get('project')) {
-      devLog('[URL] Project loaded in state but missing from URL, redirecting...')
-      router.replace(`/editor?project=${currentProjectId}`)
-    }
-  }, [status, currentProjectId, searchParams, router])
-
-  // Restore the anonymous draft from localStorage.
-  // Two entry points share the same draft: a plain visit while logged out, and
-  // the return from an OAuth redirect (?restored=true) where the pre-login
-  // work is picked up so the login effect below can offer to save it.
-  const hasHydratedRef = useRef(false)
-  useEffect(() => {
-    if (status === 'loading' || hasHydratedRef.current) return
-
-    const isOAuthReturn = searchParams.get('restored') === 'true'
-    if (isOAuthReturn) {
-      hasHydratedRef.current = true
-      hydrateFromLocalDraft()
-      window.history.replaceState({}, '', '/editor')
-    } else if (!userId && !currentProjectId) {
-      hasHydratedRef.current = true
-      hydrateFromLocalDraft()
-      setBoot('ready')
-    }
-  }, [status, userId, currentProjectId, searchParams, setBoot])
-
-  // Handle user login - offer to save local work, or load the most recent project
-  useEffect(() => {
-    if (status === 'loading') return
-
-    if (userId && !currentProjectId) {
-      fetchUserProjects().then((projects) => {
-        // Read fresh from the store: the draft may have been hydrated after
-        // this effect's render (e.g. right after an OAuth redirect)
-        const hasWorkInProgress = !!useProjectStore.getState().imageSrc
-
-        // If a project is in the URL, the URL effect above will load it
-        if (!searchParams.get('project')) {
-          if (hasWorkInProgress) {
-            // Local work in progress - show the dashboard so it can be saved
-            openModal('projects')
-          } else if (projects.length > 0) {
-            // Projects are sorted by updatedAt desc - load the most recent
-            loadProject(projects[0])
-          } else {
-            // First visit - show the dashboard to create a project
-            openModal('projects')
-          }
+          const hasDraft = useProjectStore.getState().imageBlob !== null
+          if (!hasDraft && projects.length > 0) await loadProject(projects[0].id)
+          if (!useProjectStore.getState().projectId) useEditorUiStore.getState().openModal('projects')
+        } else {
+          refreshProjects().catch((error) => console.error('[bootstrap] project list failed:', error))
         }
-        setBoot('ready')
-      }).catch(err => {
-        devError('[LOGIN] Failed to fetch projects:', err)
-        setBoot('ready')
-      })
-    } else if (!userId || currentProjectId) {
-      setBoot('ready')
+      }
+      markClean()
+      useProjectStore.getState().setBoot('ready')
+      // Whatever the arrival URL said, it now reflects the outcome (strips ?restored and a stale ?project)
+      router.replace(editorUrl(useProjectStore.getState().projectId), { scroll: false })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, userId, currentProjectId, searchParams, loadProject])
+    void boot()
+  }, [status, router])
 
-  // The draft has served its purpose once a project is loaded
+  // After boot, the URL follows the current project (switch, create, delete, "new project")
+  const projectId = useProjectStore((state) => state.projectId)
+  const boot = useProjectStore((state) => state.boot)
   useEffect(() => {
-    if (currentProjectId) {
-      clearLocalDraft()
-    }
-  }, [currentProjectId])
+    if (boot !== 'ready') return
+    const expected = editorUrl(projectId)
+    if (window.location.pathname + window.location.search !== expected) router.replace(expected, { scroll: false })
+  }, [boot, projectId, router])
+
+  // Signing out while a project is open: the row is no longer ours to save; back to an empty editor
+  useEffect(() => {
+    if (boot !== 'ready' || status !== 'anon' || !projectId) return
+    clearProject()
+    resetEditor()
+    useProjectStore.getState().setProjects([])
+    markClean()
+  }, [boot, status, projectId])
 }

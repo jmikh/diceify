@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Cloud, ChevronDown } from 'lucide-react'
-import { devError } from '@/lib/utils/debug'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import ProjectListMenu, { Project } from './ProjectListMenu'
@@ -111,28 +110,14 @@ export default function ProjectSelector({
     }
   }
 
-  const handleRenameProject = async () => {
+  // The name is part of the autosave snapshot: setting it here is the whole rename
+  const handleRenameProject = () => {
     const trimmedValue = editValue.trim()
-
     if (!currentProjectId || !trimmedValue) {
       setEditValue(currentProject)
       return
     }
-
-    try {
-      const response = await fetch(`/api/projects/${currentProjectId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmedValue })
-      })
-
-      if (response.ok) {
-        setProjectName(trimmedValue)
-      }
-    } catch (error) {
-      devError('Failed to rename project:', error)
-      setEditValue(currentProject)
-    }
+    setProjectName(trimmedValue)
   }
 
   const [isHovering, setIsHovering] = useState(false)

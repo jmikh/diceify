@@ -1,52 +1,63 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, Image as ImageIcon } from 'lucide-react'
+import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { downscaleForUpload } from '@/lib/image/decode'
+import { useUser } from '@/features/account/useUser'
+import { useProjects } from '@/features/editor/hooks/useProjects'
+import { writeDraftImage } from '@/features/editor/store/draft'
 import { uploadImage } from '@/features/editor/store/editor'
+import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
-import { persistImage } from '@/features/editor/hooks/useAutosave'
 
+/**
+ * Photo upload. The image is immutable per project: uploading while a project is open starts a new project
+ * (the open one keeps its image). Signed in, the upload creates the project right away; anonymous, it becomes
+ * the local draft (image in IndexedDB, document via autosave).
+ */
 export default function UploadMain() {
-    const originalImage = useProjectStore(state => state.imageSrc)
+    const imageSrc = useProjectStore(state => state.imageSrc)
+    const projectId = useProjectStore(state => state.projectId)
+    const { user } = useUser()
+    const { createFromDraft, startNewProject } = useProjects()
+    const [isProcessing, setIsProcessing] = useState(false)
 
-    const onDrop = useCallback((acceptedFiles: File[]) => {
+    const onDrop = useCallback(async (acceptedFiles: File[]) => {
         const file = acceptedFiles[0]
-        if (file) {
-            const reader = new FileReader()
-            reader.onload = (e) => {
-                const result = e.target?.result
-                if (typeof result === 'string') {
-                    // Create an image object to verify/get dimensions if needed
-                    const img = new Image()
-                    img.src = result
-                    img.onload = () => {
-                        uploadImage(result)
-                        // The image is the one piece of state the snapshot autosave
-                        // doesn't carry - persist it explicitly on upload
-                        persistImage(result)
-                    }
-                }
-            }
-            reader.readAsDataURL(file)
+        if (!file) return
+        setIsProcessing(true)
+        try {
+            const blob = await downscaleForUpload(file)
+            if (useProjectStore.getState().projectId) await startNewProject()
+            uploadImage(blob)
+            await writeDraftImage(blob)
+            if (user) await createFromDraft(useDocumentStore.getState().name)
+        } catch (error) {
+            console.error('[upload] failed:', error)
+            toast.error('Could not read that image. Please try another file.')
+        } finally {
+            setIsProcessing(false)
         }
-    }, [])
+    }, [user, createFromDraft, startNewProject])
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: {
             'image/*': ['.png', '.jpg', '.jpeg', '.webp']
         },
-        maxFiles: 1
+        maxFiles: 1,
+        disabled: isProcessing,
     })
 
-    if (originalImage) {
+    if (imageSrc) {
         return (
             <div className="w-full h-full flex flex-col items-center justify-center">
                 <div className="relative w-full h-full rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                        src={originalImage}
+                        src={imageSrc}
                         alt="Uploaded preview"
                         className="w-full h-full object-contain"
                     />
@@ -55,11 +66,12 @@ export default function UploadMain() {
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <button
                             {...getRootProps()}
-                            className="pointer-events-auto px-8 py-4 rounded-full bg-black/40 backdrop-blur-md border border-white/20 hover:bg-black/60 text-white font-bold shadow-2xl transition-all flex items-center gap-3"
+                            className="pointer-events-auto px-8 py-4 rounded-full bg-black/40 backdrop-blur-md border border-white/20 hover:bg-black/60 text-white font-bold shadow-2xl transition-all flex items-center gap-3 disabled:opacity-60"
+                            disabled={isProcessing}
                         >
                             <input {...getInputProps()} />
-                            <Upload size={20} />
-                            Change Image
+                            {isProcessing ? <Loader2 size={20} className="animate-spin" /> : <Upload size={20} />}
+                            {projectId ? 'Start new project' : 'Change image'}
                         </button>
                     </div>
                 </div>
@@ -88,7 +100,9 @@ export default function UploadMain() {
           transition-all duration-500
           ${isDragActive ? 'bg-accent-pink text-white rotate-12 scale-110' : 'bg-white/5 text-accent-pink group-hover:scale-110 group-hover:rotate-6'}
         `}>
-                    {isDragActive ? (
+                    {isProcessing ? (
+                        <Loader2 size={40} className="animate-spin" />
+                    ) : isDragActive ? (
                         <Upload size={40} className="animate-bounce" />
                     ) : (
                         <ImageIcon size={40} />
@@ -96,7 +110,7 @@ export default function UploadMain() {
                 </div>
 
                 <h3 className="text-2xl font-bold text-white mb-2">
-                    {isDragActive ? 'Drop it like it\'s hot!' : 'Upload your photo'}
+                    {isProcessing ? 'Preparing your photo...' : isDragActive ? 'Drop it like it\'s hot!' : 'Upload your photo'}
                 </h3>
 
                 <p className="text-gray-400 text-lg mb-8 max-w-xs">

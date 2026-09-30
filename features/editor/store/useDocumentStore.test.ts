@@ -126,7 +126,7 @@ describe('history is cleared by every document replacement', () => {
     store().setCrop(crop)
     store().updateDice({ contrast: 10 })
     expect(history().pastStates.length).toBe(2)
-    uploadImage('data:image/png;base64,new')
+    uploadImage(new Blob(['new'], { type: 'image/png' }))
     expect(history().pastStates.length).toBe(0)
     expect(history().futureStates.length).toBe(0)
     expect(store().crop).toBeNull()

@@ -57,8 +57,8 @@ export function useDicePipeline() {
 
         timeoutRef.current = setTimeout(async () => {
             try {
-                // A
-                const key = `${imageSrc.length}|${JSON.stringify(crop)}`
+                // A (object URLs are short and unique per image)
+                const key = `${imageSrc}|${JSON.stringify(crop)}`
                 let pixels = pixelsRef.current?.key === key ? pixelsRef.current.pixels : null
                 if (!pixels) {
                     pixels = await cropToPixels(imageSrc, crop)
