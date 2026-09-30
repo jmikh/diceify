@@ -14,7 +14,6 @@ export default function DiceCanvas() {
 
     return (
         <div className="flex-1 w-full h-full min-w-0 min-h-0 relative overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
                 src={processedImageUrl}
                 alt="Dice art preview"

@@ -24,7 +24,6 @@ const MONTHLY_PRICE = process.env.STRIPE_STUDIO_MONTHLY_PRICE_ID ?? ''
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = URL
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = ANON_KEY
-process.env.NEXT_PUBLIC_APP_URL ??= 'http://localhost:3000'
 
 const EMAIL = `d2-${Date.now()}@test.dev`
 const PASSWORD = 'pass1234'

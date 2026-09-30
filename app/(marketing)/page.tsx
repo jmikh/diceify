@@ -101,7 +101,7 @@ export default function Home() {
       />
 
       {/* Content */}
-      <div className="content relative z-[2] max-w-[1400px] mx-auto w-full">
+      <div className="relative z-[2] max-w-[1400px] mx-auto w-full">
         <Navbar />
         <main>
           <Hero />

@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Outfit, Syne } from 'next/font/google'
+import { Outfit, Syne } from 'next/font/google'
 import { GoogleAnalytics } from '@next/third-parties/google'
 import '@/styles/base.css'
 
-const inter = Inter({ subsets: ['latin'] })
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit', display: 'swap' })
 const syne = Syne({ subsets: ['latin'], variable: '--font-syne', display: 'swap' })
 

@@ -4,18 +4,6 @@
    ============================================================================= */
 
 /* Animations */
-@keyframes pulse-dot {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
-}
-
 @keyframes scroll-left {
   0% {
     transform: translateX(0);
@@ -51,30 +39,6 @@
 
 .hero-content {
   max-width: 560px;
-}
-
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 1rem 0.5rem 0.6rem;
-  border-radius: 100px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  margin-bottom: 1.75rem;
-  background: var(--bg-glass);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-}
-
-.hero-badge .dot {
-  width: 8px;
-  height: 8px;
-  background: var(--pink);
-  border-radius: 50%;
-  box-shadow: 0 0 10px var(--pink);
-  animation: pulse-dot 2s infinite;
 }
 
 .hero h1 {
@@ -117,11 +81,6 @@
   align-items: center;
 }
 
-.hero-visual {
-  position: relative;
-  height: 550px;
-}
-
 /* Centered hero variant */
 .hero--centered {
   display: flex;
@@ -138,28 +97,6 @@
 
 .hero--centered .hero-content p {
   max-width: 560px;
-}
-
-/* Blog section in hero */
-.hero-blogs-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-/* Blog cards row for hero */
-.hero-blogs-row {
-  display: flex;
-  gap: 1.5rem;
-  justify-content: center;
-  width: 100%;
-  max-width: 700px;
-}
-
-.hero-blogs-row .blog-card {
-  flex: 1;
-  max-width: 320px;
 }
 
 .section-header {
@@ -325,13 +262,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.gallery-page-card-dice {
-  font-size: 0.75rem;
-  color: var(--text-dim);
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 /* =============================================================================
@@ -678,12 +608,6 @@
     padding: 8rem 2rem 4rem;
   }
 
-  .hero-visual {
-    display: block;
-    margin-top: 4rem;
-    height: 400px;
-  }
-
   .hero h1 {
     font-size: 3rem;
   }
@@ -700,15 +624,5 @@
   .gallery-page-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
-  }
-
-  .hero-blogs-row {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .hero-blogs-row .blog-card {
-    max-width: 100%;
-    width: 100%;
   }
 }

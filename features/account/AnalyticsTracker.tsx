@@ -4,6 +4,13 @@ import { useEffect } from "react"
 import { sendGAEvent } from "@next/third-parties/google"
 import { useUser } from "./useUser"
 
+// gtag is installed on window by <GoogleAnalytics/> (@next/third-parties); the package does not expose it.
+declare global {
+    interface Window {
+        gtag?: (command: 'config', targetId: string, params: Record<string, unknown>) => void
+    }
+}
+
 /** Identifies the signed-in user in GA4. Mount inside a ProfileProvider. */
 export function AnalyticsTracker() {
     const userId = useUser().user?.id
@@ -14,11 +21,7 @@ export function AnalyticsTracker() {
             // Note: We use the 'config' command to set user_id for subsequent events
             // Since @next/third-parties doesn't expose gtag directly easily, we can use the window object or send a custom event with user params
 
-            if (typeof window !== 'undefined' && (window as any).gtag) {
-                (window as any).gtag('config', 'G-BDR76Z4JEE', {
-                    user_id: userId
-                })
-            }
+            window.gtag?.('config', 'G-BDR76Z4JEE', { user_id: userId })
 
             // Also send a login event
             sendGAEvent('event', 'login', {

@@ -19,7 +19,6 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = URL
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = ANON_KEY
-process.env.NEXT_PUBLIC_APP_URL ??= 'http://localhost:3000'
 
 const EMAIL = `c3-${Date.now()}@test.dev`
 const PASSWORD = 'pass1234'

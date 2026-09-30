@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/api/', '/auth/'],
+      disallow: ['/account'], // private; /editor is a public landing (see app/(editor)/layout.tsx metadata)
     },
     sitemap: 'https://diceify.art/sitemap.xml',
   }

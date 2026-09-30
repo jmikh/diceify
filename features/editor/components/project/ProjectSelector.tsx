@@ -44,11 +44,7 @@ export default function ProjectSelector({
     currentProject.startsWith('Untitled Project') ||
     currentProject.trim() === ''
 
-  // Format display name with ellipsis if needed
   const rawDisplayName = currentProject || 'Untitled Project'
-  const displayName = rawDisplayName.length > 20
-    ? rawDisplayName.substring(0, 17) + '...'
-    : rawDisplayName
 
   // Update edit value when current project changes
   useEffect(() => {

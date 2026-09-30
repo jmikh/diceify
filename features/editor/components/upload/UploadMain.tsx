@@ -56,7 +56,6 @@ export default function UploadMain() {
         return (
             <div className="w-full h-full flex flex-col items-center justify-center">
                 <div className="relative w-full h-full rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src={imageSrc}
                         alt="Uploaded preview"

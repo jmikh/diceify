@@ -116,7 +116,7 @@ export default function GalleryPage() {
             />
 
             {/* Content */}
-            <div className="content relative z-[2] max-w-[1000px] mx-auto w-full px-6 py-12">
+            <div className="relative z-[2] max-w-[1000px] mx-auto w-full px-6 py-12">
                 <Link
                     href="/"
                     className="inline-flex items-center gap-2 text-[var(--text-dim)] hover:text-[var(--pink)] transition-colors mb-8"

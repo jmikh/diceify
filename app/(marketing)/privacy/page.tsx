@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     return (
         <>
             {/* Content */}
-            <div className="content relative z-[2] max-w-[900px] mx-auto w-full px-6 py-12">
+            <div className="relative z-[2] max-w-[900px] mx-auto w-full px-6 py-12">
                 <Link
                     href="/"
                     className="inline-flex items-center gap-2 text-[var(--text-dim)] hover:text-[var(--pink)] transition-colors mb-8"
@@ -85,6 +85,7 @@ export default function PrivacyPage() {
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
                                 2.4 Analytics Data
                             </h3>
+                            {/* TODO(user): Vercel Analytics is no longer used; Google Analytics + Sentry (client error reporting) are */}
                             <p>
                                 We use Google Analytics and Vercel Analytics to understand how users interact with our Service. This includes information such as pages visited, time spent on pages, and general usage patterns. This data is anonymized and used to improve our Service.
                             </p>

@@ -57,7 +57,7 @@ describe('renderDieSymbolBody', () => {
 describe('renderDefs', () => {
   it('defines the 12 symbols with the ids the viewer references', () => {
     const defs = renderDefs()
-    const ids = Array.from(defs.matchAll(/<symbol id='([^']+)' viewBox='0 0 100 100'>/g)).map((m) => m[1])
+    const ids = [...defs.matchAll(/<symbol id='([^']+)' viewBox='0 0 100 100'>/g)].map((m) => m[1])
     expect(ids).toEqual([
       ...[1, 2, 3, 4, 5, 6].map((f) => `dice-black-${f}`),
       ...[1, 2, 3, 4, 5, 6].map((f) => `dice-white-${f}`),
@@ -71,7 +71,7 @@ describe('renderWindowSvg', () => {
   it('references symbols for the window (SVG rows), clamped to the grid', () => {
     const svg = renderWindowSvg(grid, { x0: -5, x1: 0, y0: 0, y1: 99 })
     expect(svg.startsWith('<defs>')).toBe(true)
-    const uses = Array.from(svg.matchAll(/<use [^>]*\/>/g)).map((m) => m[0])
+    const uses = [...svg.matchAll(/<use [^>]*\/>/g)].map((m) => m[0])
     expect(uses).toEqual([
       "<use href='#dice-white-4' x='0' y='0' width='1' height='1'/>", // top row = grid y 1
       "<use href='#dice-black-1' x='0' y='1' width='1' height='1'/>",

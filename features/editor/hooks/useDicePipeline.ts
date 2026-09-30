@@ -41,6 +41,8 @@ export function useDicePipeline() {
     useEffect(() => {
         loadImage(LOGO_SRC).then(img => { logoRef.current = img }).catch(() => { /* unbranded raster */ })
         return () => {
+            // A run counter, not a DOM ref: bumping it on unmount is the point (stale async results are dropped).
+            // eslint-disable-next-line react-hooks/exhaustive-deps
             runIdRef.current++
             if (timeoutRef.current) clearTimeout(timeoutRef.current)
         }

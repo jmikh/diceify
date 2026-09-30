@@ -5,7 +5,7 @@ import { FixedCropper, FixedCropperRef, ImageRestriction } from 'react-advanced-
 import 'react-advanced-cropper/dist/style.css'
 import 'react-advanced-cropper/dist/themes/corners.css'
 import styles from './Cropper.module.css'
-import { devLog, devError } from '@/lib/utils/debug'
+import { reportError } from '@/lib/report-error'
 import { cropParamsEqual, DEFAULT_ASPECT_RATIO, type CropParams } from '@/core/dice'
 import { useDocumentHistoryBatcher } from '@/features/editor/store/historyBatcher'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
@@ -121,7 +121,7 @@ export default function CropperMain() {
             if (tracked) setCrop(next)
             else untracked(() => setCrop(next))
         } catch (error) {
-            devError('Error reading crop coordinates:', error)
+            reportError(error, { where: 'crop-read' })
         }
     }, [cancelPendingReport, setCrop, untracked])
 
@@ -155,12 +155,10 @@ export default function CropperMain() {
 
         if (Math.abs(current.rotation - crop.rotation) > 0.01) {
             cropper.rotateImage(crop.rotation - current.rotation)
-            devLog('[CROP] Synced rotation:', { from: current.rotation, to: crop.rotation })
         }
         const rotated = readCrop(cropper, crop.aspectRatio)
         if (rotated && !cropParamsEqual(rotated, crop)) {
             cropper.setCoordinates({ left: crop.x, top: crop.y, width: crop.width, height: crop.height })
-            devLog('[CROP] Synced coordinates:', crop)
         }
     }, [crop, imageLoaded])
 
@@ -201,7 +199,6 @@ export default function CropperMain() {
                 scaleImage: { wheel: { ratio: 0.1 } }
             }}
             onReady={() => {
-                devLog('Cropper onReady fired')
                 setImageLoaded(true)
                 // Refresh to ensure proper sizing; the first crop is reported by the change this triggers
                 cropperRef.current?.refresh()

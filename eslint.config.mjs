@@ -37,7 +37,7 @@ const boundary = (files, group, extra = {}) => ({
 
 export default defineConfig(
   {
-    ignores: ['.next/**', 'out/**', 'node_modules/**', 'lib/generated/**', 'public/**', '.agent/**', 'next-env.d.ts'],
+    ignores: ['.next/**', 'out/**', 'node_modules/**', 'public/**', '.agent/**', 'next-env.d.ts'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -51,13 +51,15 @@ export default defineConfig(
     plugins: { 'react-hooks': reactHooks },
     rules: {
       'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
-      // 'warn' until E3 raises it to 'error' after the cleanup sweep.
-      '@typescript-eslint/no-explicit-any': 'warn',
+      'react-hooks/exhaustive-deps': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
-        'warn',
+        'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
       ],
+      // Static export with `images.unoptimized`: there is no image optimizer, so `<img>` is the right tag
+      // (the three sites are a data URL, a Google avatar and a spinner SVG).
+      '@next/next/no-img-element': 'off',
     },
   },
   {
@@ -92,6 +94,41 @@ export default defineConfig(
             { group: CORE_RESTRICTED_IMPORTS },
             // Anything that is neither a relative path nor exactly `zod`.
             { regex: '^(?!\\.{1,2}/)(?!zod$)', message: 'core may import only core (relative) and zod.' },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Edge functions run under Deno: a function imports its own folder and `../_shared`; `_shared` imports only
+    // itself; bare specifiers are the ones mapped in supabase/functions/deno.json. Tests (vitest) are exempt: they
+    // pin `_shared` against `@/core`.
+    files: ['supabase/functions/**/*.ts'],
+    ignores: ['supabase/functions/**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { regex: '^\\.\\./(?!_shared/)', message: 'A function may import only its own folder and ../_shared.' },
+            { regex: '^(?!\\.{1,2}/)(?!(stripe|zod|@supabase/supabase-js)$)', message: 'Edge functions import relative paths or the specifiers in deno.json only.' },
+            NO_SENTRY,
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['supabase/functions/_shared/**/*.ts'],
+    ignores: ['supabase/functions/**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { regex: '^\\.\\./', message: '_shared may import only _shared.' },
+            { regex: '^(?!\\.{1,2}/)(?!(stripe|zod|@supabase/supabase-js)$)', message: 'Edge functions import relative paths or the specifiers in deno.json only.' },
+            NO_SENTRY,
           ],
         },
       ],

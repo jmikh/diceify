@@ -19,7 +19,7 @@ npm run db:stop
 
 Env files (all gitignored except `.env.example`):
 
-- `.env.local` — `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_APP_URL`, optional
+- `.env.local` — `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, optional
   `NEXT_PUBLIC_SENTRY_DSN` (copy from `.env.example`; local values are printed by `db:status`).
 - `supabase/.env` — `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, read by `env(...)` in `supabase/config.toml`. Add
   `http://127.0.0.1:54331/auth/v1/callback` as an authorized redirect URI on the Google OAuth client for local sign-in.
@@ -98,7 +98,6 @@ One-time, in the Cloudflare dashboard (nothing is scripted — `wrangler` was no
    | `NODE_VERSION` | `20` | `20` |
    | `NEXT_PUBLIC_SUPABASE_URL` | `https://<project-ref>.supabase.co` | same hosted project (the local stack is not reachable from Pages) |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | hosted anon key | same |
-   | `NEXT_PUBLIC_APP_URL` | `https://diceify.art` | `https://revamp.diceify.pages.dev` |
    | `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN (optional, unset = inert) | same or unset |
    | `SENTRY_AUTH_TOKEN` | Sentry auth token (optional; enables the source-map upload — keep it a Pages *secret*) | same or unset |
    | `SENTRY_ORG` | Sentry org slug (with the token) | same |
@@ -106,6 +105,8 @@ One-time, in the Cloudflare dashboard (nothing is scripted — `wrangler` was no
 
    A build with the `NEXT_PUBLIC_*` values missing still succeeds (`lib/env.public.ts` validates on first access), so a
    misconfigured project fails at sign-in/save in the browser, not at build time — check the variables first when that happens.
+   Do **not** set `NODE_ENV=production` or `NPM_FLAGS=--omit=dev` on the project: `typescript`, `tailwindcss`, `postcss` and
+   `@types/*` are devDependencies and `next build` needs them (Pages' default `npm install`/`npm ci` includes them).
 5. Save and deploy. Preview URL after the first `revamp` build: `https://revamp.diceify.pages.dev` (not created yet — see the
    step log in `plans/revamp/revamp-tiered-plan.md`).
 
@@ -134,7 +135,7 @@ still read from the local `.env.local` by `next build` in this path, so build wi
 
 At cut-over: Pages project → Custom domains → add `diceify.art` and `www.diceify.art` (Cloudflare provisions the certificate;
 if the zone is not on Cloudflare, point a `CNAME` at `diceify.pages.dev`), then remove the domain from the Vercel project.
-`NEXT_PUBLIC_APP_URL` (production) and Supabase Site URL are already `https://diceify.art`.
+The Supabase Site URL and the edge functions' `APP_URL` secret are already `https://diceify.art`.
 
 ## Stripe (D1)
 

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { devError } from '@/lib/utils/debug'
 import { useUser } from '@/features/account/useUser'
 import PlanBadge from '@/features/billing/PlanBadge'
 import { formatBillingDate } from '@/features/billing/planCopy'
@@ -49,7 +48,7 @@ export default function UserMenu() {
                             className="w-full h-full object-cover"
                             referrerPolicy="no-referrer"
                             onError={(e) => {
-                                devError('Image failed to load:', user.avatarUrl)
+                                console.warn('Avatar image failed to load:', user.avatarUrl)
                                 // Hide the broken image and show fallback
                                 e.currentTarget.style.display = 'none'
                                 const fallback = e.currentTarget.nextElementSibling as HTMLElement

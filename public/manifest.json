@@ -22,9 +22,9 @@
   ],
   "screenshots": [
     {
-      "src": "/opengraph-image",
+      "src": "/images/og-card.jpg",
       "sizes": "1200x630",
-      "type": "image/png"
+      "type": "image/jpeg"
     }
   ]
 }

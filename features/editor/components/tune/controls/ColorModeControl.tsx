@@ -1,6 +1,6 @@
 'use client'
 
-import { ColorMode } from '@/lib/types'
+import type { ColorMode } from '@/core/dice'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 
 const options: { mode: ColorMode; tooltip: string; swatch: JSX.Element }[] = [

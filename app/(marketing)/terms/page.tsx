@@ -10,7 +10,7 @@ export default function TermsPage() {
     return (
         <>
             {/* Content */}
-            <div className="content relative z-[2] max-w-[900px] mx-auto w-full px-6 py-12">
+            <div className="relative z-[2] max-w-[900px] mx-auto w-full px-6 py-12">
                 <Link
                     href="/"
                     className="inline-flex items-center gap-2 text-[var(--text-dim)] hover:text-[var(--pink)] transition-colors mb-8"
@@ -98,6 +98,7 @@ export default function TermsPage() {
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
                                 4.4 Creator Pass ($19 one-time)
                             </h3>
+                            {/* TODO(user): Creator Pass is a 30-day pass (core/billing/plans.ts); §4.4 and §5.1 say "permanent access" */}
                             <p>
                                 The Creator Pass is a one-time purchase that grants permanent access to all premium features for the lifetime of the Service.
                             </p>
@@ -125,6 +126,7 @@ export default function TermsPage() {
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
                                 5.1 Cancellation
                             </h3>
+                            {/* TODO(user): "Creator Pass … permanent access" — it is a 30-day pass; also cancellation is now in-app on /account as well as the portal */}
                             <p className="mb-3">
                                 You may cancel your subscription at any time through the Stripe Customer Portal. Upon cancellation, you will retain access to premium features until the end of your current billing period. No refunds are provided for partial billing periods. Creator Pass purchases are non-refundable as they provide permanent access.
                             </p>

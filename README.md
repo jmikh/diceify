@@ -1,209 +1,57 @@
-# Diceify - Photo to Dice Art Converter
+# Diceify
 
-A high-performance web application that transforms photos into artistic representations made of dice faces. Think of it as converting raster images (pixels) into a mosaic of dice, where brightness determines which dice face to use.
+Turn a photo into a dice mosaic you can actually build: upload, crop, tune contrast/gamma, then follow die-by-die
+placement instructions. Live at [diceify.art](https://diceify.art).
 
-## 🎯 Core Concept
+## Stack
 
-Similar to how ASCII art converts images to text characters, Diceify converts images to dice faces:
-- **Dark areas** → Black dice with fewer dots (1-3)
-- **Light areas** → White dice with more dots (4-6)
-- **Mid-tones** → Mixed based on color mode settings
+- **Next.js 14** (App Router) as a static site generator: `output: 'export'` → `out/`, hosted on **Cloudflare Pages**.
+  There is no application server.
+- **Supabase**: Google OAuth, Postgres (projects, profiles) under row-level security, Storage for the project photo.
+  The browser talks to it directly with `supabase-js`.
+- **Two Supabase Edge Functions** (Deno): `billing` (Stripe checkout / portal / cancel / resume / sync) and
+  `stripe-webhook`. Subscription state is recomputed from Stripe on every event.
+- **Pure TypeScript dice core** (`core/`): deterministic pipeline with golden fixtures; `core/README.md` is the spec.
+- zustand + zundo (undo/redo), vitest, ESLint 9, Tailwind, Sentry (client, optional), GA4.
 
-## 🏗️ Project Structure
+See `CLAUDE.md` for the architecture map, import rules and working conventions.
 
-```
-diceify2/
-├── app/                      # Next.js 14 App Router pages
-│   ├── layout.tsx           # Root layout with global styles
-│   ├── page.tsx            # Landing page (redirects to editor)
-│   └── editor/
-│       └── page.tsx        # Main application - orchestrates workflow
-│
-├── components/
-│   └── Editor/             # All UI components for the editor
-│       ├── ImageUploader.tsx    # Drag-and-drop file upload
-│       ├── Cropper.tsx          # Image cropping interface
-│       ├── DiceCanvas.tsx       # Canvas-based dice renderer
-│       ├── ControlPanel.tsx     # Parameter controls (sliders, inputs)
-│       ├── DiceStats.tsx        # Statistics display widget
-│       ├── BuildViewer.tsx      # SVG-based build step viewer
-│       └── BuildProgress.tsx    # Navigation controls for build
-│
-├── lib/
-│   ├── dice/              # Core dice logic
-│   │   ├── generator.ts   # Image → Dice conversion algorithm
-│   │   ├── renderer.ts    # Canvas rendering engine
-│   │   ├── svg-renderer.ts # SVG rendering for build step
-│   │   ├── types.ts       # TypeScript interfaces
-│   │   └── constants.ts   # Rendering constants
-│   │
-│   ├── theme.ts           # Glassmorphism theme configuration
-│   └── utils/             # Helper functions
-│
-├── public/                # Static assets
-│   └── images/           # Dice face images (if using images)
-│
-└── CLAUDE.md             # Detailed product requirements
-```
+## Local setup
 
-## 🔄 Application Workflow
+Requirements: Node 20+ (Pages builds on 20), npm 11, the Supabase CLI and Deno (Homebrew), the Stripe CLI for billing work.
 
-The application follows a linear workflow with distinct steps:
-
-### 1. **Upload Step** (`ImageUploader.tsx`)
-- User uploads an image via drag-and-drop or file picker
-- Client-side validation and resizing
-- Maximum input: 4096x4096 pixels
-
-### 2. **Crop Step** (`Cropper.tsx`)
-- Interactive cropping with zoom/pan
-- Aspect ratio presets
-- Uses `react-cropper` library
-
-### 3. **Generate Step** (`DiceCanvas.tsx` + `generator.ts`)
-- **Image Processing Pipeline:**
-  ```
-  Image → Grayscale → Grid Division → Brightness Mapping → Dice Assignment
-  ```
-- Real-time parameter adjustments
-- Canvas-based rendering for performance
-
-### 4. **Build Step** (`BuildViewer.tsx`)
-- Navigate through dice one-by-one
-- SVG rendering with viewBox zooming
-- Shows consecutive dice counts
-- Progress tracking
-
-## 🎨 Rendering Systems
-
-### Canvas Renderer (Generate Step)
-- High-performance batch rendering
-- Viewport culling for large grids
-- Pre-cached dice images as ImageBitmaps
-- Handles 10,000+ dice smoothly
-
-### SVG Renderer (Build Step)
-- Vector-based for smooth zooming
-- ViewBox manipulation for pan/zoom
-- CSS transitions for smooth animations
-- Memory-efficient for large grids
-
-## 🔧 Key Algorithms
-
-### Brightness to Dice Mapping
-
-```typescript
-// Grayscale conversion
-grayscale = 0.299 * R + 0.587 * G + 0.114 * B
-
-// Black & White Mode (12 levels)
-0-21:    Black die, 1 dot
-22-42:   Black die, 2 dots
-...
-234-255: White die, 1 dot
-
-// Contrast adjustment (additive only)
-adjusted = 128 + ((value - 128) * (1 + contrast/100))
-```
-
-### Grid Generation Process
-1. Divide image into NxN grid cells
-2. Calculate average brightness per cell
-3. Map brightness to dice face/color
-4. Apply optional 90° rotation
-5. Return structured grid data
-
-## 🚀 Performance Optimizations
-
-- **Viewport Culling**: Only render visible dice
-- **Progressive Rendering**: Show low-res preview immediately
-- **Batch Operations**: Group similar dice for single draw calls
-- **Pre-caching**: Store rendered dice as ImageBitmaps
-- **Debouncing**: Prevent excessive re-renders on parameter changes
-
-## 🛠️ Technology Stack
-
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Theme**: Custom glassmorphism design
-- **Image Processing**: HTML5 Canvas API
-- **Vector Graphics**: SVG with dynamic viewBox
-- **Icons**: Lucide React
-
-## 📦 Installation & Development
-
-```bash
-# Install dependencies
+```sh
 npm install
-
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm run start
+cp .env.example .env.local        # Supabase URL + anon key (local values below), optional Sentry DSN
+npm run db:start                  # local Supabase on ports 5433x; `npm run db:status` prints the keys
+npm run dev                       # http://localhost:3000
 ```
 
-## 🎯 Design Patterns
+Env files (all gitignored except the examples):
 
-### Component Architecture
-- **Page Component** (`editor/page.tsx`): State management, orchestration
-- **Presentational Components**: Receive props, minimal state
-- **Render Props**: Canvas and SVG renderers as services
-- **Controlled Components**: All inputs controlled by parent state
+| File | Holds |
+|---|---|
+| `.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, optional `NEXT_PUBLIC_SENTRY_DSN` |
+| `supabase/.env` | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` for local Google sign-in (read by `supabase/config.toml`) |
+| `supabase/functions/.env` | Stripe test secrets for `npm run functions:serve` (template: `supabase/functions/.env.example`) |
 
-### State Management
-- React useState for UI state
-- Prop drilling for simplicity (no Redux needed)
-- Callbacks for child-to-parent communication
+Billing locally: `npm run functions:serve` in one terminal, `npm run stripe:listen` in another; flows, cards and
+`stripe trigger` recipes are in `docs/STRIPE_TESTING.md`.
 
-## 🔍 Key Technical Decisions
+## Commands
 
-1. **Canvas vs SVG**: Canvas for performance (generate), SVG for quality (build)
-2. **Client-side First**: All processing happens in browser
-3. **No Backend Required**: Works offline once loaded
-4. **Progressive Enhancement**: Low-res preview, then full quality
-5. **Glassmorphism UI**: Modern, semi-transparent design
+| Command | What |
+|---|---|
+| `npm run dev` / `npm run build` | dev server / static export to `out/` |
+| `npm test` / `npm run test:watch` | vitest unit tests (integration suites opt in with `SUPABASE_TEST=1`, `STRIPE_TEST=1`) |
+| `npm run lint` / `npm run typecheck` | ESLint (0 warnings policy) / `tsc` for the app and `core/` |
+| `npm run db:*` | `start`, `stop`, `status`, `reset`, `migration -- <name>`, `types` (regenerates `lib/supabase/database.types.ts`), `push` |
+| `npm run functions:*` | `serve`, `check` (`deno check`), `deploy` |
+| `npm run stripe:listen` | forward Stripe webhooks to the local function |
+| `npm run gen-fixtures` | regenerate the core's golden fixtures |
 
-## 📊 Data Flow
+## Deploy and testing
 
-```
-User Input → Page Component → Child Components → Renderers
-    ↓             ↓                   ↑              ↑
-  Image     State Updates       Callbacks      Grid Data
-```
-
-## 🎮 User Controls
-
-- **Grid Size**: 10-100 dice per row
-- **Color Mode**: B&W, Black only, White only
-- **Contrast**: 0-100 (additive)
-- **Rotation**: 90° individual dice rotation
-- **Die Size**: Physical size in mm
-- **Cost**: Price calculation
-
-## 🏗️ Future Enhancements
-
-- Web Workers for parallel processing
-- WebGL renderer for 20,000+ dice
-- Save/load projects
-- User galleries
-- Animation between states
-- Custom dice designs
-- Color dice support
-
-## 📝 Notes for Backend Engineers
-
-Coming from backend development? Here's what's different:
-
-1. **No Server State**: Everything lives in the browser
-2. **Event-Driven**: User interactions trigger re-renders
-3. **Declarative UI**: Describe what UI should look like, React handles updates
-4. **Component Lifecycle**: Components mount/unmount as user navigates
-5. **Async Everything**: File reads, image processing all async
-6. **No Database**: Data is ephemeral unless explicitly saved
-
-The mental model is closer to a desktop application than a traditional web app - think of it as a self-contained image processing program that happens to run in a browser.
+- Deployment (Cloudflare Pages, hosted Supabase, Stripe endpoint, DNS): `docs/DEPLOY.md`.
+- Billing flows and Stripe test recipes: `docs/STRIPE_TESTING.md`.
+- Revamp plan and per-step design docs: `plans/revamp/`.

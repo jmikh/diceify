@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Metadata } from 'next'
 import Logo from '@/components/Logo'
 import BackgroundOrbs from '@/components/BackgroundOrbs'
-import { Home, AlertTriangle, ArrowLeft } from 'lucide-react'
+import { AlertTriangle, ArrowLeft } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: '404 - Page Not Found',
