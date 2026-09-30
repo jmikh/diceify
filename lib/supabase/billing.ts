@@ -4,6 +4,7 @@
 
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import type { BillingState, CheckoutPlan, Plan } from '@/core/billing'
+import { reportError } from '@/lib/report-error'
 import { getSupabase } from './client'
 
 /** Mirror of `BillingView` in supabase/functions/_shared/billing-sync.ts (Deno code cannot be imported here). */
@@ -28,6 +29,15 @@ export class BillingError extends Error {
     super(message)
     this.name = 'BillingError'
   }
+}
+
+/** A 4xx envelope (401/404/409/429) is an expected answer → warn; anything else is a bug or an outage → report. */
+export function reportBillingError(error: unknown, where: string): void {
+  if (error instanceof BillingError && error.status < 500) {
+    console.warn(`[${where}] ${error.code}: ${error.message}`)
+    return
+  }
+  reportError(error, { where })
 }
 
 async function toBillingError(error: unknown): Promise<Error> {

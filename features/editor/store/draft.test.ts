@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDefaultDocument, DEFAULT_DICE_PARAMS } from '@/core/dice'
+import { reportError } from '@/lib/report-error'
+
+// Unexpected failures go through the Sentry wrapper
+vi.mock('@/lib/report-error', () => ({ reportError: vi.fn() }))
 
 // idb-keyval → an in-memory map (no IndexedDB in node)
 const idb = new Map<string, unknown>()
@@ -122,17 +126,17 @@ describe('legacy migration', () => {
 })
 
 describe('corrupt data', () => {
-  it('ignores corrupt JSON with a warning and removes it', () => {
+  it('ignores corrupt JSON, reports it and removes it', () => {
     store.set(DRAFT_KEY, '{not json')
     expect(readDraft()).toBeNull()
-    expect(console.warn).toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(expect.any(SyntaxError), expect.objectContaining({ where: 'draft-parse' }))
     expect(store.has(DRAFT_KEY)).toBe(false)
   })
 
   it('ignores a document that fails validation', () => {
     store.set(DRAFT_KEY, JSON.stringify({ doc: { schemaVersion: 99 }, name: 'x' }))
     expect(readDraft()).toBeNull()
-    expect(console.warn).toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ where: 'draft-parse' }))
   })
 
   it('survives an unavailable localStorage', () => {

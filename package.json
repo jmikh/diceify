@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@next/third-parties": "^14.2.35",
+    "@sentry/nextjs": "^11.1.0",
     "@supabase/supabase-js": "^2.117.2",
     "@types/node": "^22.14.0",
     "@types/react": "^18.3.18",

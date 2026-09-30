@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone'
 import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { downscaleForUpload } from '@/lib/image/decode'
+import { reportError } from '@/lib/report-error'
 import { useUser } from '@/features/account/useUser'
 import { useProjects } from '@/features/editor/hooks/useProjects'
 import { writeDraftImage } from '@/features/editor/store/draft'
@@ -35,7 +36,7 @@ export default function UploadMain() {
             await writeDraftImage(blob)
             if (user) await createFromDraft(useDocumentStore.getState().name)
         } catch (error) {
-            console.error('[upload] failed:', error)
+            reportError(error, { where: 'upload', extra: { type: file.type, size: file.size } })
             toast.error('Could not read that image. Please try another file.')
         } finally {
             setIsProcessing(false)

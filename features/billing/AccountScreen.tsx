@@ -18,6 +18,7 @@ import {
   BillingError,
   cancelSubscription,
   openBillingPortal,
+  reportBillingError,
   resumeSubscription,
   syncBilling,
   viewToBillingState,
@@ -54,7 +55,7 @@ function useCheckoutConfirmation(active: boolean, authed: boolean, refresh: () =
             return
           }
         } catch (error) {
-          console.warn('[billing] sync while confirming checkout failed:', error)
+          reportBillingError(error, 'billing-confirm')
         }
         await sleep(POLL_INTERVAL_MS)
       }
@@ -228,7 +229,7 @@ export default function AccountScreen() {
     if (!authed || checkoutReturn) return
     syncBilling()
       .then(() => refresh())
-      .catch((err) => console.warn('[billing] sync on account load failed:', err))
+      .catch((err) => reportBillingError(err, 'billing-sync'))
   }, [authed, checkoutReturn, refresh])
 
   const runAction = useCallback(
@@ -249,6 +250,7 @@ export default function AccountScreen() {
         if (err instanceof BillingError && REFRESH_ONLY_CODES.has(err.code)) {
           await refresh()
         } else {
+          reportBillingError(err, `billing-${kind}`)
           setError(err instanceof Error ? err.message : 'Something went wrong')
         }
       }

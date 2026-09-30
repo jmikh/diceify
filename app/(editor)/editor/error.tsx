@@ -1,10 +1,14 @@
 'use client'
 
+// Route-group error boundary for /editor: a crash in any step component lands here (reported once per error),
+// keeping the marketing pages' root boundary out of it. "Reload editor" re-renders the segment; the stores keep
+// their state, so the draft/project survives.
+
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { reportError } from '@/lib/report-error'
 
-export default function Error({
+export default function EditorError({
   error,
   reset,
 }: {
@@ -12,7 +16,7 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    reportError(error, { where: 'root-boundary', extra: { digest: error.digest } })
+    reportError(error, { where: 'editor-boundary', extra: { digest: error.digest } })
   }, [error])
 
   return (
@@ -20,15 +24,11 @@ export default function Error({
       <div className="text-center max-w-md">
         <div className="mb-8">
           <div className="text-6xl mb-4">⚠️</div>
-          <h1 className="text-3xl font-bold mb-2">Something went wrong!</h1>
-          <p className="text-gray-400">
-            An unexpected error occurred. We apologize for the inconvenience.
-          </p>
+          <h1 className="text-3xl font-bold mb-2">Something went wrong</h1>
+          <p className="text-gray-400">The editor hit an unexpected error. Your work is kept; reloading usually fixes it.</p>
           {process.env.NODE_ENV === 'development' && error.message && (
             <div className="mt-4 p-4 bg-gray-800 rounded-lg text-left">
-              <p className="text-xs text-red-400 font-mono break-all">
-                {error.message}
-              </p>
+              <p className="text-xs text-red-400 font-mono break-all">{error.message}</p>
             </div>
           )}
         </div>
@@ -36,22 +36,16 @@ export default function Error({
         <div className="space-y-4">
           <button
             onClick={reset}
-            className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+            className="block w-full bg-accent-pink hover:bg-accent-pink-light text-white font-semibold py-3 px-6 rounded-lg transition-colors"
           >
-            Try Again
+            Reload editor
           </button>
           <Link
             href="/"
             className="block w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
           >
-            Back to Home
+            Back to home
           </Link>
-        </div>
-
-        <div className="mt-8 pt-8 border-t border-gray-700">
-          <p className="text-sm text-gray-500">
-            If this error persists, please contact support.
-          </p>
         </div>
       </div>
     </div>

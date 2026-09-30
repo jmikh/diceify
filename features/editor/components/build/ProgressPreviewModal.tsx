@@ -7,6 +7,7 @@ import { RiProgress5Line, RiProgress8Line } from 'react-icons/ri'
 import { rasterSize, renderProgressSvg } from '@/core/dice'
 import { useEntitlements } from '@/features/account/useUser'
 import { rasterizeSvg } from '@/lib/image/rasterize'
+import { reportError } from '@/lib/report-error'
 import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 
@@ -53,7 +54,7 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
         let cancelled = false
         rasterizeSvg(progressSvg, raster)
             .then(url => { if (!cancelled) setRasterizedImage(url) })
-            .catch(error => console.error('[PREVIEW] Rasterize failed:', error))
+            .catch(error => reportError(error, { where: 'preview-raster' }))
         return () => { cancelled = true }
     }, [isOpen, progressSvg, raster, isPro])
 

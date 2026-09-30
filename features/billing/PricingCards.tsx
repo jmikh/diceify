@@ -5,7 +5,7 @@ import { Check, Loader2, Clock } from 'lucide-react'
 import { sendGAEvent } from '@next/third-parties/google'
 import type { CheckoutPlan, Plan } from '@/core/billing'
 import { useUser } from '@/features/account/useUser'
-import { BillingError, startCheckout } from '@/lib/supabase/billing'
+import { BillingError, reportBillingError, startCheckout } from '@/lib/supabase/billing'
 
 // =============================================================================
 // PRICING CONFIGURATION - Single source of truth
@@ -124,7 +124,7 @@ async function goToCheckout(plan: CheckoutPlan, onAlreadyPro: () => void): Promi
         if (error instanceof BillingError && error.code === 'ALREADY_SUBSCRIBED') {
             onAlreadyPro()
         } else {
-            console.error('Billing Error:', error)
+            reportBillingError(error, 'billing-checkout')
         }
         return false
     }

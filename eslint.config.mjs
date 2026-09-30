@@ -19,14 +19,20 @@ const CORE_RESTRICTED_GLOBALS = [
 ]
 const CORE_RESTRICTED_IMPORTS = ['react', 'next', 'next/*', '@/lib/*', '@/features/*', '@/app/*', '@/components/*']
 
+// Sentry is reached through lib/report-error.ts only (plan → "Sentry"). `no-restricted-imports` options are replaced,
+// not merged, by a later block for the same file, so the pattern rides along in every block below.
+const NO_SENTRY = { group: ['@sentry/*', '@sentry/*/**'], message: 'Use reportError/setErrorUser from @/lib/report-error.' }
+const SENTRY_IMPORTERS = ['lib/report-error.ts', 'instrumentation-client.ts', 'next.config.js']
+
 // Import boundaries (plan → "Import rules"). `app` → features/components/lib/core; features/marketing|account|billing
 // never reach into the editor; lib/components never import features or app.
 const NO_APP = ['@/app', '@/app/*']
 const NO_FEATURES = ['@/features', '@/features/*']
 const NO_EDITOR = ['@/features/editor', '@/features/editor/*']
-const boundary = (files, patterns) => ({
+const boundary = (files, group, extra = {}) => ({
   files,
-  rules: { 'no-restricted-imports': ['error', { patterns }] },
+  ...extra,
+  rules: { 'no-restricted-imports': ['error', { patterns: [{ group }, NO_SENTRY] }] },
 })
 
 export default defineConfig(
@@ -55,6 +61,12 @@ export default defineConfig(
     },
   },
   {
+    // Everything without a boundary block below (root files, scripts, tests): Sentry only through the wrapper.
+    files: ['**/*.{js,mjs,cjs,ts,tsx}'],
+    ignores: SENTRY_IMPORTERS,
+    rules: { 'no-restricted-imports': ['error', { patterns: [NO_SENTRY] }] },
+  },
+  {
     // CommonJS config files at the root (next.config.js, postcss.config.js).
     files: ['*.js', '*.cjs'],
     rules: { '@typescript-eslint/no-require-imports': 'off' },
@@ -64,7 +76,7 @@ export default defineConfig(
     files: ['core/**/*.ts'],
     rules: {
       'no-restricted-globals': ['error', ...CORE_RESTRICTED_GLOBALS],
-      'no-restricted-imports': ['error', { patterns: CORE_RESTRICTED_IMPORTS }],
+      'no-restricted-imports': ['error', { patterns: [{ group: CORE_RESTRICTED_IMPORTS }, NO_SENTRY] }],
     },
   },
   {
@@ -87,14 +99,24 @@ export default defineConfig(
   },
   boundary(['features/marketing/**', 'features/account/**', 'features/billing/**'], [...NO_EDITOR, ...NO_APP]),
   boundary(['features/editor/**'], NO_APP),
-  boundary(['lib/**', 'components/**'], [...NO_FEATURES, ...NO_APP]),
+  boundary(['lib/**', 'components/**'], [...NO_FEATURES, ...NO_APP], { ignores: ['lib/report-error.ts'] }),
+  {
+    // The Sentry wrapper keeps the lib boundary without the Sentry ban.
+    files: ['lib/report-error.ts'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [...NO_FEATURES, ...NO_APP] }] },
+  },
   {
     // app/ is routing glue: it may import only features, components, lib, core and styles.
     files: ['app/**'],
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [{ regex: '^@/(?!features/|components/|lib/|core/|styles/)', message: 'app may import only @/features, @/components, @/lib, @/core, @/styles.' }] },
+        {
+          patterns: [
+            { regex: '^@/(?!features/|components/|lib/|core/|styles/)', message: 'app may import only @/features, @/components, @/lib, @/core, @/styles.' },
+            NO_SENTRY,
+          ],
+        },
       ],
     },
   },

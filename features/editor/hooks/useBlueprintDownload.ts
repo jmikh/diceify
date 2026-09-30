@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { renderGridSvg } from '@/core/dice'
+import { reportError } from '@/lib/report-error'
 import { useGate } from '@/features/editor/hooks/useGate'
 import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
 
@@ -29,7 +30,7 @@ export function useBlueprintDownload() {
             document.body.removeChild(a)
             URL.revokeObjectURL(url)
         } catch (error) {
-            console.error('Error generating SVG:', error)
+            reportError(error, { where: 'blueprint-svg' })
         }
     }, [ent.hasSvgExport, gate])
 }

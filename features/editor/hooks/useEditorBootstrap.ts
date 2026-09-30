@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useUser } from '@/features/account/useUser'
 import { markClean } from '@/features/editor/store/autosave'
+import { reportError } from '@/lib/report-error'
 import { readDraft, readDraftImage } from '@/features/editor/store/draft'
 import { clearProject, loadDraftIntoEditor, resetEditor } from '@/features/editor/store/editor'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
@@ -55,14 +56,14 @@ export function useEditorBootstrap() {
           try {
             projects = await refreshProjects()
           } catch (error) {
-            console.error('[bootstrap] project list failed:', error)
+            reportError(error, { where: 'projects-list' })
             toast.error('Could not load your projects.')
           }
           const hasDraft = useProjectStore.getState().imageBlob !== null
           if (!hasDraft && projects.length > 0) await loadProject(projects[0].id)
           if (!useProjectStore.getState().projectId) useEditorUiStore.getState().openModal('projects')
         } else {
-          refreshProjects().catch((error) => console.error('[bootstrap] project list failed:', error))
+          refreshProjects().catch((error) => reportError(error, { where: 'projects-list' }))
         }
       }
       markClean()

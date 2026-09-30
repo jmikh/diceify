@@ -99,12 +99,24 @@ One-time, in the Cloudflare dashboard (nothing is scripted — `wrangler` was no
    | `NEXT_PUBLIC_SUPABASE_URL` | `https://<project-ref>.supabase.co` | same hosted project (the local stack is not reachable from Pages) |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | hosted anon key | same |
    | `NEXT_PUBLIC_APP_URL` | `https://diceify.art` | `https://revamp.diceify.pages.dev` |
-   | `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN (E2; optional, unset = inert) | same or unset |
+   | `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN (optional, unset = inert) | same or unset |
+   | `SENTRY_AUTH_TOKEN` | Sentry auth token (optional; enables the source-map upload — keep it a Pages *secret*) | same or unset |
+   | `SENTRY_ORG` | Sentry org slug (with the token) | same |
+   | `SENTRY_PROJECT` | Sentry project slug (with the token) | same |
 
    A build with the `NEXT_PUBLIC_*` values missing still succeeds (`lib/env.public.ts` validates on first access), so a
    misconfigured project fails at sign-in/save in the browser, not at build time — check the variables first when that happens.
 5. Save and deploy. Preview URL after the first `revamp` build: `https://revamp.diceify.pages.dev` (not created yet — see the
    step log in `plans/revamp/revamp-tiered-plan.md`).
+
+### Sentry (optional)
+
+Client-side only (`instrumentation-client.ts`; the static export has no server). Create a Sentry project (platform
+"Next.js"), put its DSN in `NEXT_PUBLIC_SENTRY_DSN`; without it the SDK is inert (no network, no console noise). For
+readable stack traces set `SENTRY_AUTH_TOKEN` (an org auth token with `project:releases` + `org:read`), `SENTRY_ORG`
+and `SENTRY_PROJECT` in the Pages build env: `withSentryConfig` (next.config.js) then generates hidden source maps,
+uploads them and deletes them from `out/`. Without the token no maps are generated at all. A failed upload fails the
+build (the plugin's default). Events are tagged `where=<site>` (see `lib/report-error.ts`) and carry the user id.
 
 ### Direct upload (alternative, no Git integration)
 

@@ -6,6 +6,7 @@ import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import { cropToPixels } from '@/lib/image/crop'
 import { loadImage } from '@/lib/image/decode'
 import { rasterizeSvg } from '@/lib/image/rasterize'
+import { reportError } from '@/lib/report-error'
 
 // ---------------------------------------------------------------------------
 // The dice derivation pipeline, independent of which step is on screen:
@@ -76,10 +77,10 @@ export function useDicePipeline() {
                 if (runId !== runIdRef.current) return
                 derived.finishGeneration(dataUrl)
             } catch (error) {
-                console.error('[DICE] Pipeline failed:', error)
-                if (runId === runIdRef.current) {
-                    derived.failGeneration(error instanceof Error ? error.message : String(error))
-                }
+                // A superseded run's failure is dropped like its result would be: one report per failure
+                if (runId !== runIdRef.current) return
+                reportError(error, { where: 'dice-pipeline', extra: { dice } })
+                derived.failGeneration(error instanceof Error ? error.message : String(error))
             }
         }, REGENERATE_DEBOUNCE_MS)
     }, [imageSrc, crop, dice])

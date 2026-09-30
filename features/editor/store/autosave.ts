@@ -8,6 +8,7 @@
 
 import { toast } from 'sonner'
 import { documentStats, type ProjectDocument } from '@/core/dice'
+import { reportError } from '@/lib/report-error'
 import { patchProjectKeepalive } from '@/lib/supabase/keepalive'
 import { documentJson, listProjects, saveProject, type ProjectRecord } from '@/lib/supabase/projects'
 import { writeDraft, writeDraftImage } from './draft'
@@ -115,7 +116,7 @@ async function saveToCloud(projectId: string, snap: Snapshot, json: string): Pro
   const project = useProjectStore.getState()
   const expectedVersion = project.cloudVersion
   if (expectedVersion === null) {
-    console.error('[autosave] project without a cloud version; not saving')
+    reportError(new Error('project without a cloud version; not saving'), { where: 'autosave-invariant', extra: { projectId } })
     return
   }
   project.setSaveStatus('saving')
@@ -133,7 +134,7 @@ async function saveToCloud(projectId: string, snap: Snapshot, json: string): Pro
     }
     await applyConflict(projectId, result.conflict)
   } catch (error) {
-    console.error('[autosave] save failed:', error)
+    reportError(error, { where: 'autosave-save', extra: { projectId } })
     if (useProjectStore.getState().projectId === projectId) useProjectStore.getState().setSaveStatus('error')
     // lastSavedJson unchanged: the next change (or flush) retries
   }

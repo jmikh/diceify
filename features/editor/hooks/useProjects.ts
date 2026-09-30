@@ -11,6 +11,7 @@ import {
   type ProjectSummary,
 } from '@/lib/supabase/projects'
 import { downloadProjectImage } from '@/lib/supabase/storage'
+import { reportError } from '@/lib/report-error'
 import { flushSave, markClean } from '@/features/editor/store/autosave'
 import { clearDraft } from '@/features/editor/store/draft'
 import { clearProject, loadProjectIntoEditor, resetEditor } from '@/features/editor/store/editor'
@@ -47,7 +48,7 @@ export async function loadProject(id: string): Promise<boolean> {
     void clearDraft()
     return true
   } catch (error) {
-    console.error('[projects] load failed:', error)
+    reportError(error, { where: 'projects-load', extra: { id } })
     toast.error(error instanceof DocumentError ? "This project's data could not be read." : `Could not open the project (${message(error)}).`)
     return false
   }
@@ -65,7 +66,7 @@ export function useProjects() {
     try {
       return await refreshProjects()
     } catch (error) {
-      console.error('[projects] list failed:', error)
+      reportError(error, { where: 'projects-list' })
       toast.error(`Could not load your projects (${message(error)}).`)
       return useProjectStore.getState().projects
     }
@@ -100,7 +101,7 @@ export function useProjects() {
           useEditorUiStore.getState().openModal('projects')
           return false
         }
-        console.error('[projects] create failed:', error)
+        reportError(error, { where: 'projects-create' })
         toast.error(`Could not save the project (${message(error)}).`)
         return false
       }
@@ -123,7 +124,7 @@ export function useProjects() {
       try {
         await deleteProject(id)
       } catch (error) {
-        console.error('[projects] delete failed:', error)
+        reportError(error, { where: 'projects-remove', extra: { id } })
         toast.error(`Could not delete the project (${message(error)}).`)
         return
       }

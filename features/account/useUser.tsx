@@ -6,6 +6,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { deriveEntitlements, EXPLORER_ENTITLEMENTS, type Entitlements } from '@/core/billing'
+import { reportError, setErrorUser } from '@/lib/report-error'
 import { getSupabase } from '@/lib/supabase/client'
 import { signOut as supabaseSignOut } from '@/lib/supabase/auth'
 import { fetchProfile, toBillingState, type ProfileRow } from '@/lib/supabase/profile'
@@ -80,7 +81,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     // After the OAuth redirect this also exchanges the PKCE code in the URL for a session.
     supabase.auth.getSession().then(({ data, error }) => {
-      if (error) console.error('[auth] getSession:', error.message)
+      if (error) reportError(error, { where: 'auth-session' })
       load(data.session)
     })
 
@@ -124,6 +125,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       signOut,
     }
   }, [state, refresh, signOut])
+
+  // Sentry events carry the user id (only the id) while signed in
+  const userId = value.user?.id ?? null
+  useEffect(() => setErrorUser(userId), [userId])
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>
 }

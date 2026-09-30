@@ -3,10 +3,12 @@
 //
 // Legacy keys (pre-C3: `editorState` = `{ doc, name }` or an even older flat snapshot, `editorImage` = data URL,
 // `editorBuildProgress`) are migrated on first read and removed. Every storage access is best effort: a private
-// window or a full quota degrades to "no draft", never to a thrown error in the editor.
+// window or a full quota degrades to "no draft", never to a thrown error in the editor. A quota/private-window write
+// failure is expected (warn); corrupt data and IndexedDB failures are reported.
 
 import { del, get, set } from 'idb-keyval'
 import { DocumentError, migrateDocument, type ProjectDocument } from '@/core/dice'
+import { reportError } from '@/lib/report-error'
 
 export const DRAFT_KEY = 'diceify.draft'
 export const DRAFT_IMAGE_KEY = 'diceify.draftImage'
@@ -66,7 +68,7 @@ function parseDraft(raw: string, fallbackName: string): Omit<Draft, 'savedAt'> &
 }
 
 /**
- * The stored draft, migrating the legacy keys on the way. Corrupt or unreadable data is dropped with a warning.
+ * The stored draft, migrating the legacy keys on the way. Corrupt or unreadable data is reported and dropped.
  * `fallbackName` names a legacy draft that carried none.
  */
 export function readDraft(fallbackName = 'Untitled Project'): Draft | null {
@@ -84,7 +86,7 @@ export function readDraft(fallbackName = 'Untitled Project'): Draft | null {
     return draft
   } catch (error) {
     const reason = error instanceof DocumentError ? error.message : 'corrupt JSON'
-    console.warn(`[draft] ignoring unreadable draft (${reason})`)
+    reportError(error, { where: 'draft-parse', extra: { reason, legacy: legacy !== null } })
     storageRemove(DRAFT_KEY, LEGACY_STATE_KEY, LEGACY_PROGRESS_KEY)
     return null
   }
@@ -101,7 +103,7 @@ export async function readDraftImage(): Promise<Blob | null> {
     const stored = await get<Blob>(DRAFT_IMAGE_KEY)
     if (stored) return stored
   } catch (error) {
-    console.warn('[draft] IndexedDB read failed:', error)
+    reportError(error, { where: 'draft-idb', extra: { op: 'read' } })
   }
   const legacy = storageGet(LEGACY_IMAGE_KEY)
   if (!legacy) return null
@@ -111,7 +113,7 @@ export async function readDraftImage(): Promise<Blob | null> {
     storageRemove(LEGACY_IMAGE_KEY)
     return blob
   } catch (error) {
-    console.warn('[draft] could not migrate the legacy draft image:', error)
+    reportError(error, { where: 'draft-migrate' })
     storageRemove(LEGACY_IMAGE_KEY)
     return null
   }
@@ -121,7 +123,7 @@ export async function writeDraftImage(blob: Blob): Promise<void> {
   try {
     await set(DRAFT_IMAGE_KEY, blob)
   } catch (error) {
-    console.warn('[draft] IndexedDB write failed:', error)
+    reportError(error, { where: 'draft-idb', extra: { op: 'write' } })
   }
 }
 
