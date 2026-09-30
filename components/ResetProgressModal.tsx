@@ -2,6 +2,7 @@
 
 import { X } from 'lucide-react'
 import Image from 'next/image'
+import { buildIndex } from '@/core/dice'
 import { useEditorStore } from '@/lib/store/useEditorStore'
 import { ProgressBar } from './Editor/Builder/BuilderPanel'
 
@@ -18,7 +19,7 @@ export default function ResetProgressModal({ isOpen, onClose, onConfirm }: Reset
     if (!isOpen) return null
 
     const totalDice = (diceGrid?.width || 0) * (diceGrid?.height || 0)
-    const currentIndex = buildProgress.y * (diceGrid?.width || 0) + buildProgress.x
+    const currentIndex = buildIndex(buildProgress, diceGrid?.width || 0)
     const percentage = totalDice > 0 ? (currentIndex / totalDice) * 100 : 0
 
     return (

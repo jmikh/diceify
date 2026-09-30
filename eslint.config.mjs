@@ -34,8 +34,7 @@ export default defineConfig(
     },
     plugins: { 'react-hooks': reactHooks },
     rules: {
-      // 'warn' until B2 fixes the early-return-before-hooks in BuilderMain.tsx; then raise to 'error'.
-      'react-hooks/rules-of-hooks': 'warn',
+      'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       // 'warn' until E3 raises it to 'error' after the cleanup sweep.
       '@typescript-eslint/no-explicit-any': 'warn',

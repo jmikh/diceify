@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { countCompleted } from '@/core/dice'
 import { useEditorStore, matchesBuildBaseline } from '@/lib/store/useEditorStore'
 import { devLog, devError } from '@/lib/utils/debug'
 
@@ -66,7 +67,7 @@ function toProjectFields(snap: Snapshot) {
         totalDice: snap.totalDice,
         currentX: snap.buildProgress.x,
         currentY: snap.buildProgress.y,
-        completedDice: snap.buildProgress.y * (snap.gridWidth ?? 0) + snap.buildProgress.x,
+        completedDice: countCompleted(snap.buildProgress, snap.gridWidth ?? 0),
     }
 }
 

@@ -1,9 +1,16 @@
 import { useCallback, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
+import { PLAN_LIMITS } from '@/core/billing'
+import {
+    buildIndex,
+    findNextDiff,
+    findPrevDiff,
+    nextPosition,
+    prevPosition,
+    rowLimitAllows,
+    type GridPos,
+} from '@/core/dice'
 import { useEditorStore } from '@/lib/store/useEditorStore'
-
-// Free users (explorer plan or not signed in) can only build the first N rows
-const EXPLORER_ROW_LIMIT = 5
 
 export function useBuildNavigation() {
     const { data: session } = useSession()
@@ -18,151 +25,91 @@ export function useBuildNavigation() {
     const totalCols = diceGrid?.width || 0
     const totalRows = diceGrid?.height || 0
     const totalDice = totalCols * totalRows
-    const currentIndex = currentY * totalCols + currentX
+    const currentIndex = buildIndex(buildProgress, totalCols)
 
-    // Check if user has unlimited dice access (any paid plan)
-    const hasUnlimitedDice = useMemo(() => {
-        if (!session?.user) return false
-        const planType = session.user.planType || 'explorer'
-        // Creator, Studio, and Lifetime all have unlimited dice
-        return planType !== 'explorer'
+    // Rows a user may build; null = unlimited (any paid plan). Signed-out users
+    // count as explorers. C2 derives this from entitlements instead of the session.
+    const rowLimit = useMemo(() => {
+        const planType = session?.user?.planType || 'explorer'
+        return planType !== 'explorer' ? null : PLAN_LIMITS.explorer.builderRowLimit
     }, [session])
 
-    // Helper to update position
-    const setPosition = useCallback((x: number, y: number) => {
-        setBuildProgress(prev => ({ ...prev, x, y }))
+    const setPosition = useCallback((pos: GridPos) => {
+        setBuildProgress(prev => ({ ...prev, x: pos.x, y: pos.y }))
     }, [setBuildProgress])
 
-    // Guard for any forward movement: without a paid plan, moving past the
-    // first EXPLORER_ROW_LIMIT rows prompts anonymous users to sign in and
-    // explorer users to upgrade. Returns true if the move is allowed.
-    const enforceLimit = useCallback((targetIndex: number) => {
-        const targetRow = Math.floor(targetIndex / totalCols)
-        if (!hasUnlimitedDice && targetRow >= EXPLORER_ROW_LIMIT) {
-            if (!session?.user) {
-                setShowAuthModal(true)
-            } else {
-                setShowLimitModal(true)
-            }
-            return false
+    // Guard for any forward movement: past the row limit, anonymous users are
+    // prompted to sign in and explorer users to upgrade. Returns true if the
+    // move is allowed.
+    const enforceLimit = useCallback((target: GridPos) => {
+        if (rowLimitAllows(target, rowLimit)) return true
+        if (!session?.user) {
+            setShowAuthModal(true)
+        } else {
+            setShowLimitModal(true)
         }
-        return true
-    }, [hasUnlimitedDice, totalCols, session, setShowAuthModal, setShowLimitModal])
+        return false
+    }, [rowLimit, session, setShowAuthModal, setShowLimitModal])
 
     const navigatePrev = useCallback(() => {
-        if (currentX > 0) {
-            setPosition(currentX - 1, currentY)
-        } else if (currentY > 0) {
-            setPosition(totalCols - 1, currentY - 1)
-        }
-    }, [currentX, currentY, totalCols, setPosition])
+        const target = prevPosition(buildProgress, totalCols)
+        if (target) setPosition(target)
+    }, [buildProgress, totalCols, setPosition])
 
     const navigateNext = useCallback(() => {
-        if (!enforceLimit(currentIndex + 1)) return
-
-        if (currentX < totalCols - 1) {
-            setPosition(currentX + 1, currentY)
-        } else if (currentY < totalRows - 1) {
-            setPosition(0, currentY + 1)
-        }
-    }, [currentX, currentY, totalCols, totalRows, setPosition, currentIndex, enforceLimit])
+        const target = nextPosition(buildProgress, totalCols, totalRows)
+        if (target && enforceLimit(target)) setPosition(target)
+    }, [buildProgress, totalCols, totalRows, enforceLimit, setPosition])
 
     // Jump directly to a dice (e.g. from clicking it in the viewer).
     // Backward jumps are always allowed; forward jumps respect the limit.
     const navigateTo = useCallback((x: number, y: number) => {
         if (x < 0 || x >= totalCols || y < 0 || y >= totalRows) return
 
-        const targetIndex = y * totalCols + x
-        if (targetIndex > currentIndex && !enforceLimit(targetIndex)) return
+        const target = { x, y }
+        if (buildIndex(target, totalCols) > currentIndex && !enforceLimit(target)) return
 
-        setPosition(x, y)
+        setPosition(target)
     }, [totalCols, totalRows, currentIndex, enforceLimit, setPosition])
 
     const currentDice = useMemo(() => diceGrid?.rows[currentY]?.[currentX] || null, [diceGrid, currentX, currentY])
 
+    // Diff jumps are row-local: the previous/next dice on this row that differs
+    // from the current one. When the rest of the row is identical they fall
+    // through to the far end of the adjacent row. null = nowhere to go.
+    const prevDiffTarget = useMemo<GridPos | null>(() => {
+        if (!diceGrid) return null
+        const x = currentDice ? findPrevDiff(diceGrid.rows[currentY], currentX) : null
+        if (x !== null) return { x, y: currentY }
+        return currentY > 0 ? { x: totalCols - 1, y: currentY - 1 } : null
+    }, [diceGrid, currentDice, currentX, currentY, totalCols])
+
+    const nextDiffTarget = useMemo<GridPos | null>(() => {
+        if (!diceGrid) return null
+        const x = currentDice ? findNextDiff(diceGrid.rows[currentY], currentX) : null
+        if (x !== null) return { x, y: currentY }
+        return currentY < totalRows - 1 ? { x: 0, y: currentY + 1 } : null
+    }, [diceGrid, currentDice, currentX, currentY, totalRows])
+
     const navigatePrevDiff = useCallback(() => {
-        if (!diceGrid) return
-
-        const currentFace = currentDice?.face
-        const currentColor = currentDice?.color
-
-        // Find previous different dice on same row first
-        for (let x = currentX - 1; x >= 0; x--) {
-            const dice = diceGrid.rows[currentY][x]
-            if (dice.face !== currentFace || dice.color !== currentColor) {
-                setPosition(x, currentY)
-                return
-            }
-        }
-
-        // If no different dice found on this row and not at first row, move to previous row
-        if (currentY > 0) {
-            setPosition(totalCols - 1, currentY - 1)
-        }
-    }, [currentX, currentY, currentDice, totalCols, diceGrid, setPosition])
+        if (prevDiffTarget) setPosition(prevDiffTarget)
+    }, [prevDiffTarget, setPosition])
 
     const navigateNextDiff = useCallback(() => {
-        if (!diceGrid) return
-
-        const currentFace = currentDice?.face
-        const currentColor = currentDice?.color
-
-        // Find next different dice on same row first
-        for (let x = currentX + 1; x < totalCols; x++) {
-            const dice = diceGrid.rows[currentY][x]
-            if (dice.face !== currentFace || dice.color !== currentColor) {
-                // Check the landing index, not the current one - a long run of
-                // identical dice must not jump past the limit
-                if (!enforceLimit(currentY * totalCols + x)) return
-                setPosition(x, currentY)
-                return
-            }
-        }
-
-        // If no different dice found on this row and not at last row, move to next row
-        if (currentY < totalRows - 1) {
-            if (!enforceLimit((currentY + 1) * totalCols)) return
-            setPosition(0, currentY + 1)
-        }
-    }, [currentX, currentY, currentDice, totalCols, totalRows, diceGrid, setPosition, enforceLimit])
+        // Check the landing position, not the current one - a long run of
+        // identical dice must not jump past the limit
+        if (nextDiffTarget && enforceLimit(nextDiffTarget)) setPosition(nextDiffTarget)
+    }, [nextDiffTarget, enforceLimit, setPosition])
 
     const canNavigate = useMemo(() => {
         if (!diceGrid) return { prev: false, next: false, prevDiff: false, nextDiff: false }
-
-        const currentFace = currentDice?.face
-        const currentColor = currentDice?.color
-
-        const prevDiff = (() => {
-            // Check if there's a different dice on the same row backward
-            for (let x = currentX - 1; x >= 0; x--) {
-                const dice = diceGrid.rows[currentY]?.[x]
-                if (dice && (dice.face !== currentFace || dice.color !== currentColor)) {
-                    return true
-                }
-            }
-            // Or if we can move to previous row
-            return currentY > 0
-        })()
-
-        const nextDiff = (() => {
-            // Check if there's a different dice on the same row forward
-            for (let x = currentX + 1; x < totalCols; x++) {
-                const dice = diceGrid.rows[currentY]?.[x]
-                if (dice && (dice.face !== currentFace || dice.color !== currentColor)) {
-                    return true
-                }
-            }
-            // Or if we can move to next row
-            return currentY < totalRows - 1
-        })()
-
         return {
             prev: currentIndex > 0,
             next: currentIndex < totalDice - 1,
-            prevDiff,
-            nextDiff
+            prevDiff: prevDiffTarget !== null,
+            nextDiff: nextDiffTarget !== null,
         }
-    }, [diceGrid, currentDice, currentX, currentY, currentIndex, totalDice, totalCols, totalRows])
+    }, [diceGrid, currentIndex, totalDice, prevDiffTarget, nextDiffTarget])
 
     return {
         navigatePrev,
@@ -178,7 +125,5 @@ export function useBuildNavigation() {
         totalRows,
         totalDice,
         currentIndex,
-        hasUnlimitedDice, // Expose for UI
-        diceLimit: hasUnlimitedDice ? Infinity : EXPLORER_ROW_LIMIT * totalCols, // Expose for UI
     }
 }
