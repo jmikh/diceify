@@ -22,7 +22,7 @@ features/      editor/ (store/, hooks/, components/{shell,upload,crop,tune,build
                marketing/ (components, blog/data.ts), account/ (useUser, SignInModal, AnalyticsTracker), billing/ (cards, AccountScreen)
 components/    Logo, Footer, BackgroundOrbs (shared, dumb)
 styles/        base.css, marketing.css, editor.css       supabase/  config.toml, migrations/, functions/{_shared,billing,stripe-webhook}
-scripts/       gen-fixtures.ts                            docs/      DEPLOY.md, STRIPE_TESTING.md      plans/revamp/  plan + step docs
+scripts/       gen-fixtures.ts, migrate-from-prisma.ts (+ migrate/ helpers)   docs/  DEPLOY.md, STRIPE_TESTING.md   plans/revamp/  plan + step docs
 ```
 
 Import rules (ESLint `no-restricted-imports`, all `error`): `core` → only `core` (+ `zod`). `lib`/`components` → `core`,
@@ -62,7 +62,7 @@ never import `features/editor`; nothing imports `app`. `app` → `@/features`, `
   `project-images`, path `{uid}/{projectId}/original.jpg`, **immutable per project** (DB trigger) — a new photo = a new project.
 - `cloud_version` is bumped by a trigger (client values ignored); saves are CAS `eq('cloud_version', expected)`.
 - Billing columns on `profiles` are written **only** by the edge functions (service role), recomputed from Stripe on
-  every webhook/sync. Never write them from the client or migrations.
+  every webhook/sync, and once by the legacy migration script (`scripts/migrate-from-prisma.ts`). Never write them from the client or SQL migrations.
 - Schema changes = a new migration (`npm run db:migration -- <name>`), `npm run db:reset`, `npm run db:types` (commit the types).
 
 ## Commands
@@ -70,13 +70,14 @@ never import `features/editor`; nothing imports `app`. `app` → `@/features`, `
 | Command | What |
 |---|---|
 | `npm run dev` / `npm run build` | Next dev server / static export to `out/` |
-| `npm test` / `npm run test:watch` | vitest (node env; `core/`, `lib/`, `features/`, `supabase/functions/_shared/`) |
+| `npm test` / `npm run test:watch` | vitest (node env; `core/`, `lib/`, `features/`, `supabase/functions/_shared/`, `scripts/`) |
 | `npm run lint` | ESLint 9 flat config — must be 0 errors, 0 warnings |
 | `npm run typecheck` | `tsc --noEmit && tsc -p core` (covers `scripts/`; `rm -rf .next` first after deleting a route) |
 | `npm run db:start\|stop\|status\|reset\|migration\|types\|push` | local Supabase stack (ports 5433x) / hosted push |
 | `npm run functions:serve\|check\|deploy` | edge functions locally (`supabase/functions/.env`) / `deno check` / deploy |
 | `npm run stripe:listen` | forward Stripe webhooks to the local `stripe-webhook` function |
 | `npm run gen-fixtures` | regenerate `core/dice/__fixtures__` (sharp) |
+| `npm run migrate:legacy -- [--dry-run] …` | legacy Prisma DB → Supabase (read-only source; local target unless `--target=hosted`; `docs/DEPLOY.md`) |
 
 ## Testing
 

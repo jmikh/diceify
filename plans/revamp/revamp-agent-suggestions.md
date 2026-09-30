@@ -36,10 +36,14 @@ Product / policy decisions (not made by any step):
 - C3: legacy `.env.local` vars (`DATABASE_URL`, `NEXTAUTH_*`, `STRIPE_*`, `CLOUDINARY_*`) are dead; trim the file to the values in `.env.example` (gitignored; the root `.env` is Prisma-era and untracked — delete it locally).
 - B4: worth one manual check that undo of a wheel-zoom in the crop step lands where expected (`setCoordinates` with `imageRestriction: stencil` may fit rather than apply the box); if not, `setState` with the full saved cropper state would need `crop` to carry `visibleArea`.
 
-For F1 / F2:
+For F2:
 
-- A3: legacy Prisma users with `subscriptionStatus = 'creator_pass'` have no equivalent status; F1 must map them to `plan = 'creator'`, `plan_expires_at = subscriptionExpiresAt`; `isPro && planType='explorer'` rows should be inspected by hand.
-- D1/D2: the F1 migration script needs `syncBillingFromStripe` from Node; `stripe` is a Deno-only dependency now — either add it as a devDependency or run the sync under Deno (the D2 integration test uses a 15-line `fetch` helper instead). Decide once.
+- F1: the Stripe sync could not be exercised in the rehearsal (test key vs live customer ids → 87× "customer not found", columns kept). The first live `syncBillingFromStripe` therefore happens during the hosted run; consider a `--only=<lifetime user>` real run first and check the row before migrating everyone.
+- F1: 20 of the 148 migrated projects had legacy `completedDice = 0` / `percentComplete = 0` while `currentX/currentY` recorded build progress (the old client updated the two independently). `completed_dice` is now derived from the progress (`documentStats`, what the editor displays), so those projects show a non-zero percentage after the migration. The other 128 match within rounding.
+- F1: `profiles.updated_at` is not preserved (the `profiles_set_updated_at` BEFORE UPDATE trigger stamps the migration time); `created_at` is, and both project timestamps are.
+- F1: six selected projects have no `originalImage` and are dropped (a project needs an image); `--report` lists them as `skipped-no-image`. Legacy rows also hold 1 HEIC, 2 AVIF and 2 SVG images (none in the selected set, all 148 decoded); a hosted run reporting `image decode (image/heic)` means sharp's prebuilt libvips lacks HEIF — migrate those by hand.
+- F1: `pg` v8 warns that `sslmode=require` is treated as `verify-full` today and will change in v9; the script drops `sslmode` from non-loopback URLs and passes `ssl: { rejectUnauthorized: false }` explicitly. Revisit if the hosted Postgres URL should verify the certificate (`ssl: true` + the Supabase CA).
+- F1: `Stripe.errors.StripeInvalidRequestError` + `code === 'resource_missing'` is the only Stripe failure the script treats as benign; a live-key run that logs `stripe: ERROR …` (rate limit, network) leaves the legacy-mapped columns and can simply be rerun (the sync is idempotent).
 - B1: `lib/image/*` canvas paths (`drawRegion`, `rasterizeSvg`) have no unit tests (node env). If a DOM environment is ever added (`jsdom` + `canvas`), `cropToPixels` on a 2×2 image with rotation 90 is the first test to write.
 - E2: no test covers the report sites in `autosave.ts`/`useProjects.ts` (network paths; the integration suites are opt-in).
 
@@ -69,3 +73,4 @@ Operational notes (no action; kept because they explain non-obvious behaviour):
 - C3 editor page `<Suspense>` → removed (E3). C3 `stripe` npm dependency → removed (D1). C3/E2 `lib/utils/debug.ts` → deleted; `devError` → `reportError`/`console.warn` (E3).
 - E1 `sitemap.ts` `/auth/signin` + `robots.ts` `/api/`, `/auth/` → fixed (E3). E1 `NEXT_PUBLIC_APP_URL` unread → dropped (E3). E1 privacy "Vercel Analytics" + CLAUDE.md "Vercel/Railway" → `TODO(user)` comment + CLAUDE.md rewrite (E3). C2/E1 `.next/types` in `tsconfig.include` → kept on purpose (Next re-adds it; `rm -rf .next` documented) (E3).
 - E2 `publicEnv.sentryDsn` unread → dropped (E3). E2 Next 14 never calls `onRouterTransitionStart` — harmless, noted in the E2 step doc.
+- A3 `creator_pass` mapping → `mapUserToProfile` (`plan='creator'`, `plan_expires_at=subscriptionExpiresAt`; 0 `isPro && explorer` rows in prod) (F1). D1/D2 Node sync → `stripe@20.4.1` exact devDependency, `_shared/billing-sync.ts` imported directly from the script (F1). C3 legacy `.env.local` vars → `DATABASE_URL` is still read as the `LEGACY_DATABASE_URL` fallback until F2; trim the rest after cut-over (F1 note).

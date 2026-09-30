@@ -12,6 +12,7 @@ export default defineConfig({
       'lib/**/*.test.ts',
       'features/**/*.test.ts',
       'supabase/functions/_shared/**/*.test.ts',
+      'scripts/**/*.test.ts',
     ],
   },
   resolve: {

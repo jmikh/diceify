@@ -160,6 +160,72 @@ Local testing (env, run order, cards, flows, hand-signed events): `docs/STRIPE_T
 - **Cut-over (F2)**: disable the old Vercel endpoint once this one is live; the customer ids carry over unchanged (the migration
   script copies `stripe_customer_id`, then `syncBillingFromStripe` fills the rest).
 
+## Legacy data migration (F1)
+
+`scripts/migrate-from-prisma.ts` (`npm run migrate:legacy`) copies the users the plan keeps — paid (any non-explorer plan,
+subscription status or Stripe customer) or active in the last 30 days — with their projects from the old Prisma/Postgres
+database into Supabase. Design and mapping tables: `plans/revamp/revamp-step-F1.md`. The legacy database is only read
+(`default_transaction_read_only` on the connection); the target is whatever `SUPABASE_URL`/`TARGET_DATABASE_URL` name.
+
+Env: `LEGACY_DATABASE_URL` (process env or `.env.local`; falls back to `DATABASE_URL` with a warning); `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, `TARGET_DATABASE_URL` (process env; read from `supabase status -o env` when unset and the target
+is local); `STRIPE_SECRET_KEY` (process env or `supabase/functions/.env`; never `.env.local`). A non-local `SUPABASE_URL`
+is refused without `--target=hosted`, and `--target=hosted` is refused with an `sk_test_` key.
+
+```sh
+npm run db:start && npm run db:reset                       # local rehearsal target
+npm run migrate:legacy -- --dry-run                         # reads + image decode only; prints the summary
+npm run migrate:legacy -- --report=/tmp/migrate-1.json      # real run (local stack); rerun must show 0 created
+npm run migrate:legacy -- --only=someone@example.com        # one user; --since=YYYY-MM-DD moves the activity cut-off
+```
+
+Flags: `--dry-run`, `--since`, `--only`, `--no-sync-stripe`, `--no-ignore-limit` (let the plan-limit trigger reject the
+oldest projects; default keeps every project), `--report=<file>` (legacy ids; `--report-emails` adds emails), `--target=hosted`.
+Idempotent: profiles by `legacy_id`/email, projects by `legacy_id`; a rerun re-applies the profile columns and skips
+existing projects. With a test-mode key every legacy (live) customer answers "customer not found in this Stripe mode" and
+keeps the legacy-mapped columns; the live sync at cut-over fills `cancel_at`/`current_period_end`/`plan_expires_at`.
+
+### Google-linking check (manual, before the hosted run)
+
+Migrated users are admin-created with `email_confirm: true` and no Google identity; their first Google sign-in must attach
+to that user instead of creating a second one. Supabase docs (Identity linking → Automatic linking): "When a new user signs
+in with OAuth, Supabase Auth will attempt to look for an existing user that uses the same email address. If a match is
+found, the new identity is linked to the user." The page does not mention admin-created users, so verify once on the
+local stack with your own Gmail (`supabase/.env` Google credentials + `npm run dev`):
+
+```sh
+SR=$(supabase status -o env | grep '^SERVICE_ROLE_KEY' | cut -d= -f2 | tr -d '"')
+curl -s -X POST http://127.0.0.1:54331/auth/v1/admin/users -H "apikey: $SR" -H "Authorization: Bearer $SR" \
+  -H 'Content-Type: application/json' -d '{"email":"<your gmail>","email_confirm":true,"user_metadata":{"full_name":"Me"}}'
+# open http://localhost:3000/editor → sign in with Google using that Gmail, then:
+psql "$(supabase status -o env | grep '^DB_URL' | cut -d= -f2 | tr -d '"')" -c \
+  "select (select count(*) from auth.users where email = '<your gmail>') as users, \
+          (select count(*) from auth.identities i join auth.users u on u.id = i.user_id where u.email = '<your gmail>' and i.provider = 'google') as google_identities"
+# expected: users = 1, google_identities = 1. Two users → stop: enable manual linking (Authentication → Providers →
+# "Allow manual linking" / GOTRUE_SECURITY_MANUAL_LINKING_ENABLED) or contact support before migrating production.
+```
+
 ## Cut-over (F2)
 
-TODO: runbook — Pages custom domain (above), freeze old site, `migrate:legacy --dry-run` then for real, smoke tests, DNS move, old DB read-only 30 days.
+Runbook (details per section above; the migration itself is F1):
+
+1. Hosted Supabase project: `supabase link`, `npm run db:push`, `npm run functions:deploy`, `supabase secrets set --env-file
+   supabase/functions/.env.production`, Google provider + redirect URLs, Site URL `https://diceify.art`; Stripe live webhook
+   endpoint (pinned API version); Customer Portal configuration.
+2. Cloudflare Pages: merge `revamp` → `master`, production env variables set, build green on the production branch.
+3. Freeze the old site (logins keep bumping `User.updatedAt`, and the `--since` window is evaluated at run time).
+4. Migration, from a machine with the legacy `DATABASE_URL` in `.env.local` and the hosted values in the environment:
+   ```sh
+   export SUPABASE_URL=https://<project-ref>.supabase.co SUPABASE_SERVICE_ROLE_KEY=<hosted service role key>
+   export TARGET_DATABASE_URL='postgresql://postgres:<db password>@db.<project-ref>.supabase.co:5432/postgres'
+   export STRIPE_SECRET_KEY=sk_live_…            # the hosted functions' key; enables the live sync
+   npm run migrate:legacy -- --target=hosted --dry-run
+   npm run migrate:legacy -- --target=hosted --report=migrate-prod-1.json
+   npm run migrate:legacy -- --target=hosted --report=migrate-prod-2.json   # rerun: 0 created, 0 migrated
+   ```
+   Keep the report files (legacy ids only). `TARGET_DATABASE_URL` must connect as `postgres` (the table owner): the script
+   toggles the `projects_enforce_limit` trigger per insert and writes explicit `created_at`s.
+5. Smoke test: a migrated lifetime user, a migrated studio-canceled user (`cancel_at`/status from the live sync), a new user
+   with a real Studio purchase (refund it afterwards).
+6. Move DNS `diceify.art` from Vercel to Pages (Custom domain section above); disable the old Vercel Stripe endpoint.
+7. Keep the old database read-only for 30 days, then delete the Vercel project.
