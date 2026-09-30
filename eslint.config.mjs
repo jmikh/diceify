@@ -19,6 +19,16 @@ const CORE_RESTRICTED_GLOBALS = [
 ]
 const CORE_RESTRICTED_IMPORTS = ['react', 'next', 'next/*', '@/lib/*', '@/features/*', '@/app/*', '@/components/*']
 
+// Import boundaries (plan → "Import rules"). `app` → features/components/lib/core; features/marketing|account|billing
+// never reach into the editor; lib/components never import features or app.
+const NO_APP = ['@/app', '@/app/*']
+const NO_FEATURES = ['@/features', '@/features/*']
+const NO_EDITOR = ['@/features/editor', '@/features/editor/*']
+const boundary = (files, patterns) => ({
+  files,
+  rules: { 'no-restricted-imports': ['error', { patterns }] },
+})
+
 export default defineConfig(
   {
     ignores: ['.next/**', 'out/**', 'node_modules/**', 'lib/generated/**', 'public/**', '.agent/**', 'next-env.d.ts'],
@@ -72,6 +82,19 @@ export default defineConfig(
             { regex: '^(?!\\.{1,2}/)(?!zod$)', message: 'core may import only core (relative) and zod.' },
           ],
         },
+      ],
+    },
+  },
+  boundary(['features/marketing/**', 'features/account/**', 'features/billing/**'], [...NO_EDITOR, ...NO_APP]),
+  boundary(['features/editor/**'], NO_APP),
+  boundary(['lib/**', 'components/**'], [...NO_FEATURES, ...NO_APP]),
+  {
+    // app/ is routing glue: it may import only features, components, lib, core and styles.
+    files: ['app/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [{ regex: '^@/(?!features/|components/|lib/|core/|styles/)', message: 'app may import only @/features, @/components, @/lib, @/core, @/styles.' }] },
       ],
     },
   },

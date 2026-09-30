@@ -1,8 +1,8 @@
 // The editor's one global keydown listener: cmd/ctrl-z (shift = redo) everywhere, arrow keys on the build step.
-// Ignored while typing in a field. Mounted once in app/editor/page.tsx.
+// Ignored while typing in a field. Mounted once in EditorScreen.
 
 import { useEffect } from 'react'
-import { useBuildGate } from '@/components/Editor/Builder/useBuildNavigation'
+import { useBuildGate } from '@/features/editor/hooks/useBuildNavigation'
 import { currentTargets, moveTo } from '../store/buildNavigation'
 import { useDocumentStore } from '../store/useDocumentStore'
 import { useEditorUiStore } from '../store/useEditorUiStore'

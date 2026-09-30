@@ -1,0 +1,31 @@
+/* =============================================================================
+   EDITOR (app/(editor)): everything else the editor needs is in base.css or
+   Tailwind utilities / CSS modules next to the components.
+   ============================================================================= */
+
+/* Green flash on the save indicator when an autosave completes */
+@keyframes saveFlash {
+  0% {
+    color: var(--accent-green);
+    filter: drop-shadow(0 0 8px var(--accent-green));
+  }
+
+  25% {
+    color: var(--text-secondary);
+    filter: none;
+  }
+
+  50% {
+    color: var(--accent-green);
+    filter: drop-shadow(0 0 8px var(--accent-green));
+  }
+
+  100% {
+    color: var(--text-secondary);
+    filter: none;
+  }
+}
+
+.save-flash {
+  animation: saveFlash 0.6s ease-in-out;
+}

@@ -1,4 +1,4 @@
-// Output of the dice pipeline (useDiceGeneration) — never persisted, always regenerable from the document
+// Output of the dice pipeline (useDicePipeline) — never persisted, always regenerable from the document
 // + image. Written by the pipeline; load/upload/reset only `reset()` it.
 
 import { create } from 'zustand'

@@ -71,9 +71,9 @@ Stripe ──webhook──▶ Edge Function `stripe-webhook` (verify_jwt=false, 
 app/
   layout.tsx                      fonts, metadata (static OG image), GA, imports styles/base.css
   error.tsx  not-found.tsx  robots.ts  sitemap.ts
-  (marketing)/layout.tsx          styles/marketing.css, orbs, <Navbar/>, <Footer/>
+  (marketing)/layout.tsx          styles/marketing.css, <BackgroundOrbs/> (Navbar/Footer stay in (marketing)/page.tsx: the other marketing pages never had them)
   (marketing)/page.tsx  blog/  blog/[slug]/  gallery/  dice-art/  privacy/  terms/
-  (editor)/layout.tsx             styles/editor.css, <EditorProviders/>
+  (editor)/layout.tsx             styles/editor.css, <EditorProviders/> (C2; until then SessionProvider + auth())
   (editor)/editor/page.tsx        'use client'; <Suspense><EditorScreen/></Suspense>
   (editor)/editor/error.tsx       route-group error boundary
   (editor)/account/page.tsx       plan, access-until/cancel-at, Cancel/Resume/Portal/Refresh; ?checkout=success polling
@@ -94,8 +94,8 @@ features/
             components/{shell,upload,crop,tune,build,project,account,mobile}/
   marketing/ components/{Navbar,Hero,Gallery,BlogSection,Pricing,FAQ,BlogCard,HashScrollHandler}.tsx  blog/data.ts
   account/   SignInModal.tsx  useUser.tsx (ProfileProvider)  AnalyticsTracker.tsx
-  billing/   PricingCards.tsx  PlanBadge.tsx  CheckoutSuccessHandler.tsx
-components/  Logo.tsx  Footer.tsx           (truly shared, dumb)
+  billing/   PricingCards.tsx  PlanBadge.tsx  CheckoutSuccessHandler.tsx  openBillingPortal.ts (until D2)
+components/  Logo.tsx  Footer.tsx  BackgroundOrbs.tsx   (truly shared, dumb)
 styles/      base.css  marketing.css  editor.css
 supabase/
   config.toml  migrations/<ts>_initial_schema.sql  seed.sql
@@ -110,7 +110,9 @@ Import rules (enforced by ESLint `no-restricted-imports` + `core/tsconfig.json`)
 `lib` may import `core`. `features/*` may import `core`, `lib`, `components`; `features/marketing` never
 imports `features/editor`; `features/editor` may import `features/{account,billing}`. `app/` imports only
 `features/*` and `components/`. `supabase/functions` imports only its own `_shared` (Deno; `.ts` extensions;
-`npm:` specifiers via `deno.json` imports).
+`npm:` specifiers via `deno.json` imports). Enforced since B5 (all `error`): `features/{marketing,account,billing}` may not import
+`features/editor` or `app`; `features` never imports `app`; `lib` and `components` never import `features` or `app`; `app` imports from `@/` only
+`features`, `components`, `lib`, `core`, `styles`.
 
 ### Data model (`supabase/migrations/<ts>_initial_schema.sql`)
 
@@ -393,3 +395,4 @@ Each step: fresh agent, own `revamp-step-N.md`, ends with `npm run typecheck && 
 - B2 — completed 2026-09-30. Design changes: `BuilderMain` split into `BuildViewer.tsx` + `useBuildZoom/useBuildWindow/useBuildViewBox/useElementSize` hooks + `RunBadges.tsx` (same folder; B5 moves them); the viewBox animation is stopped by the effect cleanup instead of an `any`-typed ref; the rendered window is tagged with its grid (replaces the grid-change reset effect); `useBuildNavigation` drops the unused `hasUnlimitedDice`/`diceLimit` and reads `PLAN_LIMITS.explorer.builderRowLimit` from `core/billing`; `ResetProgressModal`/`useAutosave` use `buildIndex`/`countCompleted`; `react-hooks/rules-of-hooks` is `error` — B2 step text updated. Verification: typecheck 0, test 0 (11 files, 204 tests), lint 0 (0 errors, 47 warnings, 0 rules-of-hooks), build 0.
 - B3 — completed 2026-09-30. Design changes: `'progressPreview'` dropped from the modal enum (local state, one opener per layout) and `isInitializing` not duplicated in the ui store (`useProjectStore.boot` only); `useBuildProgress()` is a hook file (a derived-store export would import the document store circularly); `store/editor.ts` added for the cross-store `uploadImage`/`resetEditor`; `replaceDocument` also seeds the derived `gridSize`/`stats.totalCount` from `doc.grid`; `DEFAULT_ASPECT_RATIO` exported from core; `SaveStatus` type lives in `lib/utils/saveStatus.ts` (import boundary); `hydrateFromLocalDraft` requires the image; `loadProject` lands on `crop` when a project has no crop; the page's remount-refetch effect removed (projects live in the store) — Editor state and Repo layout sections updated. Verification: typecheck 0, test 0 (13 files, 220 tests), lint 0 (0 errors, 33 warnings; was 47), build 0.
 - B4 — completed 2026-09-30. Design changes: the batcher gains `untracked(action)` and `createHistoryBatcher` returns the batcher object (`documentHistoryBatcher`) with `useDocumentHistoryBatcher()` as the hook wrapper; the crop widget distinguishes tracked gesture reports (one `setCrop` at `onInteractionEnd`, no mid-gesture reports) from untracked reconcile/sync write-backs instead of batching them, so a ratio change is one entry without a batch; the panel's rotate goes through a registered `cropperHandle.rotateCrop(90)` (widget → store) rather than `updateCrop({ rotation })` (store → widget), because the store cannot know the rotated box up front and the sync effect cannot tell a stale forward rotation from an undo; `buildNavigation.ts` exposes `buildTargets/currentTargets/moveTo(target, gate)` with `useBuildGate()` exported from `useBuildNavigation.ts` (one gate for the hook and the shortcut); `useBuildNavigation` returns `current`/`currentDie` instead of `currentX/Y/currentDice`; `useUndoRedo` hook + `HistoryButtons` component added — Editor state and Repo layout sections updated. Verification: typecheck 0, test 0 (15 files, 237 tests), lint 0 (0 errors, 33 warnings), build 0.
+- B5 — completed 2026-09-30. Design changes: the marketing layout renders only `<BackgroundOrbs/>` + children (Navbar/Footer stay on the landing page — the other five marketing pages never had them); `components/BackgroundOrbs.tsx` added (the orbs markup was copied 9×); `--pink-rgb: 255 45 146` is the single brand literal (`--pink` and `--pink-glow*` derive from it) so Tailwind `accent-pink/<alpha>` works, `--accent-blue` added, `pink-400` and hover/active shades map to `accent-pink-light` (= `--pink-light`); the unused Tailwind `theme.*`/`pink.*` colour maps dropped; `CropperMain` keeps a local `useWindowSize` for its stencil maths (only the shell's `isMobile` moved to `useMediaQuery`); `SaveStatus` type lives in `useProjectStore`; hero/gallery keyframes live in `marketing.css` (their only users); `useBuildNavigation`/`useBlueprintDownload` moved to `hooks/`, the BuildViewer-internal hooks (`useBuildZoom/Window/ViewBox`, `useElementSize`) stay in `components/build/`; ESLint boundaries also cover `features/{account,billing}`, `lib` and `components` — Repo layout and Import rules updated. Verification: typecheck 0, test 0 (15 files, 237 tests), lint 0 (0 errors, 28 warnings; was 33), build 0.

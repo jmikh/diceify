@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next'
-import { blogPosts } from '@/lib/blogs/data'
+import { blogPosts } from '@/features/marketing/blog/data'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://diceify.art'

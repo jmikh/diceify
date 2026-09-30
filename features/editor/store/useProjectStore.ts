@@ -3,9 +3,7 @@
 
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
-import type { SaveStatus } from '@/lib/utils/saveStatus'
-
-export type { SaveStatus }
+export type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
 
 /** What the project list needs (the API list endpoint omits the large columns). */
 export interface ProjectSummary {

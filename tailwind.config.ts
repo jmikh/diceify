@@ -2,69 +2,22 @@ import type { Config } from 'tailwindcss'
 
 const config: Config = {
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './features/**/*.{js,ts,jsx,tsx,mdx}',
     './lib/**/*.{js,ts,jsx,tsx,mdx}',
+    './styles/**/*.css',
   ],
   theme: {
     extend: {
       colors: {
-        // Design System: Map CSS variables to Tailwind colors
-        // These reference the tokens defined in globals.css :root
-        theme: {
-          // Backgrounds
-          bg: {
-            primary: 'var(--bg-primary)',
-            secondary: 'var(--bg-secondary)',
-            deep: 'var(--bg-deep)',
-            glass: {
-              DEFAULT: 'var(--bg-glass)',
-              hover: 'var(--bg-glass-hover)',
-            }
+        // Brand tokens from styles/base.css :root. `<alpha-value>` lets `bg-accent-pink/20` work.
+        accent: {
+          pink: {
+            DEFAULT: 'rgb(var(--pink-rgb) / <alpha-value>)',
+            light: 'var(--pink-light)',
           },
-          // Glass effects
-          glass: {
-            light: 'var(--glass-light)',
-            medium: 'var(--glass-medium)',
-            DEFAULT: 'var(--bg-glass)',
-            hover: 'var(--bg-glass-hover)',
-          },
-          // Text
-          text: {
-            primary: 'var(--text-primary)',
-            secondary: 'var(--text-secondary)',
-            muted: 'var(--text-muted)',
-            dim: 'var(--text-dim)',
-          },
-          // Accents
-          accent: {
-            purple: 'var(--accent-purple)',
-            green: 'var(--accent-green)',
-          },
-          // Glows
-          glow: {
-            purple: 'var(--glow-purple)',
-            green: 'var(--glow-green)',
-          },
-          // Borders
-          border: {
-            glass: 'var(--border-glass)',
-            'glass-light': 'var(--border-glass-light)',
-          },
-          // Semantic
-          primary: {
-            DEFAULT: 'var(--color-primary)',
-            hover: 'var(--color-primary-hover)',
-            glow: 'var(--color-primary-glow)',
-          },
-        },
-        // Direct pink access (frequently used)
-        pink: {
-          DEFAULT: 'var(--pink)',
-          light: 'var(--pink-light)',
-          glow: 'var(--pink-glow)',
-          'glow-soft': 'var(--pink-glow-soft)',
+          blue: 'var(--accent-blue)',
         },
       },
       fontFamily: {

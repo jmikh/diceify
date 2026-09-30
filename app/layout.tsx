@@ -2,10 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Outfit, Syne } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { GoogleAnalytics } from '@next/third-parties/google'
-import './globals.css'
-import { auth } from '@/lib/auth'
-
-import { Providers } from '@/components/Providers'
+import '@/styles/base.css'
 
 const inter = Inter({ subsets: ['latin'] })
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit', display: 'swap' })
@@ -170,9 +167,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
-        <Providers>
-          {children}
-        </Providers>
+        {children}
         <GoogleAnalytics gaId="G-BDR76Z4JEE" />
         <Analytics />
       </body>
