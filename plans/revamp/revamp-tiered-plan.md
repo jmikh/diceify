@@ -114,87 +114,36 @@ imports `features/editor`; `features/editor` may import `features/{account,billi
 `features/editor` or `app`; `features` never imports `app`; `lib` and `components` never import `features` or `app`; `app` imports from `@/` only
 `features`, `components`, `lib`, `core`, `styles`.
 
-### Data model (`supabase/migrations/<ts>_initial_schema.sql`)
+### Data model (`supabase/migrations/20260930110540_initial_schema.sql`)
 
-```sql
-create extension if not exists pgcrypto;
-create or replace function public.set_updated_at() returns trigger language plpgsql as $$
-begin new.updated_at = now(); return new; end $$;
+The migration file is the source of truth for the DDL (C1); this is the summary. Local stack: `supabase/config.toml`,
+ports **5433x** (API `http://127.0.0.1:54331`, db 54332, Studio 54333, Mailpit 54334) so it runs beside another local
+Supabase stack on the default 5432x block; analytics disabled; Google provider from `supabase/.env` (`GOOGLE_CLIENT_ID/SECRET`,
+`skip_nonce_check = true` for the supabase-js PKCE flow).
 
-create table public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  email text not null unique, name text, avatar_url text,
-  -- billing snapshot: written ONLY by the edge functions (service role) and the migration script
-  plan text not null default 'explorer' check (plan in ('explorer','creator','studio','lifetime')),
-  plan_expires_at timestamptz,            -- creator pass end (monotonic: sync only raises it)
-  stripe_customer_id text unique, stripe_subscription_id text unique,
-  subscription_status text, current_period_end timestamptz, cancel_at timestamptz,
-  synced_at timestamptz,
-  legacy_id text unique,                  -- old Prisma User.id (migration idempotency)
-  created_at timestamptz not null default now(), updated_at timestamptz not null default now());
-create trigger profiles_set_updated_at before update on public.profiles for each row execute function public.set_updated_at();
-
-create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path='' as $$
-begin
-  insert into public.profiles (id, email, name, avatar_url) values (new.id, new.email,
-    coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name'),
-    coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture'))
-  on conflict (id) do nothing; return new; end $$;
-create trigger on_auth_user_created after insert on auth.users for each row execute function public.handle_new_user();
--- + on_auth_user_email_changed trigger keeping profiles.email in sync
-
--- Effective plan + project limit in SQL. MUST mirror core/billing/entitlements.ts (comment both ways).
-create or replace function public.effective_plan(p public.profiles) returns text language sql stable as $$
-  select case
-    when p.plan = 'lifetime' then 'lifetime'
-    when p.plan = 'studio' and p.subscription_status in ('active','trialing','past_due') then 'studio'
-    when p.plan = 'creator' and p.plan_expires_at > now() then 'creator'
-    else 'explorer' end $$;
-create or replace function public.project_limit(plan text) returns int language sql immutable as $$
-  select case plan when 'studio' then 5 when 'lifetime' then 5 else 1 end $$;
-
-create table public.projects (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references public.profiles(id) on delete cascade,
-  name text not null default 'Untitled Project',
-  document jsonb not null,                -- ProjectDocument (see below); validated client-side, schemaVersion inside
-  image_path text not null,               -- '{owner_id}/{id}/original.jpg' (immutable)
-  total_dice int not null default 0, completed_dice int not null default 0,   -- projected from document by the client on write
-  percent_complete numeric(5,2) generated always as (case when total_dice>0 then least(100, completed_dice*100.0/total_dice) else 0 end) stored,
-  cloud_version int not null default 1,   -- compare-and-set: update ... where cloud_version = expected
-  legacy_id text unique,
-  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
-  constraint image_path_in_owner_folder check (image_path like owner_id::text || '/%'));
-create index projects_owner_updated_idx on public.projects (owner_id, updated_at desc);
-create trigger projects_set_updated_at before update on public.projects for each row execute function public.set_updated_at();
-
-create or replace function public.enforce_project_limit() returns trigger language plpgsql security definer set search_path='' as $$
-declare p public.profiles; n int;
-begin
-  select * into p from public.profiles where id = new.owner_id;
-  select count(*) into n from public.projects where owner_id = new.owner_id;
-  if n >= public.project_limit(public.effective_plan(p)) then
-    raise exception 'PROJECT_LIMIT' using errcode = 'P0001', detail = format('{"current":%s,"limit":%s}', n, public.project_limit(public.effective_plan(p)));
-  end if; return new; end $$;
-create trigger projects_enforce_limit before insert on public.projects for each row execute function public.enforce_project_limit();
-create trigger projects_bump_version before update on public.projects for each row
-  execute function public.bump_cloud_version();   -- new.cloud_version = old.cloud_version + 1 (client never sets it)
-
--- RLS: real policies (diceify's only rule is "owner only")
-alter table public.profiles enable row level security;
-create policy profiles_select_own on public.profiles for select to authenticated using (id = (select auth.uid()));
--- no insert/update/delete policies: billing columns are written by service role only
-alter table public.projects enable row level security;
-create policy projects_select_own on public.projects for select to authenticated using (owner_id = (select auth.uid()));
-create policy projects_insert_own on public.projects for insert to authenticated with check (owner_id = (select auth.uid()));
-create policy projects_update_own on public.projects for update to authenticated using (owner_id = (select auth.uid())) with check (owner_id = (select auth.uid()));
-create policy projects_delete_own on public.projects for delete to authenticated using (owner_id = (select auth.uid()));
-
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('project-images','project-images', false, 10485760, array['image/jpeg','image/webp','image/png']) on conflict (id) do nothing;
--- storage.objects policies: select/insert/update/delete to authenticated where bucket_id='project-images'
--- and (storage.foldername(name))[1] = (select auth.uid()::text). SELECT is required for upsert (recordio finding).
-```
+- `profiles` (id = `auth.users.id`, email unique, name, avatar_url, billing snapshot `plan | plan_expires_at |
+  stripe_customer_id | stripe_subscription_id | subscription_status | current_period_end | cancel_at | synced_at`, `legacy_id`,
+  timestamps). Billing columns are written ONLY by the edge functions (service role) and the migration script.
+  Triggers: `on_auth_user_created` → `handle_new_user()` (name/avatar from `raw_user_meta_data`, `on conflict do nothing`),
+  `on_auth_user_email_changed` → `handle_user_email_change()`, `profiles_set_updated_at`.
+- `effective_plan(profiles) → text` and `project_limit(text) → int` **mirror `core/billing/entitlements.ts` /
+  `plans.ts`** (lifetime → studio with `active|trialing|past_due` → creator with `plan_expires_at > now()` → explorer;
+  limits studio/lifetime 5, creator/explorer 1). Both files carry a comment pointing at the other.
+- `projects` (id, owner_id → profiles cascade, name, `document jsonb` = ProjectDocument, `image_path` with CHECK
+  `image_path_in_owner_folder` (`like owner_id || '/%'`), `total_dice`/`completed_dice` projected by the client,
+  `percent_complete numeric(5,2)` generated stored, `cloud_version` default 1, `legacy_id`, timestamps); index
+  `(owner_id, updated_at desc)`. Triggers: `projects_set_updated_at`; `projects_bump_version` → `bump_cloud_version()`
+  (**always** `old + 1`, a client-supplied value is discarded); `projects_enforce_limit` (before insert, security definer) →
+  `raise 'PROJECT_LIMIT'` errcode `P0001`, detail `{"current":n,"limit":m}` — PostgREST surfaces it as
+  `{ code: 'P0001', message: 'PROJECT_LIMIT', details: '<that JSON string>' }`. The owner's profile row is locked
+  (`for update`) inside the trigger so concurrent inserts by one user serialize.
+- RLS (all `to authenticated`, `(select auth.uid())` form; `anon` sees nothing): `profiles` select own only (no client
+  writes at all); `projects` select/insert/update/delete own.
+- Storage: bucket `project-images` (private, 10 MiB, jpeg/webp/png) created **in the migration** (so `db push` creates it on
+  the hosted project); `storage.objects` select/insert/update/delete policies for `bucket_id = 'project-images' and
+  (storage.foldername(name))[1] = (select auth.uid()::text)`. SELECT is required for upserts (recordio finding).
+- `seed.sql` is intentionally empty (auth users are created through the Admin API, see `docs/DEPLOY.md`).
+- Generated types: `npm run db:types` → `lib/supabase/database.types.ts` (committed, diff-free on rerun).
 
 Column-vs-blob rule (recordio): what list views need without parsing JSON is a column (`name`, `total_dice`,
 `completed_dice`, `percent_complete`, `image_path`, `cloud_version`); everything the editor needs to restore
@@ -257,7 +206,7 @@ deriveEntitlements(b: BillingState, now: Date): Entitlements     // priority: li
   `POST /billing/cancel` → `subscriptions.update(id, {cancel_at_period_end:true})` → sync → view. `POST /billing/resume` → `{cancel_at_period_end:false}` → sync.
   `GET /billing/sync` → sync (skipped if `synced_at` < 30 s ago) → view. Account page calls it on load; `?checkout=success` polls it every 2 s up to 10× until `isPro` flips.
 - Stripe client pinned: `new Stripe(key, { apiVersion: '2025-11-17.clover' })`; webhook endpoint in the dashboard set to the same version.
-- Local: `supabase functions serve --env-file supabase/.env.local` (STRIPE_SECRET_KEY sk_test, STRIPE_WEBHOOK_SECRET from `stripe listen`, 3 price IDs, APP_URL) + `npm run stripe:listen` = `stripe listen --forward-to http://127.0.0.1:54321/functions/v1/stripe-webhook`. Prod secrets via `supabase secrets set`. Boot guard: refuse `sk_test_` when `SUPABASE_URL` is not local.
+- Local: `supabase functions serve --env-file supabase/functions/.env` (STRIPE_SECRET_KEY sk_test, STRIPE_WEBHOOK_SECRET from `stripe listen`, 3 price IDs, APP_URL) + `npm run stripe:listen` = `stripe listen --forward-to http://127.0.0.1:54331/functions/v1/stripe-webhook`. Prod secrets via `supabase secrets set`. Boot guard: refuse `sk_test_` when `SUPABASE_URL` is not local.
 - Errors: JSON `{ error: { code, message, details? } }`; codes UNAUTHORIZED, VALIDATION, ALREADY_SUBSCRIBED, NO_SUBSCRIPTION, INTERNAL.
 
 ### Client data access (`lib/supabase/`)
@@ -306,8 +255,8 @@ deriveEntitlements(b: BillingState, now: Date): Entitlements     // priority: li
 
 - `vitest@^3` (4/5 crash npm 11.5.1's arborist / miss rolldown bindings — see agent-suggestions) (node env; `include: core/**, lib/**, features/**, supabase/functions/_shared/**`; alias `@` → root; `allowImportingTsExtensions` so `_shared` files with `.ts` imports test under vitest and run under Deno).
 - ESLint 9 flat config (`eslint.config.mjs`): `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks` (only `rules-of-hooks` + `exhaustive-deps`; v7's preset adds React-Compiler rules we don't use), `@next/eslint-plugin-next@15` (v14 uses APIs removed in ESLint 9; v15 is dev-only, no `next` peer, exports `flatConfig.coreWebVitals`); `no-explicit-any: error`; core purity overrides; import boundaries. Drop `eslint-config-next@15`, `@typescript-eslint/*`.
-- Scripts: `dev`, `build`, `test`, `test:watch`, `lint`, `typecheck` (`tsc --noEmit && tsc -p core`), `db:start|stop|reset|types|push`, `functions:serve`, `functions:deploy`, `stripe:listen`, `gen-fixtures`, `migrate:legacy`.
-- Deps add: `@supabase/supabase-js`, `zod`, `zundo`, `idb-keyval`, `sonner`, `@sentry/nextjs`; dev: `vitest`, `tsx`, `pg`, `@types/pg`, `supabase` (CLI), eslint packages above; `sharp` → dev. Remove: `prisma`, `@prisma/client`, `next-auth`, `@auth/prisma-adapter`, `stripe` (moves to Deno), `@vercel/analytics`, `opentype.js`, `puppeteer`, `glob`, `eslint-config-next`, `@typescript-eslint/*`; pin `@next/third-parties@^14.2`. (A1: `@next/eslint-plugin-next` is `^15`, `vitest` is `^3` — see Tooling above.)
+- Scripts: `dev`, `build`, `test`, `test:watch`, `lint`, `typecheck` (`tsc --noEmit && tsc -p core`), `db:start|stop|reset|status|migration|types|push`, `functions:serve`, `functions:deploy`, `stripe:listen`, `gen-fixtures`, `migrate:legacy`.
+- Deps add: `@supabase/supabase-js`, `zod`, `zundo`, `idb-keyval`, `sonner`, `@sentry/nextjs`; dev: `vitest`, `tsx`, `pg`, `@types/pg`, eslint packages above (the Supabase CLI is a Homebrew install documented in `docs/DEPLOY.md`, not an npm dependency); `sharp` → dev. Remove: `prisma`, `@prisma/client`, `next-auth`, `@auth/prisma-adapter`, `stripe` (moves to Deno), `@vercel/analytics`, `opentype.js`, `puppeteer`, `glob`, `eslint-config-next`, `@typescript-eslint/*`; pin `@next/third-parties@^14.2`. (A1: `@next/eslint-plugin-next` is `^15`, `vitest` is `^3` — see Tooling above.)
 - CLAUDE.md rewritten (short): rules, architecture map + import rules, core orientation/pipeline/fixtures regen rule, store ownership + undo rules, gating rule, commands, "no manual browser tests unless asked". Stale PRD tables removed.
 
 ### Cleanup (applied across steps; final sweep in E3)
@@ -350,7 +299,7 @@ Each step: fresh agent, own `revamp-step-N.md`, ends with `npm run typecheck && 
 
 ### Phase D — Billing (edge functions)
 
-**D1 — Edge functions scaffold, billing sync, webhook.** `supabase/functions/deno.json`, `_shared/{billing-snapshot (+vitest), billing-sync, stripe, supabase-admin, http}.ts`, `stripe-webhook/index.ts`, `billing/index.ts` with only `GET /sync`; `config.toml` `[functions.stripe-webhook] verify_jwt = false`; `supabase/.env.local` example; `npm run functions:serve`, `npm run stripe:listen`; `docs/STRIPE_TESTING.md` (cards, flows, `stripe trigger`, test clocks, dashboard-cancel-then-sync). Delete `app/api/stripe/**`, `lib/stripe.ts`. Verify: snapshot unit tests (active+canceled picks active; only canceled → plan studio but entitlements explorer; creator via `planType` metadata; monotonic expiry; lifetime kept; item-level period end); `stripe trigger customer.subscription.updated` → 200 + "unknown customer" log; a test-mode customer with a real subscription → `GET /billing/sync` fills the profile columns.
+**D1 — Edge functions scaffold, billing sync, webhook.** `supabase/functions/deno.json`, `_shared/{billing-snapshot (+vitest), billing-sync, stripe, supabase-admin, http}.ts`, `stripe-webhook/index.ts`, `billing/index.ts` with only `GET /sync`; `config.toml` `[functions.stripe-webhook] verify_jwt = false` (stanza is already there commented out; C1 found the CLI warns on every start when the folder is missing); `supabase/functions/.env` example (already outlined in `.env.example`); `npm run functions:serve`, `npm run stripe:listen`; `docs/STRIPE_TESTING.md` (cards, flows, `stripe trigger`, test clocks, dashboard-cancel-then-sync). Delete `app/api/stripe/**`, `lib/stripe.ts`. Verify: snapshot unit tests (active+canceled picks active; only canceled → plan studio but entitlements explorer; creator via `planType` metadata; monotonic expiry; lifetime kept; item-level period end); `stripe trigger customer.subscription.updated` → 200 + "unknown customer" log; a test-mode customer with a real subscription → `GET /billing/sync` fills the profile columns.
 
 **D2 — Checkout, portal, cancel, resume + Account page + pricing wiring.** Remaining `billing` routes; `lib/supabase/billing.ts` (`functions.invoke` wrappers); `app/(editor)/account/page.tsx` (plan, access-until/cancel-at, Cancel/Resume/Portal/Refresh, `?checkout=success` polling); `PricingCards`/`Pricing`/`ProFeatureModal` call checkout; `UserMenu`/`MobileMenu` link to `/account`; `CheckoutSuccessHandler` replaces SessionRefresher. Verify (with `stripe listen`): buy Creator with 4242 → plan creator, expires +30 d; buy Studio → active + period end; second checkout while pro → 409; only one Stripe customer per user; cancel → `cancel_at` set, still pro, `renews=false`; resume → cleared; stop `stripe listen`, cancel in dashboard, open `/account` → reflected via sync; portal opens and returns.
 
@@ -396,3 +345,4 @@ Each step: fresh agent, own `revamp-step-N.md`, ends with `npm run typecheck && 
 - B3 — completed 2026-09-30. Design changes: `'progressPreview'` dropped from the modal enum (local state, one opener per layout) and `isInitializing` not duplicated in the ui store (`useProjectStore.boot` only); `useBuildProgress()` is a hook file (a derived-store export would import the document store circularly); `store/editor.ts` added for the cross-store `uploadImage`/`resetEditor`; `replaceDocument` also seeds the derived `gridSize`/`stats.totalCount` from `doc.grid`; `DEFAULT_ASPECT_RATIO` exported from core; `SaveStatus` type lives in `lib/utils/saveStatus.ts` (import boundary); `hydrateFromLocalDraft` requires the image; `loadProject` lands on `crop` when a project has no crop; the page's remount-refetch effect removed (projects live in the store) — Editor state and Repo layout sections updated. Verification: typecheck 0, test 0 (13 files, 220 tests), lint 0 (0 errors, 33 warnings; was 47), build 0.
 - B4 — completed 2026-09-30. Design changes: the batcher gains `untracked(action)` and `createHistoryBatcher` returns the batcher object (`documentHistoryBatcher`) with `useDocumentHistoryBatcher()` as the hook wrapper; the crop widget distinguishes tracked gesture reports (one `setCrop` at `onInteractionEnd`, no mid-gesture reports) from untracked reconcile/sync write-backs instead of batching them, so a ratio change is one entry without a batch; the panel's rotate goes through a registered `cropperHandle.rotateCrop(90)` (widget → store) rather than `updateCrop({ rotation })` (store → widget), because the store cannot know the rotated box up front and the sync effect cannot tell a stale forward rotation from an undo; `buildNavigation.ts` exposes `buildTargets/currentTargets/moveTo(target, gate)` with `useBuildGate()` exported from `useBuildNavigation.ts` (one gate for the hook and the shortcut); `useBuildNavigation` returns `current`/`currentDie` instead of `currentX/Y/currentDice`; `useUndoRedo` hook + `HistoryButtons` component added — Editor state and Repo layout sections updated. Verification: typecheck 0, test 0 (15 files, 237 tests), lint 0 (0 errors, 33 warnings), build 0.
 - B5 — completed 2026-09-30. Design changes: the marketing layout renders only `<BackgroundOrbs/>` + children (Navbar/Footer stay on the landing page — the other five marketing pages never had them); `components/BackgroundOrbs.tsx` added (the orbs markup was copied 9×); `--pink-rgb: 255 45 146` is the single brand literal (`--pink` and `--pink-glow*` derive from it) so Tailwind `accent-pink/<alpha>` works, `--accent-blue` added, `pink-400` and hover/active shades map to `accent-pink-light` (= `--pink-light`); the unused Tailwind `theme.*`/`pink.*` colour maps dropped; `CropperMain` keeps a local `useWindowSize` for its stencil maths (only the shell's `isMobile` moved to `useMediaQuery`); `SaveStatus` type lives in `useProjectStore`; hero/gallery keyframes live in `marketing.css` (their only users); `useBuildNavigation`/`useBlueprintDownload` moved to `hooks/`, the BuildViewer-internal hooks (`useBuildZoom/Window/ViewBox`, `useElementSize`) stay in `components/build/`; ESLint boundaries also cover `features/{account,billing}`, `lib` and `components` — Repo layout and Import rules updated. Verification: typecheck 0, test 0 (15 files, 237 tests), lint 0 (0 errors, 28 warnings; was 33), build 0.
+- C1 — completed 2026-09-30. Design changes: local stack runs on ports **5433x** (API 54331, db 54332, Studio 54333, Mailpit 54334) because the recordio stack occupies the default 5432x block — `.env.example`, D1's `stripe listen` URL and the Data model section updated; the Data model section now points at `supabase/migrations/20260930110540_initial_schema.sql` (source of truth) with a prose summary instead of an SQL copy; `enforce_project_limit()` locks the owner's profile row (`for update`) so concurrent inserts serialize; `[functions.stripe-webhook]` is left commented out in `config.toml` (CLI 2.84 boots but logs a WARN per start without the function folder — D1 uncomments it); Stripe secrets file is `supabase/functions/.env` (not `supabase/.env.local`); the Supabase CLI stays a Homebrew install (no `supabase` npm devDependency); scripts `db:status`/`db:migration` added to the `db:*` set; `lib/env.public.ts` validates lazily through getters (importing never throws). Verification: `db reset` clean; Admin-API user → profile row with name; second explorer project → `PROJECT_LIMIT` `{"current":1,"limit":1}` (psql and REST `P0001`); CHECK violation for a foreign folder; `cloud_version` 1→2→3(→ client-sent 99 ignored)→4→5, `updated_at` bumped, `percent_complete` 25.00; REST: B sees `[]`, A sees own row, anon `[]`, B PATCH A → `[]`, A PATCH profiles → `[]`, B insert as A → RLS error; storage: own folder 200 (also with `x-upsert`), other folder 400/RLS, cross-user download 404, `text/plain` 415; `db:types` rerun diff-free; typecheck 0, test 0 (15 files, 237 tests), lint 0 (0 errors, 28 warnings), build 0.

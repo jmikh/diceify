@@ -56,3 +56,10 @@ Thumbs.db
 /lib/generated/prisma
 
 .agent/
+
+# Supabase (local state and secrets)
+supabase/.temp
+supabase/.branches
+supabase/.env
+supabase/.env.*
+supabase/functions/.env*

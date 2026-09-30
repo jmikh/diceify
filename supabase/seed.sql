@@ -1,0 +1,2 @@
+-- Intentionally empty. Auth users cannot be seeded meaningfully (they are created through GoTrue, which
+-- also fires the profiles trigger); create test users with the Admin API instead — see docs/DEPLOY.md.

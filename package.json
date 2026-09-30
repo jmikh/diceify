@@ -10,6 +10,13 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit && tsc -p core",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:status": "supabase status",
+    "db:migration": "supabase migration new",
+    "db:push": "supabase db push",
+    "db:types": "supabase gen types typescript --local --schema public > lib/supabase/database.types.ts",
     "gen-fixtures": "tsx scripts/gen-fixtures.ts"
   },
   "dependencies": {
