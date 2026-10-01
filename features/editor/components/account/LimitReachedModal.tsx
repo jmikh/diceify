@@ -60,9 +60,6 @@ export default function LimitReachedModal() {
                             <li className="flex items-center gap-2">
                                 <span className="text-accent-pink">✓</span> Full resolution SVG blueprints
                             </li>
-                            <li className="flex items-center gap-2">
-                                <span className="text-accent-pink">✓</span> More cloud project slots
-                            </li>
                         </ul>
                     </div>
 

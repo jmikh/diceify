@@ -9,10 +9,11 @@
     "build": "next build",
     "build:prod": "node --env-file=.env.prod.local node_modules/next/dist/bin/next build",
     "start": "next start",
+    "pages:dev": "wrangler pages dev out",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit && tsc -p core",
+    "typecheck": "tsc --noEmit && tsc -p core && tsc -p functions",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
@@ -24,7 +25,7 @@
     "functions:serve": "supabase functions serve --env-file supabase/functions/.env",
     "functions:deploy": "supabase functions deploy",
     "functions:check": "deno check --config supabase/functions/deno.json supabase/functions/billing/index.ts supabase/functions/stripe-webhook/index.ts",
-    "stripe:listen": "stripe listen --forward-to http://127.0.0.1:54331/functions/v1/stripe-webhook",
+    "stripe:listen": "stripe listen --project-name diceify --forward-to http://127.0.0.1:54331/functions/v1/stripe-webhook",
     "gen-fixtures": "tsx scripts/gen-fixtures.ts",
     "migrate:legacy": "tsx scripts/migrate-from-prisma.ts"
   },
@@ -49,6 +50,7 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261001.1",
     "@eslint/js": "^9.39.5",
     "@next/eslint-plugin-next": "^15.5.0",
     "@types/node": "^22.14.0",

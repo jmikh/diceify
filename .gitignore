@@ -52,6 +52,10 @@ Thumbs.db
 
 .agent/
 
+# Cloudflare Pages local dev (wrangler pages dev: state + Function variables)
+.wrangler/
+.dev.vars
+
 # Supabase (local state and secrets)
 supabase/.temp
 supabase/.branches

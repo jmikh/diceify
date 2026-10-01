@@ -19,10 +19,10 @@ const state = (overrides: Partial<BillingState> = {}): BillingState => ({
 describe('PLAN_LIMITS / PRICING', () => {
   it('pins the limits table (null, never Infinity)', () => {
     expect(PLAN_LIMITS).toEqual({
-      explorer: { projectLimit: 1, builderRowLimit: 5, hasSvgExport: false },
-      creator: { projectLimit: 1, builderRowLimit: null, hasSvgExport: true },
-      studio: { projectLimit: 5, builderRowLimit: null, hasSvgExport: true },
-      lifetime: { projectLimit: 5, builderRowLimit: null, hasSvgExport: true },
+      explorer: { builderRowLimit: 5, hasSvgExport: false },
+      creator: { builderRowLimit: null, hasSvgExport: true },
+      studio: { builderRowLimit: null, hasSvgExport: true },
+      lifetime: { builderRowLimit: null, hasSvgExport: true },
     })
     for (const plan of PLANS) expect(PLAN_LIMITS[plan].builderRowLimit).not.toBe(Infinity)
   })
@@ -109,7 +109,7 @@ describe('deriveEntitlements: pinned cases', () => {
 
   it('lifetime never expires and has no access-until', () => {
     const e = deriveEntitlements(state({ plan: 'lifetime', subscriptionStatus: 'canceled', planExpiresAt: iso(-DAY) }), NOW)
-    expect(e).toMatchObject({ plan: 'lifetime', isPro: true, projectLimit: 5, builderRowLimit: null, accessUntil: null, renews: false })
+    expect(e).toMatchObject({ plan: 'lifetime', isPro: true, builderRowLimit: null, accessUntil: null, renews: false })
   })
 
   it('an unparseable expiry counts as expired', () => {

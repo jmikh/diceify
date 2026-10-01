@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { findRun } from '@/core/dice'
 import { buildTargets, moveTo, type BuildGate } from '@/features/editor/store/buildNavigation'
 import { useBuildProgress } from '@/features/editor/hooks/useBuildProgress'
 import { useGate } from '@/features/editor/hooks/useGate'
@@ -26,6 +27,11 @@ export function useBuildNavigation() {
 
     const targets = useMemo(() => buildTargets(grid, current), [grid, current])
     const currentDie = grid?.rows[current.y]?.[current.x] ?? null
+    // The run of identical dice the selector is in (viewer rectangle + badges, panel copy)
+    const run = useMemo(
+        () => (grid && currentDie ? findRun(grid.rows[current.y], current.x) : null),
+        [grid, currentDie, current.x, current.y]
+    )
 
     const actions = useMemo(() => ({
         navigatePrev: () => moveTo(targets.prev, gate),
@@ -39,6 +45,7 @@ export function useBuildNavigation() {
     return {
         current,
         currentDie,
+        run,
         percent,
         canNavigate: {
             prev: targets.prev !== null,

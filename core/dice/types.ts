@@ -52,11 +52,11 @@ export interface GridPos {
 }
 
 export const DEFAULT_DICE_PARAMS: DiceParams = {
-  numRows: 30,
+  numRows: 70,
   colorMode: 'both',
-  contrast: 0,
+  contrast: 25,
   gamma: 1,
-  edgeSharpening: 0,
+  edgeSharpening: 5,
   rotate6: false,
   rotate3: false,
   rotate2: false,

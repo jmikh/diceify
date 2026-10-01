@@ -1,86 +1,65 @@
 'use client'
 
-import { useState } from 'react'
-import { BarChart3, Palette, RotateCw, LucideIcon } from 'lucide-react'
-import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
-import DiceStatsCard from '@/features/editor/components/tune/DiceStatsCard'
+import { useState, type ReactNode } from 'react'
 import ColorModeControl from '@/features/editor/components/tune/controls/ColorModeControl'
 import OrientationControl from '@/features/editor/components/tune/controls/OrientationControl'
-import ParamSlider from '@/features/editor/components/tune/controls/ParamSlider'
-import { tunerSliders } from '@/features/editor/components/tune/controls/sliderConfigs'
+import { tunerSliders, type TunerSliderConfig } from '@/features/editor/components/tune/controls/sliderConfigs'
+import { TunerSlider } from '@/features/editor/components/tune/TunerPanel'
+import DieIcon from '../common/DieIcon'
+import { choiceOn, panel } from '../common/ui'
+import { MobileStepBack, MobileStepNext } from './MobileStepButtons'
+import { mainRow, toolRow } from './rows'
 
-type ToolKey = 'stats' | 'color' | 'orientation' | 'numRows' | 'contrast' | 'gamma' | 'edgeSharpening'
+type ToolKey = TunerSliderConfig['key'] | 'color' | 'orientation'
 
-const tools: { key: ToolKey; icon: LucideIcon; label: string }[] = [
-    { key: 'stats', icon: BarChart3, label: 'Stats' },
-    { key: 'color', icon: Palette, label: 'Color' },
-    { key: 'orientation', icon: RotateCw, label: 'Dice' },
-    { key: 'numRows', icon: tunerSliders[0].icon, label: 'Rows' },
-    { key: 'contrast', icon: tunerSliders[1].icon, label: 'Contrast' },
-    { key: 'gamma', icon: tunerSliders[2].icon, label: 'Bright' },
-    { key: 'edgeSharpening', icon: tunerSliders[3].icon, label: 'Sharpen' },
+const tools: { key: ToolKey; label: string; icon: ReactNode }[] = [
+    ...tunerSliders.map(config => {
+        const Icon = config.icon
+        return { key: config.key, label: config.shortLabel, icon: <Icon size={18} /> }
+    }),
+    {
+        key: 'color',
+        label: 'Color',
+        icon: <span aria-hidden className="w-4 h-4 rounded-[4px] border border-white/55" style={{ background: 'linear-gradient(135deg, #fff 0 50%, #000 50% 100%)' }} />,
+    },
+    { key: 'orientation', label: 'Rotate', icon: <DieIcon face={6} size={20} /> },
 ]
 
 /**
- * Mobile tune toolbar: a horizontal icon strip in the thumb zone; tapping
- * a tool shows just that control above the strip so the dice preview stays
- * visible while adjusting.
+ * Mobile tune toolbar: one control at a time in a card (between step back/next) above a row of tool tabs, so the
+ * preview keeps the screen. The active tab names the control, so the card has no heading.
  */
 export default function MobileTuneControls() {
-    const params = useDocumentStore(state => state.dice)
-    const updateDice = useDocumentStore(state => state.updateDice)
-
-    const [activeTool, setActiveTool] = useState<ToolKey | null>('numRows')
-
-    const activeSlider = tunerSliders.find(s => s.key === activeTool)
+    const [active, setActive] = useState<ToolKey>('numRows')
+    const slider = tunerSliders.find(s => s.key === active)
 
     return (
-        <div className="bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-2xl px-3 pt-3 pb-1.5">
-            {/* Active control - fixed height so the toolbar doesn't jump between tools */}
-            {activeTool && (
-                <div className="h-16 mb-2 px-1 flex flex-col justify-center">
-                    {activeTool === 'stats' && <DiceStatsCard compact />}
-                    {activeTool === 'color' && <ColorModeControl large />}
-                    {activeTool === 'orientation' && <OrientationControl large />}
-                    {activeSlider && (
-                        <ParamSlider
-                            large
-                            icon={activeSlider.icon}
-                            label={activeSlider.label}
-                            min={activeSlider.min}
-                            max={activeSlider.max}
-                            step={activeSlider.step}
-                            value={params[activeSlider.key]}
-                            onChange={(value) => updateDice({ [activeSlider.key]: value })}
-                            formatValue={activeSlider.formatValue}
-                        />
-                    )}
+        <>
+            <div className={`${mainRow} flex gap-2`}>
+                <MobileStepBack className="w-10 rounded-[14px]" />
+                <div className={`${panel} flex-1 min-w-0 rounded-[20px] px-4 flex flex-col justify-center`}>
+                    {slider && <TunerSlider config={slider} large />}
+                    {active === 'color' && <ColorModeControl large />}
+                    {active === 'orientation' && <OrientationControl large />}
                 </div>
-            )}
-
-            {/* Tool strip */}
-            <div
-                className="flex items-stretch gap-1 overflow-x-auto [&::-webkit-scrollbar]:hidden"
-                style={{ scrollbarWidth: 'none' }}
-            >
+                <MobileStepNext className="w-10 rounded-[14px]" />
+            </div>
+            <div role="group" aria-label="Tune tools" className="grid grid-cols-6 gap-1">
                 {tools.map(tool => {
-                    const isActive = activeTool === tool.key
-                    const Icon = tool.icon
+                    const on = tool.key === active
                     return (
                         <button
                             key={tool.key}
-                            onClick={() => setActiveTool(isActive ? null : tool.key)}
-                            className={`flex flex-col items-center justify-center gap-1 min-w-[3.25rem] flex-1 py-2 rounded-xl transition-colors ${isActive
-                                ? 'bg-accent-pink/15 text-accent-pink-light'
-                                : 'text-white/50 active:bg-white/10'
-                                }`}
+                            onClick={() => setActive(tool.key)}
+                            aria-pressed={on}
+                            className={`${toolRow} flex flex-col items-center justify-center gap-1.5 rounded-[14px] text-[11px] font-medium transition-colors ${on ? choiceOn : 'border border-transparent text-white/70 active:bg-white/[0.06]'}`}
                         >
-                            <Icon size={18} />
-                            <span className="text-[9px] font-medium uppercase tracking-wide">{tool.label}</span>
+                            {tool.icon}
+                            {tool.label}
                         </button>
                     )
                 })}
             </div>
-        </div>
+        </>
     )
 }

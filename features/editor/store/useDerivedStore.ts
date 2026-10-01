@@ -4,6 +4,7 @@
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import type { DiceGrid, DiceStats, GridSize } from '@/core/dice'
+import type { Thumbnail } from '@/lib/image/decode'
 
 export const EMPTY_STATS: DiceStats = { blackCount: 0, whiteCount: 0, totalCount: 0 }
 
@@ -13,12 +14,15 @@ interface DerivedState {
   /** Dimensions of `grid`, or of the persisted grid after a load (before the pipeline regenerates). */
   gridSize: GridSize | null
   previewUrl: string | null
+  /** The cropped photo, small: the project thumbnail. */
+  thumbnail: Thumbnail | null
   isGenerating: boolean
   error: string | null
 
   startGeneration: () => void
   setGrid: (grid: DiceGrid, stats: DiceStats) => void
   finishGeneration: (previewUrl: string) => void
+  setThumbnail: (thumbnail: Thumbnail) => void
   failGeneration: (message: string) => void
   /** Drop everything; `gridSize` seeds the persisted grid dimensions of a loaded document. */
   reset: (gridSize: GridSize | null) => void
@@ -32,6 +36,7 @@ export const useDerivedStore = create<DerivedState>()(
     stats: EMPTY_STATS,
     gridSize: null,
     previewUrl: null,
+    thumbnail: null,
     isGenerating: false,
     error: null,
 
@@ -44,6 +49,7 @@ export const useDerivedStore = create<DerivedState>()(
         stats: jsonEquals(state.stats, stats) ? state.stats : stats,
       })),
     finishGeneration: (previewUrl) => set({ previewUrl, isGenerating: false }),
+    setThumbnail: (thumbnail) => set((state) => (state.thumbnail === thumbnail ? state : { thumbnail })),
     failGeneration: (message) => set({ error: message, isGenerating: false }),
     reset: (gridSize) =>
       set({
@@ -52,6 +58,7 @@ export const useDerivedStore = create<DerivedState>()(
         // Black/white split is recomputed when the grid regenerates; the total is known from the dimensions
         stats: gridSize ? { ...EMPTY_STATS, totalCount: gridSize.width * gridSize.height } : EMPTY_STATS,
         previewUrl: null,
+        thumbnail: null,
         isGenerating: false,
         error: null,
       }),

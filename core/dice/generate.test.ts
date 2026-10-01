@@ -35,8 +35,9 @@ describe('generateDiceGrid', () => {
       height: 3,
     }
     px.data.set([64, 64, 64, 255], 4 * 4) // dark center
-    const plain = generateDiceGrid(px, { ...DEFAULT_DICE_PARAMS, numRows: 3 })
-    const sharp = generateDiceGrid(px, { ...DEFAULT_DICE_PARAMS, numRows: 3, edgeSharpening: 100 })
+    const base = { ...DEFAULT_DICE_PARAMS, numRows: 3, contrast: 0 }
+    const plain = generateDiceGrid(px, { ...base, edgeSharpening: 0 })
+    const sharp = generateDiceGrid(px, { ...base, edgeSharpening: 100 })
     expect(plain.rows[1][1]).toEqual({ face: 6, color: 'black' })
     expect(sharp.rows[1][1]).toEqual({ face: 1, color: 'black' }) // 64*5 - 4*255 < 0 → clamped to 0
     expect(sharp.rows[0]).toEqual(plain.rows[0]) // border untouched

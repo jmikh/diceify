@@ -6,8 +6,10 @@ placement instructions. Live at [diceify.art](https://diceify.art).
 ## Stack
 
 - **Next.js 14** (App Router) as a static site generator: `output: 'export'` → `out/`, hosted on **Cloudflare Pages**.
-  There is no application server.
-- **Supabase**: Google OAuth, Postgres (projects, profiles) under row-level security, Storage for the project photo.
+  There is no application server; one Cloudflare Pages Function (`functions/s/[id].ts`) adds the social card tags to
+  share links (`/s/<id>`).
+- **Supabase**: Google OAuth, Postgres (projects, profiles, shares) under row-level security, Storage for the project
+  photo (private) and share card images (public).
   The browser talks to it directly with `supabase-js`.
 - **Two Supabase Edge Functions** (Deno): `billing` (Stripe checkout / portal / cancel / resume / sync) and
   `stripe-webhook`. Subscription state is recomputed from Stripe on every event.
@@ -22,18 +24,21 @@ Requirements: Node 20+ (Pages builds on 20), npm 11, the Supabase CLI and Deno (
 
 ```sh
 npm install
-cp .env.example .env.local        # Supabase URL + anon key (local values below), optional Sentry DSN
-npm run db:start                  # local Supabase on ports 5433x; `npm run db:status` prints the keys
-npm run dev                       # http://localhost:3000
+npm run db:start                  # local Supabase on ports 5433x; `npm run db:status` prints the URL + anon key
+npm run dev                       # http://localhost:3000 (needs .env.local, below)
 ```
 
-Env files (all gitignored except the examples):
+Env files (all gitignored except `supabase/functions/.env.example`). Only `NEXT_PUBLIC_*` values reach the Next app, and
+they are inlined into the static bundle, so no secret ever goes in a root file; secrets live under `supabase/`.
 
 | File | Holds |
 |---|---|
-| `.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, optional `NEXT_PUBLIC_SENTRY_DSN` |
+| `.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (local stack), optional `NEXT_PUBLIC_SENTRY_DSN`; `LEGACY_DATABASE_URL` for `npm run migrate:legacy` until the F2 cut-over |
+| `.env.prod.local` | the same public values for the hosted project (`npm run dev:prod` / `build:prod`) |
 | `supabase/.env` | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` for local Google sign-in (read by `supabase/config.toml`) |
-| `supabase/functions/.env` | Stripe test secrets for `npm run functions:serve` (template: `supabase/functions/.env.example`) |
+| `supabase/functions/.env` | Stripe **test** secrets for `npm run functions:serve` (template: `supabase/functions/.env.example`) |
+| `supabase/functions/.env.production` | Stripe **live** secrets, pushed with `supabase secrets set` (`docs/DEPLOY.md`) |
+| `.dev.vars` | the two `NEXT_PUBLIC_SUPABASE_*` values for the share-link Pages Function under `npm run pages:dev` |
 
 Billing locally: `npm run functions:serve` in one terminal, `npm run stripe:listen` in another; flows, cards and
 `stripe trigger` recipes are in `docs/STRIPE_TESTING.md`.

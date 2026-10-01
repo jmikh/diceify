@@ -1,8 +1,7 @@
 import { useCallback } from 'react'
-import { canAdvance, needsResetConfirm, nextStep, prevStep, type Step } from '../steps'
+import { canAdvance, canEnter, needsResetConfirm, nextStep, prevStep, type Step } from '../steps'
 import { useDocumentStore } from '../store/useDocumentStore'
 import { useEditorUiStore } from '../store/useEditorUiStore'
-import { useProjectStore } from '../store/useProjectStore'
 
 /**
  * The one way to move between steps. Entering build goes through `enterBuild()` (progress reset when the
@@ -10,7 +9,6 @@ import { useProjectStore } from '../store/useProjectStore'
  */
 export function useStepNavigation() {
   const step = useEditorUiStore((s) => s.step)
-  const hasImage = useProjectStore((s) => s.imageSrc !== null)
   const hasCrop = useDocumentStore((s) => s.crop !== null)
 
   const goTo = useCallback((to: Step) => {
@@ -29,8 +27,10 @@ export function useStepNavigation() {
 
   return {
     step,
-    canGoNext: next !== null && canAdvance(step, { hasImage, hasCrop }),
+    canGoNext: next !== null && canAdvance(step, { hasCrop }),
     canGoBack: prev !== null,
+    /** Whether a step tab may be jumped to. */
+    canGoTo: (to: Step) => canEnter(to, { hasCrop }),
     goNext: () => next && goTo(next),
     goBack: () => prev && goTo(prev),
     goTo,

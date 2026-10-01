@@ -2,9 +2,9 @@
 // Only `crop` and `dice` are tracked (partialize); progress/name/baseline are flat siblings so an undo's
 // shallow `set(pastState)` never touches them. See plans/revamp/revamp-tiered-plan.md → "Editor state".
 
-import { create, useStore } from 'zustand'
+import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
-import { temporal, type TemporalState } from 'zundo'
+import { temporal } from 'zundo'
 import {
   CURRENT_SCHEMA_VERSION,
   DEFAULT_DICE_PARAMS,
@@ -115,9 +115,6 @@ export const useDocumentStore = create<DocumentState>()(
   ),
 )
 
-export const useDocumentHistory = <T,>(selector: (state: TemporalState<TrackedState>) => T) =>
-  useStore(useDocumentStore.temporal, selector)
-
 /** Replaces the document (load, hydrate) without leaving a history entry; seeds the derived grid size. */
 export function replaceDocument(doc: ProjectDocument, name: string): void {
   useDocumentStore.getState().loadDocument(doc, name)
@@ -137,8 +134,7 @@ export function buildDocument(
 ): ProjectDocument {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    // 'upload' is never persisted: a document always belongs to an image
-    step: step === 'upload' ? 'crop' : step,
+    step,
     crop: state.crop,
     dice: state.dice,
     grid: gridSize,

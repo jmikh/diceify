@@ -7,9 +7,8 @@ import { reportError } from '@/lib/report-error'
 import { readDraft, readDraftImage } from '@/features/editor/store/draft'
 import { clearProject, loadDraftIntoEditor, resetEditor } from '@/features/editor/store/editor'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
-import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
-import { loadProject, refreshProjects } from './useProjects'
+import { loadProject, refreshProjects, saveDraftAsProject } from './useProjects'
 
 /** Restore the local draft into the stores. False when there is none (a document without its image is no draft). */
 async function hydrateDraft(): Promise<boolean> {
@@ -21,16 +20,37 @@ async function hydrateDraft(): Promise<boolean> {
   return true
 }
 
+/**
+ * Signed-in arrival: `?project=` is opened; otherwise a waiting draft becomes a project (a failed save keeps it a
+ * draft); otherwise the most recent project; none → the Start screen (no image).
+ */
+async function bootSignedIn(projectParam: string | null): Promise<void> {
+  if (projectParam) await loadProject(projectParam)
+  const project = useProjectStore.getState()
+  if (!project.projectId && project.imageBlob) {
+    // Refreshes the list itself
+    await saveDraftAsProject(useDocumentStore.getState().name)
+    return
+  }
+  let projects: Awaited<ReturnType<typeof refreshProjects>> = []
+  try {
+    projects = await refreshProjects()
+  } catch (error) {
+    reportError(error, { where: 'projects-list' })
+    toast.error('Could not load your projects.')
+  }
+  if (!useProjectStore.getState().projectId && projects.length > 0) await loadProject(projects[0].id)
+}
+
 function editorUrl(projectId: string | null): string {
   return projectId ? `/editor?project=${encodeURIComponent(projectId)}` : '/editor'
 }
 
 /**
- * Decides what the editor shows on arrival (plans/revamp/revamp-step-C3.md → "Hooks"):
- *   anonymous  → a `?project=` is stripped; the local draft is restored
- *   signed in  → the local draft is restored (back from OAuth with `?restored=true`, or left over from a failed save);
- *                `?project=` is opened (or reported and stripped); otherwise the list decides: a draft to save →
- *                projects modal, else the most recent project, else the modal
+ * Decides what the editor shows on arrival (plans/revamp/revamp-step-C3.md → "Hooks", G1 → "Arrival"):
+ *   anonymous  → a `?project=` is stripped; the local draft is restored (none → the Start screen)
+ *   signed in  → the local draft is restored (back from OAuth with `?restored=true`, or left over from a failed save),
+ *                then `bootSignedIn`
  * Ends with `markClean()` + `boot = 'ready'`. Afterwards `?project=` follows the current project id.
  */
 export function useEditorBootstrap() {
@@ -49,23 +69,7 @@ export function useEditorBootstrap() {
       // A draft is offered to a signed-in user too (not only on `?restored=true`): it exists after sign-in and
       // after a failed "save as project" (plan limit, offline), and opening a project would discard it.
       await hydrateDraft()
-      if (status === 'authed') {
-        if (projectParam) await loadProject(projectParam)
-        if (!useProjectStore.getState().projectId) {
-          let projects: Awaited<ReturnType<typeof refreshProjects>> = []
-          try {
-            projects = await refreshProjects()
-          } catch (error) {
-            reportError(error, { where: 'projects-list' })
-            toast.error('Could not load your projects.')
-          }
-          const hasDraft = useProjectStore.getState().imageBlob !== null
-          if (!hasDraft && projects.length > 0) await loadProject(projects[0].id)
-          if (!useProjectStore.getState().projectId) useEditorUiStore.getState().openModal('projects')
-        } else {
-          refreshProjects().catch((error) => reportError(error, { where: 'projects-list' }))
-        }
-      }
+      if (status === 'authed') await bootSignedIn(projectParam)
       markClean()
       useProjectStore.getState().setBoot('ready')
       // Whatever the arrival URL said, it now reflects the outcome (strips ?restored and a stale ?project)

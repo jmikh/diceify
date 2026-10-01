@@ -87,31 +87,32 @@ describe('renderWindowSvg', () => {
 
 describe('renderProgressSvg', () => {
   const dieCount = (svg: string) => (svg.match(/<svg x='/g) ?? []).length
-  const placeholderCount = (svg: string) => (svg.match(/<rect x='/g) ?? []).length
+  const ghostCount = (svg: string) => (svg.match(/<g opacity='0.15'>/g) ?? []).length
 
-  it('draws exactly countCompleted dice and placeholders for the rest', () => {
+  it('draws every die, the ones after countCompleted as faint ghosts', () => {
     for (let y = 0; y < grid.height; y++) {
       for (let x = 0; x < grid.width; x++) {
         const progress = { x, y }
         const svg = renderProgressSvg(grid, progress)
-        expect(dieCount(svg)).toBe(countCompleted(progress, grid.width))
-        expect(placeholderCount(svg)).toBe(6 - countCompleted(progress, grid.width))
+        expect(dieCount(svg)).toBe(6)
+        expect(ghostCount(svg)).toBe(6 - countCompleted(progress, grid.width))
         expect(placedDiceCount(grid, progress)).toBe(countCompleted(progress, grid.width))
       }
     }
   })
 
-  it('draws every die with showAll and uses the placeholder fill as background', () => {
+  it('draws no ghosts with showAll and uses the cream background', () => {
     const svg = renderProgressSvg(grid, { x: 0, y: 0 }, { showAll: true })
     expect(dieCount(svg)).toBe(6)
-    expect(placeholderCount(svg)).toBe(0)
+    expect(ghostCount(svg)).toBe(0)
     expect(svg).toContain('<rect width="3" height="2" fill="#eae3d2" />')
   })
 
   it('places the bottom-left die first (SVG row height-1)', () => {
-    const svg = renderProgressSvg(grid, { x: 1, y: 0 }, { placeholderFill: '#fff', placeholderStroke: '#000' })
-    expect(svg).toContain("<svg x='0' y='1' width='1' height='1'")
-    expect(svg).toContain("<rect x='1' y='1' width='1' height='1' fill='#fff' stroke='#000' stroke-width='0.02' />")
+    const svg = renderProgressSvg(grid, { x: 1, y: 0 }, { background: '#fff' })
+    expect(svg).toContain("\n<svg x='0' y='1' width='1' height='1'")
+    expect(svg).toContain("<g opacity='0.15'><svg x='1' y='1' width='1' height='1'")
+    expect(svg).toContain('<rect width="3" height="2" fill="#fff" />')
   })
 
   it('caps placedDiceCount at the grid size', () => {

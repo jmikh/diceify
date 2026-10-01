@@ -2,7 +2,7 @@
 
 export interface Counts {
   users: { selected: number; created: number; existedByLegacyId: number; existedByEmail: number; updated: number; failed: number }
-  projects: { selected: number; migrated: number; skippedNoImage: number; skippedExisting: number; skippedOverLimit: number; failed: number }
+  projects: { selected: number; migrated: number; skippedNoImage: number; skippedExisting: number; failed: number }
   bytesUploaded: number
   /** Bytes a dry run would have uploaded. */
   bytesPlanned: number
@@ -12,7 +12,7 @@ export interface Counts {
 export function emptyCounts(): Counts {
   return {
     users: { selected: 0, created: 0, existedByLegacyId: 0, existedByEmail: 0, updated: 0, failed: 0 },
-    projects: { selected: 0, migrated: 0, skippedNoImage: 0, skippedExisting: 0, skippedOverLimit: 0, failed: 0 },
+    projects: { selected: 0, migrated: 0, skippedNoImage: 0, skippedExisting: 0, failed: 0 },
     bytesUploaded: 0,
     bytesPlanned: 0,
     stripe: { synced: 0, notFound: 0, errors: 0, skipped: 0 },
@@ -37,7 +37,7 @@ export function formatSummary(c: Counts, opts: { dryRun: boolean; stripeSkippedR
   return (
     prefix +
     `users     selected ${u.selected} | created ${u.created} | existed(legacy_id) ${u.existedByLegacyId} | existed(email) ${u.existedByEmail} | updated ${u.updated} | failed ${u.failed}\n` +
-    `projects  selected ${p.selected} | migrated ${p.migrated} | skipped: no-image ${p.skippedNoImage}, existing ${p.skippedExisting}, over-limit ${p.skippedOverLimit} | failed ${p.failed}\n` +
+    `projects  selected ${p.selected} | migrated ${p.migrated} | skipped: no-image ${p.skippedNoImage}, existing ${p.skippedExisting} | failed ${p.failed}\n` +
     `${storage}\n` +
     `stripe    synced ${s.synced} | not-found ${s.notFound} | errors ${s.errors}${skipped}`
   )
@@ -46,7 +46,7 @@ export function formatSummary(c: Counts, opts: { dryRun: boolean; stripeSkippedR
 export interface ProjectReport {
   legacyId: string
   projectId: string | null
-  action: 'migrated' | 'skipped-no-image' | 'skipped-existing' | 'skipped-over-limit' | 'failed'
+  action: 'migrated' | 'skipped-no-image' | 'skipped-existing' | 'failed'
   reason?: string
 }
 

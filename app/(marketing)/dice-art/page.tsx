@@ -56,7 +56,7 @@ const jsonLd = {
         "@type": "WebPage",
         "@id": "https://diceify.art/dice-art"
     },
-    "keywords": "dice art, dice portrait, dice mosaic, dice art generator, how to make dice art",
+    "keywords": "dice art, dice portrait, dice mosaic, dice art generator, how to make dice art, dice art gift, personalized gift ideas, diy gift ideas",
     "inLanguage": "en-US"
 }
 

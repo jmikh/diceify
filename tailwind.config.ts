@@ -16,6 +16,7 @@ const config: Config = {
           pink: {
             DEFAULT: 'rgb(var(--pink-rgb) / <alpha-value>)',
             light: 'var(--pink-light)',
+            strong: 'var(--pink-strong)',
           },
           blue: 'var(--accent-blue)',
         },

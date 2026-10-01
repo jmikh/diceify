@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useRef, useCallback, useMemo, memo, type MouseEvent } from 'react'
-import { Plus, Minus } from 'lucide-react'
-import { findRun, gridRowFromSvg, svgRow, type DiceGrid } from '@/core/dice'
+import { useState, useRef, useCallback, memo, type MouseEvent } from 'react'
+import { gridRowFromSvg, svgRow, type DiceGrid } from '@/core/dice'
 import { useBuildNavigation } from '@/features/editor/hooks/useBuildNavigation'
 import { useBuildViewBox } from './useBuildViewBox'
 import { useBuildWindow } from './useBuildWindow'
-import { useBuildZoom } from './useBuildZoom'
-import { useElementSize } from './useElementSize'
+import { useBuildPinchZoom, useBuildZoomLevel } from './useBuildZoom'
+import { useElementSize } from '@/features/editor/hooks/useElementSize'
 import RunBadges from './RunBadges'
 
 interface BuildViewerProps {
@@ -16,13 +15,10 @@ interface BuildViewerProps {
 
 const HIGHLIGHT_TRANSITION = 'x 0.5s cubic-bezier(0.4, 0, 0.2, 1), y 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
 
-const zoomButtonClass =
-    'w-10 h-10 flex items-center justify-center rounded-xl bg-accent-pink/10 hover:bg-accent-pink/20 border border-accent-pink/20 text-accent-pink hover:text-accent-pink-light transition-all backdrop-blur-md shadow-[0_0_15px_rgb(var(--pink-rgb)/0.15)] disabled:opacity-30 disabled:cursor-not-allowed'
-
-/** The zoomable dice viewer for the build step. `grid` is never null: BuilderMain gates on it. */
+/** The zoomable dice viewer for the build step (+/- buttons live in BuildControlBar). `grid` is never null: BuilderMain gates on it. */
 const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
     // Arrow-key navigation lives in useEditorShortcuts (page level)
-    const { current, currentDie, navigateTo } = useBuildNavigation()
+    const { current, run, navigateTo } = useBuildNavigation()
     const { x: currentX, y: currentY } = current
     const { width: cols, height: rows } = grid
 
@@ -33,7 +29,8 @@ const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
     const containerSize = useElementSize(containerRef)
     const aspect = containerSize ? containerSize.width / containerSize.height : null
 
-    const { zoomLevel, zoomIn, zoomOut, canZoomIn, canZoomOut } = useBuildZoom(containerRef)
+    const zoomLevel = useBuildZoomLevel()
+    useBuildPinchZoom(containerRef)
     const { svgContent, ensureRendered } = useBuildWindow(grid)
     useBuildViewBox({
         svgRef,
@@ -45,11 +42,6 @@ const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
         onView: ensureRendered,
     })
 
-    // The run of identical dice the selector is in (group rectangle + badges)
-    const run = useMemo(
-        () => (currentDie ? findRun(grid.rows[currentY], currentX) : null),
-        [grid, currentDie, currentX, currentY]
-    )
     const currentSvgY = svgRow(currentY, rows)
 
     // Dice cell currently under the mouse (SVG coordinates), for the hover indicator
@@ -90,17 +82,15 @@ const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
     const handleSvgMouseLeave = useCallback(() => setHoverCell(null), [])
 
     return (
-        <div className="flex w-full h-full justify-center items-center" data-testid="build-viewer">
-            <div className="w-full h-full flex items-center justify-center p-4">
+        <div className="w-full h-full" data-testid="build-viewer">
+            <div className="w-full h-full">
                 <div
                     ref={containerRef}
-                    className="relative w-full h-full backdrop-blur-xl rounded-2xl border overflow-hidden"
+                    className="relative w-full h-full overflow-hidden"
                     style={{
-                        backgroundColor: 'var(--glass-medium)',
-                        borderColor: 'var(--border-glass)',
                         // Floor keeps the builder usable on very small windows
-                        minWidth: 280,
-                        minHeight: 280,
+                        minWidth: 240,
+                        minHeight: 240,
                         // Keep pinch gestures for the dice grid, not browser zoom/scroll
                         touchAction: 'none',
                     }}
@@ -174,16 +164,6 @@ const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
 
                             {run && <RunBadges run={run} current={current} rows={rows} />}
                         </svg>
-                    </div>
-
-                    {/* Zoom Controls */}
-                    <div className="absolute top-6 right-6 flex flex-col gap-2 z-10">
-                        <button onClick={zoomOut} disabled={!canZoomOut} className={zoomButtonClass} title="Zoom Out">
-                            <Minus className="w-5 h-5" />
-                        </button>
-                        <button onClick={zoomIn} disabled={!canZoomIn} className={zoomButtonClass} title="Zoom In">
-                            <Plus className="w-5 h-5" />
-                        </button>
                     </div>
                 </div>
             </div>

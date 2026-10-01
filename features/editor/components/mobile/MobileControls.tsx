@@ -5,18 +5,12 @@ import MobileCropControls from './MobileCropControls'
 import MobileTuneControls from './MobileTuneControls'
 import MobileBuildControls from './MobileBuildControls'
 
-/**
- * Bottom control area of the mobile editor - renders the step-specific
- * toolbar. The upload step has no bottom controls (the canvas area holds
- * the upload target).
- */
+/** The step-specific controls of the mobile editor, under the stage: each step renders a main row and a tool row. */
 export default function MobileControls() {
     const step = useEditorUiStore(state => state.step)
 
-    if (step === 'upload') return null
-
     return (
-        <div className="flex-shrink-0">
+        <div className="flex flex-col gap-2.5">
             {step === 'crop' && <MobileCropControls />}
             {step === 'tune' && <MobileTuneControls />}
             {step === 'build' && <MobileBuildControls />}

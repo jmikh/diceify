@@ -1,95 +1,74 @@
-/**
- * TunerPanel Component
- *
- * Desktop sidebar with the parameter controls for dice art generation:
- * dice stats, color mode, dice orientation and the tuning sliders
- * (rows, contrast, brightness, sharpening).
- *
- * The individual controls live in ./controls and are shared with the
- * mobile toolbar (MobileTuneControls).
- */
-
 'use client'
 
-import { RotateCw, Palette } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { useBlueprintDownload } from '@/features/editor/hooks/useBlueprintDownload'
 import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
-import DiceStatsCard from './DiceStatsCard'
+import { Inspector, InspectorSection, InspectorToolButton } from '../common/Inspector'
+import { ghostButton, primaryButton } from '../common/ui'
 import ColorModeControl from './controls/ColorModeControl'
 import OrientationControl from './controls/OrientationControl'
 import ParamSlider from './controls/ParamSlider'
-import { tunerSliders } from './controls/sliderConfigs'
-import styles from './TunerPanel.module.css'
+import { tunerSliders, type TunerSliderConfig } from './controls/sliderConfigs'
 
-export default function TunerPanel() {
-  const params = useDocumentStore(state => state.dice)
+/** One tuning slider bound to its dice param. */
+export function TunerSlider({ config, large = false }: { config: TunerSliderConfig; large?: boolean }) {
+  const value = useDocumentStore(state => state.dice[config.key])
   const updateDice = useDocumentStore(state => state.updateDice)
+  return (
+    <ParamSlider
+      large={large}
+      icon={config.icon}
+      label={config.label}
+      min={config.min}
+      max={config.max}
+      step={config.step}
+      value={value}
+      onChange={(next) => updateDice({ [config.key]: next })}
+      formatValue={config.formatValue}
+    />
+  )
+}
+
+/**
+ * Desktop inspector for the tune step: size (rows), tone (contrast, brightness, sharpening), dice colour,
+ * orientation and the blueprint download. The controls are shared with the mobile toolbar (MobileTuneControls).
+ */
+export default function TunerPanel() {
   const { goNext, goBack } = useStepNavigation()
+  const downloadBlueprint = useBlueprintDownload()
+  const [rows, ...tone] = tunerSliders
 
   return (
-    <>
-      <div className={`space-y-6 flex-grow ${styles.scrollContainer} pr-2`}>
-        {/* Stats Section */}
-        <DiceStatsCard />
-
-        {/* Color Mode */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Palette size={16} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
-            <span className="text-[10px] font-medium text-gray-300 uppercase tracking-wider">Color Mode</span>
-          </div>
-          <ColorModeControl />
+    <Inspector
+      title="Tune"
+      description="Shape how the photo turns into dice."
+      footer={
+        <>
+          <button onClick={goBack} className={`${ghostButton} h-12 pl-3 pr-4 text-sm`}>
+            <ChevronLeft size={17} />
+            Crop
+          </button>
+          <button onClick={goNext} className={`${primaryButton} h-12 flex-1 text-[15px]`}>
+            Continue to Build
+            <ChevronRight size={18} />
+          </button>
+        </>
+      }
+    >
+        <TunerSlider config={rows} />
+        <div className="flex flex-col gap-5">
+          {tone.map(config => <TunerSlider key={config.key} config={config} />)}
         </div>
-
-        {/* Dice Rotation (Orientation) */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <RotateCw size={16} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
-            <span className="text-[10px] font-medium text-gray-300 uppercase tracking-wider">Orientation</span>
-          </div>
-          <OrientationControl />
-        </div>
-
-        {/* Tuning sliders */}
-        {tunerSliders.map(config => (
-          <ParamSlider
-            key={config.key}
-            icon={config.icon}
-            label={config.label}
-            min={config.min}
-            max={config.max}
-            step={config.step}
-            value={params[config.key]}
-            onChange={(value) => updateDice({ [config.key]: value })}
-            formatValue={config.formatValue}
-          />
-        ))}
-      </div>
-
-      {/* Navigation Buttons */}
-      <div className="flex gap-3 mt-6 pt-6 border-t border-white/10 flex-shrink-0">
-        <button
-          onClick={goBack}
-          className="flex-1 py-3.5 rounded-full border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-semibold transition-all flex items-center justify-center gap-2 text-sm"
-        >
-          ← Back
-        </button>
-
-        <button
-          onClick={goNext}
-          className="
-            flex-1 py-3.5 rounded-full
-            bg-accent-pink hover:bg-accent-pink-light
-            text-white font-semibold
-            shadow-[0_0_20px_rgb(var(--pink-rgb)/0.3)]
-            hover:shadow-[0_0_30px_rgb(var(--pink-rgb)/0.5)]
-            transition-all
-            flex items-center justify-center gap-2 text-sm
-          "
-        >
-          Continue →
-        </button>
-      </div>
-    </>
+      <InspectorSection label="Dice colour">
+        <ColorModeControl />
+      </InspectorSection>
+      <InspectorSection label="Orientation" hint="tap to rotate 90°">
+        <OrientationControl />
+      </InspectorSection>
+      <InspectorSection label="Export">
+        <InspectorToolButton icon={Download} label="Download blueprint" onClick={downloadBlueprint} />
+      </InspectorSection>
+    </Inspector>
   )
 }

@@ -22,7 +22,7 @@ const history = () => useDocumentStore.temporal.getState()
 beforeEach(() => {
   useDocumentStore.setState({ crop: null, dice: DEFAULT_DICE_PARAMS, buildProgress: { x: 0, y: 0 }, buildBaseline: null, name: 'Untitled Project' })
   history().clear()
-  useEditorUiStore.setState({ step: 'upload' })
+  useEditorUiStore.setState({ step: 'crop' })
   useDerivedStore.getState().reset(null)
 })
 
@@ -71,9 +71,9 @@ describe('buildDocument', () => {
     expect(buildDocument().buildProgress).toEqual({ x: 0, y: 0 })
   })
 
-  it('never persists the upload step', () => {
-    useEditorUiStore.setState({ step: 'upload' })
-    expect(buildDocument().step).toBe('crop')
+  it('persists the visible step', () => {
+    useEditorUiStore.setState({ step: 'tune' })
+    expect(buildDocument().step).toBe('tune')
   })
 })
 

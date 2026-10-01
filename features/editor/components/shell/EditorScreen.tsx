@@ -2,45 +2,54 @@
 
 import { Toaster } from 'sonner'
 import BackgroundOrbs from '@/components/BackgroundOrbs'
-import Footer from '@/components/Footer'
 import { useMediaQuery } from '@/lib/media-query'
 import { useUser } from '@/features/account/useUser'
 
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
-import { useProjects } from '@/features/editor/hooks/useProjects'
 import { useAutosave } from '@/features/editor/hooks/useAutosave'
 import { useDicePipeline } from '@/features/editor/hooks/useDicePipeline'
 import { useEditorShortcuts } from '@/features/editor/hooks/useEditorShortcuts'
 import { useEditorBootstrap } from '@/features/editor/hooks/useEditorBootstrap'
+import { useProjectPreviewSync } from '@/features/editor/hooks/useProjectPreviewSync'
+import type { Step } from '@/features/editor/steps'
 
 import EditorHeader from './EditorHeader'
-import DiceStepper from './DiceStepper'
-import UploaderPanel from '../upload/UploaderPanel'
-import UploadMain from '../upload/UploadMain'
 import CropperPanel from '../crop/CropperPanel'
 import CropperMain from '../crop/CropperMain'
 import TunerPanel from '../tune/TunerPanel'
 import TunerMain from '../tune/TunerMain'
+import { DiceStatsStrip } from '../tune/DiceStats'
 import BuilderPanel from '../build/BuilderPanel'
 import BuilderMain from '../build/BuilderMain'
+import BuildControlBar from '../build/BuildControlBar'
 import ResetProgressModal from '../build/ResetProgressModal'
-import MobileBottomBar from '../mobile/MobileBottomBar'
-import MobileControls from '../mobile/MobileControls'
-import ProjectSelectionModal from '../project/ProjectSelectionModal'
+import MobileEditor from '../mobile/MobileEditor'
+import StartScreen from '../start/StartScreen'
 import EditorSignInModal from '../account/EditorSignInModal'
 import LimitReachedModal from '../account/LimitReachedModal'
 import ProFeatureModal from '../account/ProFeatureModal'
+import ShareModal from '../share/ShareModal'
+import { panel } from '../common/ui'
 
-// Below lg the editor switches to a fixed-viewport mobile shell: full-screen canvas with a step bar
-// on top and controls in the thumb zone. Same breakpoint as Tailwind's `lg:` utilities.
+// Below lg the editor switches to the mobile shell (MobileEditor): stage on top, controls in the thumb zone. Same
+// breakpoint as Tailwind's `lg:` utilities.
 const MOBILE_QUERY = '(max-width: 1023.98px)'
 
-const PANEL_CLASS = 'min-h-[650px] max-h-[650px] [@media(min-height:800px)]:max-h-[750px] [@media(min-height:900px)]:max-h-[850px] bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl'
+// The desktop canvas content per step; each renders its own loading state while the dice pipeline regenerates.
+const STEP_MAIN: Record<Step, () => JSX.Element> = {
+  crop: () => <CropperMain />,
+  tune: () => (
+    <div className="w-full h-full p-6">
+      <TunerMain />
+    </div>
+  ),
+  build: () => <BuilderMain />,
+}
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+    <div className="h-[100dvh] flex items-center justify-center relative overflow-hidden">
       <BackgroundOrbs />
       <div className="text-center relative z-10">
         <img src="/favicon.svg" alt="Loading..." className="animate-spin w-12 h-12 mb-4 mx-auto block" />
@@ -50,10 +59,29 @@ function LoadingScreen() {
   )
 }
 
+/** Desktop (direction A): header, canvas panel with its under-canvas strip, inspector on the right. */
+function DesktopEditor({ step }: { step: Step }) {
+  return (
+    <>
+      <EditorHeader />
+      <main className="relative z-10 flex-1 min-h-0 flex gap-4 px-6 pt-2 pb-6">
+        <section aria-label="Canvas" className={`flex-1 min-w-0 flex flex-col rounded-3xl overflow-hidden ${panel}`}>
+          <div className="relative flex-1 min-h-0">{STEP_MAIN[step]()}</div>
+          {step === 'tune' && <DiceStatsStrip />}
+          {step === 'build' && <BuildControlBar />}
+        </section>
+        <aside aria-label="Settings" className={`w-[344px] flex-shrink-0 flex flex-col rounded-3xl ${panel}`}>
+          {step === 'crop' && <CropperPanel />}
+          {step === 'tune' && <TunerPanel />}
+          {step === 'build' && <BuilderPanel />}
+        </aside>
+      </main>
+    </>
+  )
+}
+
 export default function EditorScreen() {
   const { status } = useUser()
-
-  const { projects, load, createFromDraft, startNewProject, remove } = useProjects()
 
   // Single autosave pipeline: watches the store, persists the snapshot
   // (project row when a project is loaded, local draft otherwise)
@@ -69,12 +97,14 @@ export default function EditorScreen() {
   // Session / URL / draft arrival sequence; flips boot to 'ready'
   useEditorBootstrap()
 
+  // The open project's thumbnail follows its cropped photo
+  useProjectPreviewSync()
+
   // Store state
   const step = useEditorUiStore(state => state.step)
-  const modal = useEditorUiStore(state => state.modal)
-  const closeModal = useEditorUiStore(state => state.closeModal)
+  const startOpen = useEditorUiStore(state => state.startOpen)
 
-  const hasDraft = useProjectStore(state => state.imageBlob !== null && state.projectId === null)
+  const hasImage = useProjectStore(state => state.imageSrc !== null)
   const boot = useProjectStore(state => state.boot)
 
   const isMobile = useMediaQuery(MOBILE_QUERY)
@@ -84,100 +114,26 @@ export default function EditorScreen() {
     return <LoadingScreen />
   }
 
-  // "Create" with a name: save the waiting draft as that project, or start a fresh one on the upload step
-  const handleCreateNew = (name: string) => {
-    if (hasDraft) createFromDraft(name)
-    else startNewProject(name)
-  }
-
-  const projectProps = {
-    projects,
-    onSelectProject: load,
-    onCreateNew: handleCreateNew,
-    onDeleteProject: remove,
-  }
-
-  // Render main content based on current step. Steps render their own
-  // loading state while the dice pipeline regenerates missing derived data.
-  const renderMainContent = () => {
-    switch (step) {
-      case 'upload': return <UploadMain />
-      case 'crop': return <CropperMain />
-      case 'tune': return <TunerMain />
-      case 'build': return <BuilderMain />
-    }
-  }
-
+  // The whole editor is one viewport: nothing scrolls the page
   return (
-    <div className={`flex flex-col relative overflow-hidden ${isMobile ? 'h-[100dvh]' : 'min-h-screen'}`}>
+    <div className="h-[100dvh] flex flex-col relative overflow-hidden">
       <BackgroundOrbs />
 
-      {/* Header - desktop only; on mobile its functions fold into the bottom bar menu */}
-      {!isMobile && <EditorHeader {...projectProps} />}
-
-      {/* Main Content Area */}
-      {isMobile ? (
-        /* Mobile: fixed viewport - canvas fills, controls and step bar together in the thumb zone */
-        <main
-          className="relative flex-1 min-h-0 flex flex-col px-2 gap-2 z-10"
-          style={{
-            paddingTop: 'calc(env(safe-area-inset-top) + 0.25rem)',
-            paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)',
-          }}
-        >
-          <div className="flex-1 min-h-0 relative flex items-center justify-center overflow-hidden bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 shadow-2xl">
-            {renderMainContent()}
-          </div>
-
-          <MobileControls />
-
-          <MobileBottomBar {...projectProps} />
-        </main>
+      {/* No photo yet (or "New project" over the open one): the Start screen */}
+      {!hasImage || startOpen ? (
+        <StartScreen />
+      ) : isMobile ? (
+        <MobileEditor step={step} />
       ) : (
-        <main className="relative p-1 sm:p-4 flex-grow">
-          {/* Center: Stepper */}
-          <div className="flex justify-center items-center mb-4">
-            <DiceStepper />
-          </div>
-
-          {/* Step Content */}
-          <div className="w-full mx-auto px-4 flex flex-row gap-6 items-stretch justify-center h-auto min-h-[calc(100vh-180px)]">
-            {/* LEFT PANEL AREA - Sidebar */}
-            <div className={`flex-shrink-0 flex flex-col w-[350px] min-w-[350px] max-w-[350px] ${PANEL_CLASS}`}>
-              {step === 'upload' && <UploaderPanel />}
-              {step === 'crop' && <CropperPanel />}
-              {step === 'tune' && <TunerPanel />}
-              {step === 'build' && <BuilderPanel />}
-            </div>
-
-            {/* MAIN CONTENT AREA */}
-            <div className={`flex items-center justify-center relative flex-grow w-auto min-w-[400px] max-w-[850px] overflow-hidden ${PANEL_CLASS}`}>
-              {renderMainContent()}
-            </div>
-          </div>
-        </main>
+        <DesktopEditor step={step} />
       )}
 
+      {/* Modals and toasts mounted once, over the Start screen and the editor alike */}
       <EditorSignInModal />
-
-      {/* Projects dashboard: opened on arrival (save the draft / pick a project) and on the plan limit */}
-      <ProjectSelectionModal
-        isOpen={modal === 'projects'}
-        onClose={closeModal}
-        onCreateNew={handleCreateNew}
-        onSelectProject={load}
-        onDeleteProject={remove}
-        projects={projects}
-        hasCurrentState={hasDraft}
-      />
-
       <LimitReachedModal />
       <ProFeatureModal />
       <ResetProgressModal />
-
-      {/* Footer - desktop only; the mobile shell is a fixed viewport */}
-      {!isMobile && <Footer />}
-
+      <ShareModal />
       <Toaster theme="dark" position="bottom-center" closeButton />
     </div>
   )

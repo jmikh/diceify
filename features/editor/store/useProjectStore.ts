@@ -21,6 +21,8 @@ interface ProjectState {
   saveStatus: SaveStatus
   lastSaved: Date | null
   projects: ProjectSummary[]
+  /** Thumbnail URL by project id (signed URLs from the list, data URLs for thumbnails written this session). */
+  previews: Record<string, string>
 
   setBoot: (boot: 'booting' | 'ready') => void
   setProjectId: (id: string | null) => void
@@ -30,6 +32,8 @@ interface ProjectState {
   setSaveStatus: (status: SaveStatus) => void
   setLastSaved: (date: Date | null) => void
   setProjects: (projects: ProjectSummary[]) => void
+  setPreviews: (previews: Record<string, string>) => void
+  setPreview: (projectId: string, url: string) => void
 }
 
 export const useProjectStore = create<ProjectState>()(
@@ -42,6 +46,7 @@ export const useProjectStore = create<ProjectState>()(
     saveStatus: 'idle',
     lastSaved: null,
     projects: [],
+    previews: {},
 
     setBoot: (boot) => set({ boot }),
     setProjectId: (projectId) => set({ projectId }),
@@ -56,5 +61,7 @@ export const useProjectStore = create<ProjectState>()(
     setSaveStatus: (saveStatus) => set({ saveStatus }),
     setLastSaved: (lastSaved) => set({ lastSaved }),
     setProjects: (projects) => set({ projects }),
+    setPreviews: (previews) => set({ previews }),
+    setPreview: (projectId, url) => set((state) => ({ previews: { ...state.previews, [projectId]: url } })),
   })),
 )

@@ -1,21 +1,20 @@
-// Plan catalogue: limits and display/pricing metadata. Values mirror the current site exactly.
+// Plan catalogue: limits and display/pricing metadata. Projects are unlimited on every plan (G1).
 
 export type Plan = 'explorer' | 'creator' | 'studio' | 'lifetime'
 
 export const PLANS: readonly Plan[] = ['explorer', 'creator', 'studio', 'lifetime']
 
 export interface PlanLimits {
-  projectLimit: number
   /** Rows a user may build; `null` = unlimited (never `Infinity`: it does not survive JSON). */
   builderRowLimit: number | null
   hasSvgExport: boolean
 }
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
-  explorer: { projectLimit: 1, builderRowLimit: 5, hasSvgExport: false },
-  creator: { projectLimit: 1, builderRowLimit: null, hasSvgExport: true },
-  studio: { projectLimit: 5, builderRowLimit: null, hasSvgExport: true },
-  lifetime: { projectLimit: 5, builderRowLimit: null, hasSvgExport: true },
+  explorer: { builderRowLimit: 5, hasSvgExport: false },
+  creator: { builderRowLimit: null, hasSvgExport: true },
+  studio: { builderRowLimit: null, hasSvgExport: true },
+  lifetime: { builderRowLimit: null, hasSvgExport: true },
 }
 
 /** What a user can buy (the `plan` sent to the billing checkout route). */

@@ -1,5 +1,6 @@
-// The `project-images` bucket: one immutable JPEG per project at `{uid}/{projectId}/original.jpg`, RLS-scoped to
-// the owner's folder. No signed URLs — the client downloads the Blob and renders it through an object URL.
+// The `project-images` bucket, RLS-scoped to the owner's folder. Per project: the immutable original at
+// `{uid}/{projectId}/original.jpg` (downloaded as a Blob, rendered through an object URL) and a small `preview.jpg`
+// thumbnail of the cropped photo next to it (overwritten whenever the crop changes, shown in lists through signed URLs).
 //
 // storage-api answers most failures with HTTP 400 and the real code in the body (`statusCode: '403' | '404' |
 // '415'`, C1 finding); storage-js exposes that body code as `StorageApiError.statusCode`, so mapping keys on it and
@@ -11,6 +12,15 @@ export const PROJECT_IMAGES_BUCKET = 'project-images'
 
 export function projectImagePath(userId: string, projectId: string): string {
   return `${userId}/${projectId}/original.jpg`
+}
+
+export function projectPreviewPath(userId: string, projectId: string): string {
+  return `${userId}/${projectId}/preview.jpg`
+}
+
+/** The thumbnail lives next to the original: same folder, `preview.jpg`. */
+export function previewPathFor(imagePath: string): string {
+  return imagePath.replace(/[^/]*$/, 'preview.jpg')
 }
 
 export type ProjectStorageErrorCode = 'NOT_FOUND' | 'FORBIDDEN' | 'UNSUPPORTED_TYPE' | 'TOO_LARGE' | 'EXISTS' | 'UNKNOWN'
@@ -86,9 +96,27 @@ export async function downloadProjectImage(path: string): Promise<Blob> {
   return data
 }
 
-/** Remove the object; a missing object is not an error (the row may have outlived it, or vice versa). */
-export async function removeProjectImage(path: string): Promise<void> {
-  const { error } = await bucket().remove([path])
+/** Write (or replace) the project's thumbnail. */
+export async function uploadProjectPreview(path: string, blob: Blob): Promise<void> {
+  const { error } = await bucket().upload(path, blob, { contentType: 'image/jpeg', upsert: true })
+  if (error) throw mapStorageError(error)
+}
+
+/** Signed URLs by path; paths without an object (or refused) are left out. */
+export async function signedUrls(paths: string[], expiresInSeconds = 3600): Promise<Map<string, string>> {
+  const urls = new Map<string, string>()
+  if (paths.length === 0) return urls
+  const { data, error } = await bucket().createSignedUrls(paths, expiresInSeconds)
+  if (error) throw mapStorageError(error)
+  for (const entry of data) {
+    if (!entry.error && entry.path && entry.signedUrl) urls.set(entry.path, entry.signedUrl)
+  }
+  return urls
+}
+
+/** Remove the objects; missing ones are not an error (the row may have outlived them, or vice versa). */
+export async function removeProjectObjects(paths: string[]): Promise<void> {
+  const { error } = await bucket().remove(paths)
   if (!error) return
   const mapped = mapStorageError(error)
   if (mapped.code !== 'NOT_FOUND') throw mapped

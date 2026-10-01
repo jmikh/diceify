@@ -1,12 +1,12 @@
 // The editor's step machine: pure data + transition rules. `useStepNavigation` applies them to the stores.
+// Uploading is not a step: a photo starts a project (Start screen), which then goes crop → tune → build.
 
-import type { GridPos } from '@/core/dice'
+import type { DocumentStep, GridPos } from '@/core/dice'
 
-export const STEPS = ['upload', 'crop', 'tune', 'build'] as const
-export type Step = (typeof STEPS)[number]
+export const STEPS = ['crop', 'tune', 'build'] as const satisfies readonly DocumentStep[]
+export type Step = DocumentStep
 
 export const STEP_LABELS: Record<Step, string> = {
-  upload: 'Upload',
   crop: 'Crop',
   tune: 'Tune',
   build: 'Build',
@@ -22,11 +22,9 @@ export function prevStep(step: Step): Step | null {
   return STEPS[stepIndex(step) - 1] ?? null
 }
 
-/** May the user leave `step` forwards? (upload needs an image, crop needs a crop; tune always; build has no next.) */
-export function canAdvance(step: Step, state: { hasImage: boolean; hasCrop: boolean }): boolean {
+/** May the user leave `step` forwards? (crop needs a crop; tune always; build has no next.) */
+export function canAdvance(step: Step, state: { hasCrop: boolean }): boolean {
   switch (step) {
-    case 'upload':
-      return state.hasImage
     case 'crop':
       return state.hasCrop
     case 'tune':
@@ -34,6 +32,11 @@ export function canAdvance(step: Step, state: { hasImage: boolean; hasCrop: bool
     case 'build':
       return false
   }
+}
+
+/** May the user jump straight to `step` (step tabs)? Crop always; tune and build once a crop exists. */
+export function canEnter(step: Step, state: { hasCrop: boolean }): boolean {
+  return step === 'crop' || state.hasCrop
 }
 
 /** Leaving the build step with progress needs a confirmation (the progress may be reset by a parameter change). */

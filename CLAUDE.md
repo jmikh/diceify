@@ -7,19 +7,22 @@
 
 Photo → dice-art editor. **No server of our own**: a static Next.js 14 export (`output: 'export'`, `out/`) on
 Cloudflare Pages, the browser talks to Supabase (Auth + Postgres + Storage) directly under RLS, and the only server
-code is two Supabase Edge Functions (`billing`, `stripe-webhook`). Sentry client-side only; GA4 via `@next/third-parties`.
+code is two Supabase Edge Functions (`billing`, `stripe-webhook`) plus one Cloudflare Pages Function (`functions/s/[id].ts`:
+social card tags for share links). Sentry client-side only; GA4 via `@next/third-parties`.
 
 ## Architecture map
 
 ```
 app/           routing glue only: (marketing)/ landing, blog, gallery, dice-art, privacy, terms; (editor)/ editor, account
 core/          PURE TS (no DOM, no React, no app imports; own tsconfig, lib es2022): dice/ pipeline, build math, svg,
-               document schema; billing/ entitlements + plans. README.md = algorithm spec (Swift-portable). Fixtures + tests.
-lib/           browser/platform adapters: supabase/ (client, auth, profile, projects, storage, keepalive, billing,
-               generated database.types.ts), image/ (decode, crop, rasterize), report-error.ts (the only Sentry importer),
+               document schema; billing/ entitlements + plans; share/ ids, URLs, copy, card layout, meta tags.
+               README.md = algorithm spec (Swift-portable). Fixtures + tests.
+lib/           browser/platform adapters: supabase/ (client, auth, profile, projects, shares, storage, keepalive, billing,
+               generated database.types.ts), image/ (decode, crop, rasterize, shareCard), report-error.ts (the only Sentry importer),
                env.public.ts, media-query.ts
-features/      editor/ (store/, hooks/, components/{shell,upload,crop,tune,build,project,account,mobile}, steps.ts),
-               marketing/ (components, blog/data.ts), account/ (useUser, SignInModal, AnalyticsTracker), billing/ (cards, AccountScreen)
+features/      editor/ (store/, hooks/, components/{shell,start,crop,tune,build,project,share,account,mobile,common}, steps.ts),
+               marketing/ (components incl. ShareView, blog/data.ts), account/ (useUser, SignInModal, AnalyticsTracker), billing/ (cards, AccountScreen)
+functions/     Cloudflare Pages Functions (Workers runtime, own tsconfig): s/[id].ts = share page + its og/twitter tags
 components/    Logo, Footer, BackgroundOrbs (shared, dumb)
 styles/        base.css, marketing.css, editor.css       supabase/  config.toml, migrations/, functions/{_shared,billing,stripe-webhook}
 scripts/       gen-fixtures.ts, migrate-from-prisma.ts (+ migrate/ helpers)   docs/  DEPLOY.md, STRIPE_TESTING.md   plans/revamp/  plan + step docs
@@ -29,6 +32,7 @@ Import rules (ESLint `no-restricted-imports`, all `error`): `core` → only `cor
 `lib`, `components` (never `features`/`app`). `features/*` → `core`, `lib`, `components`; `features/{marketing,account,billing}`
 never import `features/editor`; nothing imports `app`. `app` → `@/features`, `@/components`, `@/lib`, `@/core`, `@/styles`.
 `supabase/functions`: a function imports its own folder + `../_shared`; `_shared` only itself; bare specifiers from `deno.json`.
+`functions/` (Pages): its own folder + `core/share` only (relative).
 `@sentry/*` only in `lib/report-error.ts` (+ `instrumentation-client.ts`, `next.config.js`) — use `reportError`/`setErrorUser`.
 
 ## Core (`core/dice`)
@@ -45,21 +49,32 @@ never import `features/editor`; nothing imports `app`. `app` → `@/features`, `
 - `useDocumentStore` (zustand + zundo): `crop`, `dice`, `buildProgress`, `buildBaseline`, `name`. **Undo tracks only
   `crop` + `dice`**; slider drags go through `documentHistoryBatcher` (one entry per interaction); widget/store reconcile
   writes use `untracked()`. `replaceDocument`/`uploadImage`/`resetEditor` clear history.
-- `useEditorUiStore`: `step`, one `modal` at a time. `useDerivedStore`: grid/stats/preview written by `useDicePipeline`.
-  `useProjectStore`: `boot`, `projectId`, `cloudVersion`, image (object URL + Blob), `saveStatus`, `projects`.
+- `useEditorUiStore`: `step` (crop → tune → build; uploading is the Start screen, not a step), `startOpen`, one `modal`
+  at a time. `useDerivedStore`: grid/stats/preview written by `useDicePipeline`. `useProjectStore`: `boot`, `projectId`,
+  `cloudVersion`, image (object URL + Blob), `saveStatus`, `projects`, `previews` (thumbnails).
+- Shell: one fixed viewport (no page scroll). Desktop = header + canvas panel (+ under-canvas strip) + inspector;
+  mobile (`< lg`) = `MobileEditor`. Shared class strings in `components/common/ui.ts`; filled buttons use `--pink-strong`.
 - Autosave (`store/autosave.ts`): whole snapshot, 1.5 s debounce, cloud save is CAS on `cloud_version` (conflict → reload +
   toast); anonymous = local draft (`localStorage` doc + IndexedDB image). Step transitions only via `useStepNavigation`.
+
+## Sharing
+
+`/s/<id>` = static `share.html` + the Pages Function's meta tags. A share = immutable `shares` row + `share-images/<id>.jpg`
+(public bucket, 1200×630 card rendered client-side); row first, then upload (storage policy needs the own row); public read
+only via the `get_share` RPC; no update/delete/unshare. Sign-in required, free on every plan. Links carry UTM tags
+(`core/share/urls.ts`); GA4 events `share_create`, `share`, `share_view`, `share_cta_click`.
 
 ## Gating
 
 `useEntitlements()` / `useGate()` are the **only** gating sources (`deriveEntitlements` in `core/billing/entitlements.ts`;
-`builderRowLimit: null` = unlimited, never `Infinity`). SQL `effective_plan`/`project_limit` in the initial migration
-**must mirror** `entitlements.ts`/`plans.ts` — change both together.
+`builderRowLimit: null` = unlimited, never `Infinity`). SQL `effective_plan` in the initial migration **must mirror**
+`entitlements.ts` — change both together. Projects are unlimited on every plan (no SQL limit since G1).
 
 ## Data
 
 - RLS owner-only on `profiles` (read only from the client) and `projects` (CRUD own rows); storage bucket
-  `project-images`, path `{uid}/{projectId}/original.jpg`, **immutable per project** (DB trigger) — a new photo = a new project.
+  `project-images`, path `{uid}/{projectId}/original.jpg`, **immutable per project** (DB trigger) — a new photo = a new project;
+  `preview.jpg` next to it is the thumbnail (the cropped photo, overwritten when the crop changes, listed via signed URLs). Projects are unlimited.
 - `cloud_version` is bumped by a trigger (client values ignored); saves are CAS `eq('cloud_version', expected)`.
 - Billing columns on `profiles` are written **only** by the edge functions (service role), recomputed from Stripe on
   every webhook/sync, and once by the legacy migration script (`scripts/migrate-from-prisma.ts`). Never write them from the client or SQL migrations.
@@ -73,10 +88,11 @@ never import `features/editor`; nothing imports `app`. `app` → `@/features`, `
 | `npm run dev:prod` / `npm run build:prod` | same against the HOSTED project (`.env.prod.local`, gitignored; hosted functions, no local serve) |
 | `npm test` / `npm run test:watch` | vitest (node env; `core/`, `lib/`, `features/`, `supabase/functions/_shared/`, `scripts/`) |
 | `npm run lint` | ESLint 9 flat config — must be 0 errors, 0 warnings |
-| `npm run typecheck` | `tsc --noEmit && tsc -p core` (covers `scripts/`; `rm -rf .next` first after deleting a route) |
+| `npm run typecheck` | `tsc --noEmit && tsc -p core && tsc -p functions` (covers `scripts/`; `rm -rf .next` first after deleting a route) |
 | `npm run db:start\|stop\|status\|reset\|migration\|types\|push` | local Supabase stack (ports 5433x) / hosted push; `db:types:prod` diffs types against the linked project |
 | `npm run functions:serve\|check\|deploy` | edge functions locally (`supabase/functions/.env`) / `deno check` / deploy |
 | `npm run stripe:listen` | forward Stripe webhooks to the local `stripe-webhook` function |
+| `npm run pages:dev` | `wrangler pages dev out` (after `npm run build`): the static site + the share Function, vars from `.dev.vars` |
 | `npm run gen-fixtures` | regenerate `core/dice/__fixtures__` (sharp) |
 | `npm run migrate:legacy -- [--dry-run] …` | legacy Prisma DB → Supabase (read-only source; local target unless `--target=hosted`; `docs/DEPLOY.md`) |
 

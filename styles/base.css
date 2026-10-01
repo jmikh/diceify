@@ -40,6 +40,7 @@
   --pink-rgb: 255 45 146;               /* the one brand pink (#FF2D92); everything pink derives from it */
   --pink: rgb(var(--pink-rgb));
   --pink-light: #FF5CAD;
+  --pink-strong: #E0127A;               /* filled buttons: white text on it passes 4.5:1 (on --pink it does not) */
   --pink-glow: rgb(var(--pink-rgb) / 0.25);
   --pink-glow-soft: rgb(var(--pink-rgb) / 0.08);
 

@@ -3,29 +3,10 @@
 import type { ColorMode } from '@/core/dice'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 
-const options: { mode: ColorMode; tooltip: string; swatch: JSX.Element }[] = [
-    {
-        mode: 'both',
-        tooltip: 'Mixed',
-        swatch: (
-            // Diagonally split square
-            <svg width="18" height="18" viewBox="0 0 18 18" className="relative z-10">
-                <path d="M1 1 L17 17 L17 1 Z" fill="white" />
-                <path d="M1 1 L1 17 L17 17 Z" fill="black" />
-                <rect x="0.5" y="0.5" width="17" height="17" fill="none" stroke="white" strokeWidth="1" />
-            </svg>
-        )
-    },
-    {
-        mode: 'black',
-        tooltip: 'Black',
-        swatch: <div className="w-4 h-4 rounded-sm border relative z-10" style={{ backgroundColor: 'black', borderColor: 'white' }} />
-    },
-    {
-        mode: 'white',
-        tooltip: 'White',
-        swatch: <div className="w-4 h-4 rounded-sm border relative z-10" style={{ backgroundColor: 'white', borderColor: 'white' }} />
-    }
+const options: { mode: ColorMode; label: string; swatch: string }[] = [
+    { mode: 'both', label: 'Mixed', swatch: 'linear-gradient(135deg, #fff 0 50%, #000 50% 100%)' },
+    { mode: 'black', label: 'Black', swatch: '#000' },
+    { mode: 'white', label: 'White', swatch: '#fff' },
 ]
 
 interface ColorModeControlProps {
@@ -33,48 +14,30 @@ interface ColorModeControlProps {
     large?: boolean
 }
 
+/** Which dice colours the art uses: a three-way segmented control. */
 export default function ColorModeControl({ large = false }: ColorModeControlProps) {
     const colorMode = useDocumentStore(state => state.dice.colorMode)
     const updateDice = useDocumentStore(state => state.updateDice)
 
     return (
-        <div
-            className="flex w-full rounded-lg overflow-hidden border"
-            style={{
-                backgroundColor: 'var(--glass-light)',
-                borderColor: 'var(--border-glass)'
-            }}
-        >
-            {options.map((option, index) => (
-                <button
-                    key={option.mode}
-                    onClick={() => updateDice({ colorMode: option.mode })}
-                    // Round the outer corners of the edge buttons so the inset
-                    // selection ring follows the container's rounded corners
-                    className={`flex-1 ${large ? 'h-12' : 'h-10'} flex items-center justify-center transition-all relative group ${index === 0 ? 'rounded-l-lg' : ''} ${index === options.length - 1 ? 'rounded-r-lg' : ''}`}
-                    style={{
-                        boxShadow: colorMode === option.mode ? `inset 0 0 0 2px var(--pink)` : 'none',
-                        backgroundColor: 'transparent',
-                        borderRight: index < options.length - 1 ? `1px solid var(--border-glass)` : undefined
-                    }}
-                >
-                    {option.swatch}
-                    {/* Hover indicator */}
-                    <div
-                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                        style={{
-                            background: `radial-gradient(circle at center, var(--pink-glow), transparent)`
-                        }}
-                    />
-                    {/* Tooltip */}
-                    <div
-                        className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20"
-                        style={{ backgroundColor: 'rgba(10, 0, 20, 0.95)', color: 'white' }}
+        <div role="group" aria-label="Dice colour" className="grid grid-cols-3 gap-1 p-1 rounded-[13px] bg-white/[0.04] border border-white/[0.08]">
+            {options.map(option => {
+                const on = colorMode === option.mode
+                return (
+                    <button
+                        key={option.mode}
+                        onClick={() => updateDice({ colorMode: option.mode })}
+                        aria-pressed={on}
+                        className={`${large ? 'h-12' : 'h-10'} flex items-center justify-center gap-2 rounded-[9px] text-[13px] font-medium transition-colors border ${on
+                            ? 'border-accent-pink/60 bg-accent-pink/[0.14] text-white'
+                            : 'border-transparent text-white/75 hover:text-white hover:bg-white/[0.05]'
+                            }`}
                     >
-                        {option.tooltip}
-                    </div>
-                </button>
-            ))}
+                        <span aria-hidden className="w-3.5 h-3.5 rounded-[4px] border border-white/55 flex-shrink-0" style={{ background: option.swatch }} />
+                        {option.label}
+                    </button>
+                )
+            })}
         </div>
     )
 }

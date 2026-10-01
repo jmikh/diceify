@@ -7,7 +7,7 @@ import {
   deleteProject,
   getProject,
   listProjects,
-  ProjectLimitError,
+  projectPreviewUrls,
   type ProjectSummary,
 } from '@/lib/supabase/projects'
 import { downloadProjectImage } from '@/lib/supabase/storage'
@@ -21,11 +21,24 @@ import { useProjectStore } from '@/features/editor/store/useProjectStore'
 
 const message = (error: unknown) => (error instanceof Error && error.message ? error.message : String(error))
 
-/** Refresh the list into the store; returns it. Throws on failure (callers decide whether to toast). */
+/**
+ * Refresh the list into the store; returns it. Throws on failure (callers decide whether to toast). Thumbnails
+ * follow in the background: they are decoration, a failure leaves the list without them.
+ */
 export async function refreshProjects(): Promise<ProjectSummary[]> {
   const projects = await listProjects()
   useProjectStore.getState().setProjects(projects)
+  projectPreviewUrls(projects)
+    .then((previews) => useProjectStore.getState().setPreviews(previews))
+    .catch((error) => reportError(error, { where: 'projects-previews' }))
   return projects
+}
+
+/** Leave whatever overlay was up: a project is current now. */
+function closeOverlays(): void {
+  const ui = useEditorUiStore.getState()
+  ui.closeModal()
+  ui.closeStart()
 }
 
 /**
@@ -43,7 +56,7 @@ export async function loadProject(id: string): Promise<boolean> {
     const blob = await downloadProjectImage(record.imagePath)
     loadProjectIntoEditor(record, blob)
     markClean()
-    useEditorUiStore.getState().closeModal()
+    closeOverlays()
     // The draft has served its purpose once a project is current
     void clearDraft()
     return true
@@ -55,8 +68,36 @@ export async function loadProject(id: string): Promise<boolean> {
 }
 
 /**
+ * The current draft (image + document) becomes a project: upload, insert, switch the autosave to the row. On failure
+ * it stays a draft (the Start screen's draft card offers the save again).
+ */
+export async function saveDraftAsProject(name: string): Promise<boolean> {
+  const { imageBlob, projectId } = useProjectStore.getState()
+  if (!imageBlob || projectId) return false
+  await flushSave()
+  try {
+    useDocumentStore.getState().setName(name)
+    const record = await createProject({ name, document: buildDocument(), imageBlob })
+    const project = useProjectStore.getState()
+    project.setProjectId(record.id)
+    project.setCloudVersion(record.cloudVersion)
+    project.setLastSaved(new Date(record.updatedAt))
+    project.setSaveStatus('saved')
+    markClean()
+    closeOverlays()
+    void clearDraft()
+    await refreshProjects().catch((error) => reportError(error, { where: 'projects-list' }))
+    return true
+  } catch (error) {
+    reportError(error, { where: 'projects-create' })
+    toast.error(`Could not save the project (${message(error)}).`)
+    return false
+  }
+}
+
+/**
  * Project actions for the UI (signed-in users only; the anonymous editor never calls these).
- * Every failure is a toast; the plan limit re-opens the projects modal, whose capacity banner is the limit UI.
+ * Every failure is a toast.
  */
 export function useProjects() {
   const userId = useUser().user?.id
@@ -74,42 +115,13 @@ export function useProjects() {
 
   const load = useCallback((id: string) => loadProject(id), [])
 
-  /** The current draft (image + document) becomes a project: upload, insert, switch the autosave to the row. */
+  /** The current draft (image + document) becomes a project (signed in only). */
   const createFromDraft = useCallback(
-    async (name: string): Promise<boolean> => {
-      const { imageBlob, projectId } = useProjectStore.getState()
-      if (!userId || !imageBlob || projectId) return false
-      await flushSave()
-      try {
-        useDocumentStore.getState().setName(name)
-        const record = await createProject({ name, document: buildDocument(), imageBlob })
-        const project = useProjectStore.getState()
-        project.setProjectId(record.id)
-        project.setCloudVersion(record.cloudVersion)
-        project.setLastSaved(new Date(record.updatedAt))
-        project.setSaveStatus('saved')
-        markClean()
-        useEditorUiStore.getState().closeModal()
-        void clearDraft()
-        await refresh()
-        return true
-      } catch (error) {
-        if (error instanceof ProjectLimitError) {
-          const list = await refresh()
-          const limit = error.limit ?? list.length
-          toast.error(`Project limit reached (${error.current ?? list.length}/${limit}). Delete a project to save this one.`)
-          useEditorUiStore.getState().openModal('projects')
-          return false
-        }
-        reportError(error, { where: 'projects-create' })
-        toast.error(`Could not save the project (${message(error)}).`)
-        return false
-      }
-    },
-    [userId, refresh],
+    async (name: string): Promise<boolean> => (userId ? saveDraftAsProject(name) : false),
+    [userId],
   )
 
-  /** Detach from the current project and start over on the upload step; the next upload creates the project. */
+  /** Detach from the current project and reset the editor (the Start screen); the next photo creates the project. */
   const startNewProject = useCallback(async (name: string = DEFAULT_PROJECT_NAME) => {
     await flushSave()
     clearProject()

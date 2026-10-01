@@ -87,16 +87,14 @@ describe.skipIf(!ENABLED)('projects + storage (local stack)', () => {
     expect(missing).toEqual({ ok: false, conflict: null })
   })
 
-  it('a second project on the explorer plan → ProjectLimitError {1, 1} and no orphaned object', async () => {
-    const { createProject, ProjectLimitError } = await import('./projects')
-    await expect(createProject({ name: 'Second', document: createDefaultDocument(), imageBlob: jpeg })).rejects.toBeInstanceOf(
-      ProjectLimitError,
-    )
-    try {
-      await createProject({ name: 'Second', document: createDefaultDocument(), imageBlob: jpeg })
-    } catch (error) {
-      expect(error).toMatchObject({ current: 1, limit: 1 })
-    }
+  it('projects are unlimited: an explorer creates more than one (and deleting them leaves no objects)', async () => {
+    const { createProject, deleteProject, listProjects } = await import('./projects')
+    const extra = [
+      await createProject({ name: 'Second', document: createDefaultDocument(), imageBlob: jpeg }),
+      await createProject({ name: 'Third', document: createDefaultDocument(), imageBlob: jpeg }),
+    ]
+    expect((await listProjects()).length).toBe(3)
+    for (const record of extra) await deleteProject(record.id)
     const { data } = await admin.storage.from('project-images').list(userId)
     expect(data?.map((o) => o.name)).toEqual([projectId])
   })
@@ -111,12 +109,24 @@ describe.skipIf(!ENABLED)('projects + storage (local stack)', () => {
     expect(error?.message).toContain('IMAGE_PATH_IMMUTABLE')
   })
 
-  it('deleteProject removes the row and the object', async () => {
+  it('thumbnail: written (and overwritten) next to the original, listed through a signed URL', async () => {
+    const { listProjects, projectPreviewUrls } = await import('./projects')
+    const { projectPreviewPath, uploadProjectPreview } = await import('./storage')
+    expect(await projectPreviewUrls(await listProjects())).toEqual({})
+    await uploadProjectPreview(projectPreviewPath(userId, projectId), jpeg)
+    await uploadProjectPreview(projectPreviewPath(userId, projectId), jpeg)
+    const urls = await projectPreviewUrls(await listProjects())
+    expect(Object.keys(urls)).toEqual([projectId])
+    expect((await fetch(urls[projectId])).status).toBe(200)
+  })
+
+  it('deleteProject removes the row, the image and the thumbnail', async () => {
     const { deleteProject, getProject } = await import('./projects')
-    const { downloadProjectImage } = await import('./storage')
+    const { downloadProjectImage, previewPathFor } = await import('./storage')
     await deleteProject(projectId)
     expect(await getProject(projectId)).toBeNull()
     await expect(downloadProjectImage(imagePath)).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(downloadProjectImage(previewPathFor(imagePath))).rejects.toMatchObject({ code: 'NOT_FOUND' })
     // Idempotent
     await expect(deleteProject(projectId)).resolves.toBeUndefined()
   })

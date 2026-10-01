@@ -59,7 +59,6 @@ describe('toBillingState', () => {
       new Date('2026-09-30T12:00:00.000Z'),
     )
     expect(ent.plan).toBe('studio')
-    expect(ent.projectLimit).toBe(5)
     expect(ent.builderRowLimit).toBeNull()
     expect(ent.accessUntil).toBe('2026-10-15T00:00:00.000Z')
   })

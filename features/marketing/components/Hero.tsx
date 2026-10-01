@@ -1,75 +1,109 @@
 'use client'
 
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { sendGAEvent } from '@next/third-parties/google'
-import Image from 'next/image'
+import type { DiceColor, DiceFace } from '@/core/dice'
+import DiceLens from './DiceLens'
+import DieFace from './DieFace'
+
+// Each portrait is `/images/hero/{id}-dice.webp` + `{id}-photo.webp`. A pair must share framing (the lens shows the
+// photo exactly where the dice are), and every portrait this size so the frame doesn't jump when switching.
+const PORTRAIT_SIZE = { width: 1240, height: 1096 }
+
+const PORTRAITS = [
+    { id: 'kids', label: 'Kids', alt: 'Portrait of a smiling boy turned into dice art' },
+    { id: 'pets', label: 'Pets', alt: 'Portrait of a tabby cat turned into dice art' },
+    { id: 'couples', label: 'Couples', alt: 'Portrait of a smiling couple turned into dice art' },
+]
+
+const portraitImages = (id: string) => ({ dice: `/images/hero/${id}-dice.webp`, photo: `/images/hero/${id}-photo.webp` })
+
+const PROOF_DICE: { face: DiceFace; color: DiceColor }[] = [
+    { face: 6, color: 'black' },
+    { face: 3, color: 'black' },
+    { face: 4, color: 'white' },
+    { face: 1, color: 'white' },
+]
 
 export default function Hero() {
     return (
-        <section className="hero hero--centered">
-            <div className="hero-content text-center mx-auto">
-                <div className="flex flex-col items-center gap-4 mb-4">
-                    <Image
-                        src="/favicon-192x192.png"
-                        alt="Diceify"
-                        width={192}
-                        height={192}
-                        style={{ width: '5rem', height: '5rem' }}
-                    />
-                    <h1 className="!mb-0">Turn photos into <span className="highlight">dice art</span></h1>
-                </div>
-                <p className="mx-auto">Upload a photo, tune the contrast and detail, then follow our step-by-step guide to build stunning mosaic art using standard dice.</p>
-                <div className="hero-buttons justify-center">
+        <section className="hero">
+            <div className="hero-content">
+                <span className="hero-badge">
+                    <img src="/favicon.svg" alt="" className="hero-badge-icon" />
+                    Photo-to-dice mosaic generator
+                </span>
+                <h1>Turn loved ones into <span className="highlight">dice art</span></h1>
+                <p>Upload a photo, tune the contrast and detail, then follow our step-by-step guide to build a mosaic from standard dice.</p>
+                <div className="hero-buttons">
                     <Link
                         href="/editor"
                         className="btn-primary"
                         onClick={() => sendGAEvent('event', 'go_to_editor', { source: 'hero' })}
                     >
+                        <DieFace face={5} color="white" className="hero-button-die" />
                         Start creating
                     </Link>
+                    <Link
+                        href="/dice-art"
+                        className="hero-link"
+                        onClick={() => sendGAEvent('event', 'hub_click', { source: 'hero' })}
+                    >
+                        How dice art works →
+                    </Link>
                 </div>
-                <Link
-                    href="/dice-art"
-                    className="text-sm text-[var(--text-muted)] hover:text-[var(--pink)] transition-colors no-underline"
-                    onClick={() => sendGAEvent('event', 'hub_click', { source: 'hero' })}
-                >
-                    or learn about dice art →
-                </Link>
-                <div className="flex items-center justify-center gap-3 mt-6">
-                    <div className="flex -space-x-2">
-                        {['from-accent-pink to-purple-600', 'from-blue-400 to-cyan-500', 'from-amber-400 to-orange-500', 'from-emerald-400 to-teal-600', 'from-violet-400 to-indigo-500'].map((gradient, i) => (
-                            <div
-                                key={i}
-                                className={`w-8 h-8 rounded-full bg-gradient-to-br ${gradient} border-2 border-[var(--bg-primary)] flex items-center justify-center`}
-                            >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="white" opacity="0.8">
-                                    <circle cx="12" cy="8" r="4" />
-                                    <path d="M20 21a8 8 0 1 0-16 0" />
-                                </svg>
-                            </div>
+                <div className="hero-proof">
+                    <div className="hero-proof-dice">
+                        {PROOF_DICE.map(({ face, color }) => (
+                            <DieFace key={`${color}-${face}`} face={face} color={color} />
                         ))}
                     </div>
-                    <span className="text-sm text-[var(--text-muted)]">
-                        Join <strong className="text-[var(--text-primary)]">5,000+</strong> happy creators
+                    <span>
+                        Join <strong>5,000+</strong> creators building with real dice
                     </span>
                 </div>
             </div>
 
-            {/* Demo video */}
-            <div className="glass" style={{ padding: '0.5rem', maxWidth: '800px', width: '100%' }}>
-                <video
-                    src="/demo-optimized.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="metadata"
-                    style={{ width: '100%', borderRadius: '1rem', display: 'block' }}
-                />
-            </div>
-
-            {/* Decorative glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/15 blur-[120px] rounded-full -z-10 pointer-events-none" />
+            <HeroPortraits />
         </section>
+    )
+}
+
+/** The dice-lens portrait, with a toggle between example subjects. */
+function HeroPortraits() {
+    const [portrait, setPortrait] = useState(PORTRAITS[0])
+    const preloaded = useRef(false)
+
+    // Fetch every portrait once the visitor reaches for the toggle, so a switch doesn't show the old photo
+    // through the new dice while the images load.
+    const preload = () => {
+        if (preloaded.current) return
+        preloaded.current = true
+        for (const { id } of PORTRAITS) {
+            const { dice, photo } = portraitImages(id)
+            new window.Image().src = dice
+            new window.Image().src = photo
+        }
+    }
+
+    return (
+        <figure className="hero-visual">
+            <div
+                role="group"
+                aria-label="Example portrait"
+                className="hero-portrait-toggle"
+                onPointerEnter={preload}
+                onFocus={preload}
+            >
+                {PORTRAITS.map(p => (
+                    <button key={p.id} type="button" aria-pressed={p.id === portrait.id} onClick={() => setPortrait(p)}>
+                        {p.label}
+                    </button>
+                ))}
+            </div>
+            <DiceLens {...portraitImages(portrait.id)} alt={portrait.alt} {...PORTRAIT_SIZE} />
+            <figcaption>Move across the dice: the lens shows the original photo.</figcaption>
+        </figure>
     )
 }

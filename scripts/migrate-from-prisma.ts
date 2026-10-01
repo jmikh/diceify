@@ -4,13 +4,12 @@
 //   --since=YYYY-MM-DD   activity cut-off for unpaid users (default: 30 days ago)
 //   --only=<email>       one legacy user
 //   --no-sync-stripe     skip the Stripe sync after the profile update (default: on when a key is available)
-//   --no-ignore-limit    let the projects_enforce_limit trigger reject over-limit projects (default: bypassed)
 //   --report=<file.json> per-user results (legacy ids; --report-emails adds emails)
 //   --target=hosted      allow a non-local SUPABASE_URL (F2); refused with an sk_test_ key
 //
 // The legacy database is READ ONLY (default_transaction_read_only on the connection). Writes go to the Supabase
 // stack named by SUPABASE_URL / TARGET_DATABASE_URL: auth users through the Admin API, profile + project rows
-// through pg (explicit created_at, trigger toggle), images through the admin storage client. Idempotent by
+// through pg (explicit created_at), images through the admin storage client. Idempotent by
 // profiles.legacy_id / lower(email) and projects.legacy_id. Env resolution: scripts/migrate/env.ts.
 
 import { randomUUID } from 'node:crypto'
@@ -43,14 +42,12 @@ const ROOT = path.resolve(__dirname, '..')
 const BUCKET = 'project-images'
 /** The `_shared/stripe.ts` pin (stripe@20.4.1 types the literal, so a drift fails `typecheck`). */
 const STRIPE_API_VERSION = '2026-02-25.clover'
-const LIMIT_TRIGGER = 'projects_enforce_limit'
 
 interface Options {
   dryRun: boolean
   since: Date
   only: string | undefined
   syncStripe: boolean
-  ignoreLimit: boolean
   report: string | undefined
   reportEmails: boolean
   target: Target
@@ -79,7 +76,6 @@ function parseOptions(argv: string[], now: Date): Options {
       since: { type: 'string' },
       only: { type: 'string' },
       'sync-stripe': { type: 'boolean', default: true },
-      'ignore-limit': { type: 'boolean', default: true },
       report: { type: 'string' },
       'report-emails': { type: 'boolean', default: false },
       target: { type: 'string', default: 'local' },
@@ -91,7 +87,6 @@ function parseOptions(argv: string[], now: Date): Options {
     since: parseSince(values.since, now),
     only: values.only,
     syncStripe: values['sync-stripe'],
-    ignoreLimit: values['ignore-limit'],
     report: values.report,
     reportEmails: values['report-emails'],
     target: values.target,
@@ -280,26 +275,12 @@ async function transcode(data: Buffer): Promise<Transcoded> {
   return { jpeg, factor, width: info.width, height: info.height }
 }
 
-const isProjectLimit = (e: unknown): boolean =>
-  typeof e === 'object' && e !== null && (e as { code?: string }).code === 'P0001' && /PROJECT_LIMIT/.test(errorMessage(e))
-
-/** Insert inside a transaction; with `ignoreLimit` the limit trigger is disabled for the duration of that transaction. */
 async function insertProject(ctx: Ctx, row: LegacyProjectFull, id: string, ownerId: string, imagePath: string, documentJson: string, totalDice: number, completedDice: number) {
-  const { target, opts } = ctx
-  await target.query('begin')
-  try {
-    if (opts.ignoreLimit) await target.query(`alter table public.projects disable trigger ${LIMIT_TRIGGER}`)
-    await target.query(
-      `insert into public.projects (id, owner_id, name, document, image_path, total_dice, completed_dice, legacy_id, created_at, updated_at)
-       values ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10)`,
-      [id, ownerId, projectName(row.name), documentJson, imagePath, totalDice, completedDice, row.id, row.createdAt, row.updatedAt],
-    )
-    if (opts.ignoreLimit) await target.query(`alter table public.projects enable trigger ${LIMIT_TRIGGER}`)
-    await target.query('commit')
-  } catch (e) {
-    await target.query('rollback')
-    throw e
-  }
+  await ctx.target.query(
+    `insert into public.projects (id, owner_id, name, document, image_path, total_dice, completed_dice, legacy_id, created_at, updated_at)
+     values ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10)`,
+    [id, ownerId, projectName(row.name), documentJson, imagePath, totalDice, completedDice, row.id, row.createdAt, row.updatedAt],
+  )
 }
 
 async function migrateProject(ctx: Ctx, ownerId: string | null, row: LegacyProjectFull): Promise<ProjectReport> {
@@ -351,11 +332,6 @@ async function migrateProject(ctx: Ctx, ownerId: string | null, row: LegacyProje
     await insertProject(ctx, row, id, ownerId, imagePath, JSON.stringify(mapped.document), mapped.totalDice, mapped.completedDice)
   } catch (e) {
     await admin.storage.from(BUCKET).remove([imagePath])
-    if (isProjectLimit(e)) {
-      counts.projects.skippedOverLimit++
-      log(`    project ${row.id}: over the plan limit (trigger); skipped`)
-      return { legacyId: row.id, projectId: null, action: 'skipped-over-limit' }
-    }
     return fail(`insert: ${errorMessage(e)}`)
   }
   counts.projects.migrated++
@@ -378,7 +354,7 @@ async function main(): Promise<number> {
     return 2
   }
   log(`target: ${opts.target} (${env.supabaseUrl})${opts.dryRun ? ' — DRY RUN' : ''}`)
-  log(`since: ${opts.since.toISOString()}${opts.only ? ' — only one user' : ''}; ignore-limit: ${opts.ignoreLimit}`)
+  log(`since: ${opts.since.toISOString()}${opts.only ? ' — only one user' : ''}`)
   const stripe = stripeClient(env, opts)
   log(`stripe: ${stripe ? `${stripeMode(env.stripeSecretKey)} mode` : 'sync disabled'}`)
 

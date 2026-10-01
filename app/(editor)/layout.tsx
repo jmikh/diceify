@@ -15,6 +15,9 @@ export const metadata: Metadata = {
     'dice portrait builder',
     'dice mosaic builder',
     'online dice art maker',
+    'personalized photo gift maker',
+    'custom portrait gift',
+    'diy photo gift',
   ],
   openGraph: {
     title: 'Dice Art Builder — Upload, Crop, Tune & Build | Diceify',

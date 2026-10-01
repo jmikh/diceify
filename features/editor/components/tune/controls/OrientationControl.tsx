@@ -1,11 +1,12 @@
 'use client'
 
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
+import DieIcon from '../../common/DieIcon'
 
 const rotatableDice = [
-    { dice: 2 as const, glyph: '⚁', paramKey: 'rotate2' as const },
-    { dice: 3 as const, glyph: '⚂', paramKey: 'rotate3' as const },
-    { dice: 6 as const, glyph: '⚅', paramKey: 'rotate6' as const }
+    { face: 2 as const, paramKey: 'rotate2' as const },
+    { face: 3 as const, paramKey: 'rotate3' as const },
+    { face: 6 as const, paramKey: 'rotate6' as const },
 ]
 
 interface OrientationControlProps {
@@ -13,50 +14,30 @@ interface OrientationControlProps {
     large?: boolean
 }
 
+/** Toggles that turn the pips of the 2, 3 and 6 faces by 90°; each icon shows the face as it will be drawn. */
 export default function OrientationControl({ large = false }: OrientationControlProps) {
     const params = useDocumentStore(state => state.dice)
     const updateDice = useDocumentStore(state => state.updateDice)
 
     return (
-        <div
-            className="flex w-full rounded-lg overflow-hidden border"
-            style={{
-                backgroundColor: 'var(--glass-light)',
-                borderColor: 'var(--border-glass)'
-            }}
-        >
-            {rotatableDice.map((option, index) => (
-                <button
-                    key={option.dice}
-                    onClick={() => updateDice({ [option.paramKey]: !params[option.paramKey] })}
-                    className={`flex-1 ${large ? 'h-12' : 'h-10'} flex items-center justify-center transition-all hover:bg-white/10 relative group`}
-                    style={{
-                        borderRight: index < rotatableDice.length - 1 ? `1px solid var(--border-glass)` : undefined
-                    }}
-                >
-                    {/* Orientation derived from the document so undo/redo animate the glyph too */}
-                    <span
-                        className="inline-block transition-transform"
-                        style={{
-                            transform: `rotate(${params[option.paramKey] ? 0 : 90}deg)`,
-                            transformOrigin: 'center',
-                            transition: 'transform 0.3s ease',
-                            color: 'var(--text-secondary)',
-                            fontSize: '28px',
-                            lineHeight: 1
-                        }}
+        <div role="group" aria-label="Dice orientation" className="grid grid-cols-3 gap-1.5">
+            {rotatableDice.map(option => {
+                const rotated = params[option.paramKey]
+                return (
+                    <button
+                        key={option.face}
+                        onClick={() => updateDice({ [option.paramKey]: !rotated })}
+                        aria-pressed={rotated}
+                        aria-label={`Rotate the ${option.face} faces 90°`}
+                        className={`${large ? 'h-14' : 'h-12'} flex items-center justify-center rounded-xl border transition-colors ${rotated
+                            ? 'border-accent-pink/60 bg-accent-pink/[0.14] text-white'
+                            : 'border-white/[0.08] bg-white/[0.04] text-white/80 hover:bg-white/[0.08] hover:text-white'
+                            }`}
                     >
-                        {option.glyph}
-                    </span>
-                    {/* Hover indicator */}
-                    <div
-                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                        style={{
-                            background: `radial-gradient(circle at center, var(--pink-glow), transparent)`
-                        }}
-                    />
-                </button>
-            ))}
+                        <DieIcon face={option.face} rotated={rotated} size={large ? 30 : 26} />
+                    </button>
+                )
+            })}
         </div>
     )
 }

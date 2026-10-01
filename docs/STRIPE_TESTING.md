@@ -27,8 +27,9 @@ npm run stripe:listen       # terminal 3: forwards test-mode events to the local
 npm run dev                 # terminal 4
 ```
 
-`stripe:listen` uses the Stripe CLI login (`stripe login`). If the CLI is logged into another account, target the key's account
-explicitly: `npm run stripe:listen -- --api-key sk_test_…` (same for `stripe trigger`). Type-check the functions with
+`stripe:listen` uses the Stripe CLI's `diceify` profile (`stripe login --project-name diceify`; the CLI key expires after 90
+days), so the CLI's default login can stay on another account. Pass `--project-name diceify` to `stripe trigger` and other CLI
+commands too. Type-check the functions with
 `npm run functions:check` (Deno, not part of `npm run typecheck`).
 
 ## Test cards

@@ -134,6 +134,21 @@ export default defineConfig(
       ],
     },
   },
+  {
+    // Cloudflare Pages Functions (Workers runtime, bundled by wrangler): relative imports of core/share only.
+    files: ['functions/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { regex: '^(?!\\./|(\\.\\./)+core/share(/|$))', message: 'Pages Functions import their own folder and core/share only.' },
+            NO_SENTRY,
+          ],
+        },
+      ],
+    },
+  },
   boundary(['features/marketing/**', 'features/account/**', 'features/billing/**'], [...NO_EDITOR, ...NO_APP]),
   boundary(['features/editor/**'], NO_APP),
   boundary(['lib/**', 'components/**'], [...NO_FEATURES, ...NO_APP], { ignores: ['lib/report-error.ts'] }),

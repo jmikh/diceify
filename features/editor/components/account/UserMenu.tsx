@@ -1,30 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useUser } from '@/features/account/useUser'
 import PlanBadge from '@/features/billing/PlanBadge'
 import { formatBillingDate } from '@/features/billing/planCopy'
+import { useDismiss } from '@/features/editor/hooks/useDismiss'
+import { popover } from '../common/ui'
 
-// Avatar + account dropdown for the editor header (rendered only when signed in)
+// Avatar + account dropdown for the editor header and the mobile top bar (rendered only when signed in)
 export default function UserMenu() {
     const { user, entitlements: ent, signOut } = useUser()
     const [showMenu, setShowMenu] = useState(false)
-
-    // Close when clicking outside
-    useEffect(() => {
-        if (!showMenu) return
-
-        const handleClickOutside = (event: MouseEvent) => {
-            const target = event.target as HTMLElement
-            if (!target.closest('.user-menu-container')) {
-                setShowMenu(false)
-            }
-        }
-
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [showMenu])
+    const ref = useRef<HTMLDivElement>(null)
+    const close = useCallback(() => setShowMenu(false), [])
+    useDismiss(ref, showMenu, close)
 
     if (!user) return null
 
@@ -36,10 +26,12 @@ export default function UserMenu() {
 
     return (
         <div className="flex items-center gap-3">
-            <div className="relative user-menu-container">
-                <div
-                    className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-600 hover:border-gray-400 transition-colors cursor-pointer"
+            <div ref={ref} className="relative">
+                <button
+                    className="block w-9 h-9 rounded-full overflow-hidden border-2 border-white/15 hover:border-white/40 transition-colors"
                     onClick={() => setShowMenu(!showMenu)}
+                    aria-label="Account menu"
+                    aria-expanded={showMenu}
                 >
                     {user.avatarUrl ? (
                         <img
@@ -56,18 +48,18 @@ export default function UserMenu() {
                             }}
                         />
                     ) : null}
-                    <div
+                    <span
                         className="w-full h-full bg-gradient-to-br from-accent-pink to-purple-600 items-center justify-center text-white font-semibold"
                         style={{ display: user.avatarUrl ? 'none' : 'flex' }}
                     >
                         {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
-                    </div>
-                </div>
+                    </span>
+                </button>
 
                 {/* Dropdown menu */}
                 {showMenu && (
-                    <div className="absolute top-full right-0 mt-2 bg-[#0a0014]/90 backdrop-blur-xl rounded-lg shadow-2xl border border-white/10 overflow-hidden z-50" style={{ minWidth: '280px' }}>
-                        <div className="px-4 py-3 border-b border-gray-700">
+                    <div className={`absolute top-full right-0 mt-2 w-[280px] max-w-[calc(100vw-2rem)] rounded-xl overflow-hidden z-50 ${popover}`}>
+                        <div className="px-4 py-3 border-b border-white/[0.08]">
                             <div className="text-sm font-medium text-white">
                                 {user.name || 'User'}
                             </div>

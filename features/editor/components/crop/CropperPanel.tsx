@@ -1,11 +1,16 @@
 'use client'
 
-import { Proportions, RotateCw } from 'lucide-react'
+import { ChevronRight, Minus, Plus, RotateCw } from 'lucide-react'
 
 import { DEFAULT_ASPECT_RATIO, type AspectRatio } from '@/core/dice'
-import { rotateCrop } from './cropperHandle'
+import { rotateCrop, zoomCrop } from './cropperHandle'
 import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
+import { Inspector, InspectorSection } from '../common/Inspector'
+import { choiceOff, choiceOn, ghostButton, primaryButton } from '../common/ui'
+
+// One zoom-button click; gentler than a wheel notch
+const ZOOM_STEP = 1.15
 
 export interface AspectRatioOption {
     value: AspectRatio
@@ -79,7 +84,7 @@ export const aspectRatioOptions: AspectRatioOption[] = [
     },
 ]
 
-/** Ratio / rotation controls shared by the desktop panel and the mobile toolbar. */
+/** Ratio / rotation / zoom controls shared by the desktop panel and the mobile toolbar. */
 export function useCropControls() {
     const crop = useDocumentStore(state => state.crop)
     const updateCrop = useDocumentStore(state => state.updateCrop)
@@ -87,102 +92,67 @@ export function useCropControls() {
         selectedRatio: crop?.aspectRatio ?? DEFAULT_ASPECT_RATIO,
         setSelectedRatio: (aspectRatio: AspectRatio) => updateCrop({ aspectRatio }),
         rotate: () => rotateCrop(90),
+        zoomIn: () => zoomCrop(ZOOM_STEP),
+        zoomOut: () => zoomCrop(1 / ZOOM_STEP),
     }
 }
 
-export default function CropperPanel() {
-    const { selectedRatio, setSelectedRatio, rotate } = useCropControls()
-    // Progress invalidation is handled centrally: enterBuild() compares the
-    // current params against the baseline the progress was built on
-    const { canGoNext, goNext, goBack } = useStepNavigation()
-
+/** Ratio chips shared by the desktop inspector and the mobile toolbar. */
+export function AspectRatioChips({ className = 'grid grid-cols-5 gap-1.5', chipClassName = 'h-16' }: { className?: string; chipClassName?: string }) {
+    const { selectedRatio, setSelectedRatio } = useCropControls()
     return (
-        <>
-            <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-accent-pink/20 flex items-center justify-center">
-                    <Proportions className="w-4 h-4 text-accent-pink" />
-                </div>
-                <h3 className="text-lg font-bold text-white">Aspect Ratio</h3>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-3 mb-6">
-                {aspectRatioOptions.map((option) => (
+        <div role="group" aria-label="Aspect ratio" className={className}>
+            {aspectRatioOptions.map(option => {
+                const on = selectedRatio === option.value
+                return (
                     <button
                         key={option.value}
                         onClick={() => setSelectedRatio(option.value)}
-                        className={`
-              group relative flex flex-col items-center justify-center gap-3
-              w-20 h-20 rounded-xl border transition-all duration-200 flex-shrink-0
-              ${selectedRatio === option.value
-                                ? 'bg-accent-pink/10 border-accent-pink'
-                                : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
-                            }
-            `}
+                        aria-pressed={on}
+                        className={`${chipClassName} flex flex-col items-center justify-center gap-1.5 rounded-xl text-xs font-semibold transition-colors ${on ? choiceOn : choiceOff}`}
                     >
-                        <div className={`
-              transition-colors duration-200
-              ${selectedRatio === option.value ? 'text-accent-pink' : 'text-gray-400 group-hover:text-gray-300'}
-            `}>
-                            {option.icon}
-                        </div>
-                        <span className={`
-              text-xs font-semibold
-              ${selectedRatio === option.value ? 'text-accent-pink' : 'text-gray-500 group-hover:text-gray-400'}
-            `}>
-                            {option.label}
-                        </span>
-
-                        {/* Selected glow effect */}
-                        {selectedRatio === option.value && (
-                            <div className="absolute inset-0 bg-accent-pink/5 rounded-xl animate-pulse pointer-events-none" />
-                        )}
+                        <span className={on ? 'text-accent-pink-light' : 'text-white/70'}>{option.icon}</span>
+                        {option.label}
                     </button>
-                ))}
-            </div>
-
-            {/* Additional Controls */}
-            <div className="flex flex-col gap-3">
-                <button
-                    onClick={rotate}
-                    className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center gap-2 transition-colors text-sm font-medium text-gray-300"
-                >
-                    <RotateCw className="w-4 h-4" />
-                    Rotate 90°
-                </button>
-                <p className="text-white/60 text-sm leading-relaxed text-center px-1">
-                    Pan and zoom into the desired area. Zoomed in portraits work better than fullbody shots.
-                </p>
-            </div>
-
-            {/* Spacer to push buttons to bottom */}
-            <div className="flex-grow" />
-
-            {/* Navigation Buttons */}
-            <div className="flex gap-3 mt-6 pt-6 border-t border-white/10">
-                <button
-                    onClick={goBack}
-                    className="flex-1 py-3.5 rounded-full border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-semibold transition-all flex items-center justify-center gap-2 text-sm"
-                >
-                    ← Back
-                </button>
-
-                <button
-                    onClick={goNext}
-                    disabled={!canGoNext}
-                    className="
-            flex-1 py-3.5 rounded-full
-            bg-accent-pink hover:bg-accent-pink-light
-            text-white font-semibold
-            shadow-[0_0_20px_rgb(var(--pink-rgb)/0.3)]
-            hover:shadow-[0_0_30px_rgb(var(--pink-rgb)/0.5)]
-            transition-all disabled:opacity-50 disabled:cursor-not-allowed
-            flex items-center justify-center gap-2 text-sm
-          "
-                >
-                    Continue →
-                </button>
-            </div>
-        </>
+                )
+            })}
+        </div>
     )
 }
 
+/** Desktop inspector for the crop step. */
+export default function CropperPanel() {
+    const { rotate, zoomIn, zoomOut } = useCropControls()
+    // Progress invalidation is handled centrally: enterBuild() compares the
+    // current params against the baseline the progress was built on
+    const { canGoNext, goNext } = useStepNavigation()
+
+    return (
+        <Inspector
+            title="Crop"
+            description="Drag to frame your subject, scroll or pinch to zoom. Close-up portraits work better than full-body shots."
+            footer={
+                <button onClick={goNext} disabled={!canGoNext} className={`${primaryButton} h-12 flex-1 text-[15px]`}>
+                    Continue to Tune
+                    <ChevronRight size={18} />
+                </button>
+            }
+        >
+            <InspectorSection label="Aspect ratio">
+                <AspectRatioChips />
+            </InspectorSection>
+            <div className="flex gap-1.5">
+                <button onClick={zoomOut} aria-label="Zoom out" title="Zoom out" className={`${ghostButton} h-12 flex-1 rounded-xl`}>
+                    <Minus size={17} />
+                </button>
+                <button onClick={zoomIn} aria-label="Zoom in" title="Zoom in" className={`${ghostButton} h-12 flex-1 rounded-xl`}>
+                    <Plus size={17} />
+                </button>
+                <button onClick={rotate} className={`${ghostButton} h-12 flex-[2] rounded-xl text-sm`}>
+                    <RotateCw size={17} />
+                    Rotate 90°
+                </button>
+            </div>
+        </Inspector>
+    )
+}

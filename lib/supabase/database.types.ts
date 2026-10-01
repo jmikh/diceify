@@ -116,6 +116,48 @@ export type Database = {
           },
         ]
       }
+      shares: {
+        Row: {
+          created_at: string
+          grid_cols: number
+          grid_rows: number
+          id: string
+          owner_id: string
+          project_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          grid_cols: number
+          grid_rows: number
+          id: string
+          owner_id: string
+          project_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          grid_cols?: number
+          grid_rows?: number
+          id?: string
+          owner_id?: string
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shares_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shares_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -125,7 +167,15 @@ export type Database = {
         Args: { p: Database["public"]["Tables"]["profiles"]["Row"] }
         Returns: string
       }
-      project_limit: { Args: { plan: string }; Returns: number }
+      get_share: {
+        Args: { share_id: string }
+        Returns: {
+          created_at: string
+          grid_cols: number
+          grid_rows: number
+          id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

@@ -28,7 +28,7 @@ function load(): PublicEnv {
   })
   if (!result.success) {
     const names = [...new Set(result.error.issues.map((i) => String(i.path[0])))].join(', ')
-    throw new Error(`Missing or invalid public env: ${names} (see .env.example)`)
+    throw new Error(`Missing or invalid public env: ${names} (see README.md, "Env files")`)
   }
   const v = result.data
   cached = {

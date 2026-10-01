@@ -21,9 +21,7 @@ Product / policy decisions (not made by any step):
 - C2: `LimitReachedModal` and the landing Explorer card hard-code "5 rows"; `BuilderLimitToast` reads `ent.builderRowLimit`. One line to read it from `useEntitlements()` if the explorer limit ever changes.
 - C2: `AnalyticsTracker` fires a GA `login` event on every editor page load for a signed-in user (same frequency as before). Key it on `SIGNED_IN` in `ProfileProvider` if "login" should mean "just signed in".
 - C2: an OAuth round trip returning with `#error=…` is only reported by `auth.initialize()`; `ProfileProvider` does not surface it. A "sign-in failed" toast needs `initialize()` in the provider (sonner is available).
-- C3: a signed-in user with a waiting draft saves it only via the header dropdown's "Create New Project"; a visible "Save project" button is a one-liner on `createFromDraft` in `ProjectSelector`.
 - C2/D2: `features/billing/PricingCards.tsx` `PRICING_CONFIG` duplicates `core/billing/plans.ts` `PRICING` (prices/description); the bullet lists are UI copy. Build the cards on `PRICING` in a UI pass.
-- B2/B5: three viewport hooks coexist (`useMediaQuery` in lib, `useWindowSize` local to `CropperMain`, `useElementSize` in `BuildViewer`). `CropperMain` could size its stencil from its container via `useElementSize` — a behaviour change, for a UI pass.
 - E1: no CSP in `public/_headers`. Needs `script-src` for `googletagmanager.com` + Next's inline scripts, `connect-src` for the Supabase URL/`*.google-analytics.com`, `img-src data: blob:`, `form-action` to `checkout.stripe.com`/`billing.stripe.com`. Start with `Content-Security-Policy-Report-Only` once the hosted Supabase URL is fixed (F2).
 - E2: `withSentryConfig`'s default `errorHandler` throws, so with `SENTRY_AUTH_TOKEN` set a failed source-map upload fails the Pages build. Pass `errorHandler: (err) => console.warn(err)` if deploys should survive that.
 - E2: the Sentry runtime is bundled without a DSN (`/editor` first-load JS 388 kB). `bundleSizeOptimizations: { excludeTracing, excludeReplayShadowDom, excludeReplayIframe, excludeReplayWorker }` could trim it — measure first.
@@ -33,8 +31,12 @@ Product / policy decisions (not made by any step):
 - E3: `public/android-chrome-{192,512}.png` are referenced by nothing (`manifest.json` lists only `favicon.svg`). Add them to the manifest `icons` or delete them.
 - A1: vitest is pinned to `^3` because npm 11.5.1 cannot resolve vitest 4/5 (arborist crash / missing rolldown bindings). Revisit after `npm i -g npm@latest`.
 - A1: `package-lock.json` was regenerated from scratch in A1; transitive deps moved within their ranges. Smoke-test sign-in + Stripe on `master`'s deploy path before cut-over (F2) or diff the lockfile if anything regresses.
-- C3: legacy `.env.local` vars (`DATABASE_URL`, `NEXTAUTH_*`, `STRIPE_*`, `CLOUDINARY_*`) are dead; trim the file to the values in `.env.example` (gitignored; the root `.env` is Prisma-era and untracked — delete it locally).
 - B4: worth one manual check that undo of a wheel-zoom in the crop step lands where expected (`setCoordinates` with `imageRestriction: stencil` may fit rather than apply the box); if not, `setState` with the full saved cropper state would need `crop` to carry `visibleArea`.
+
+- H1: the Explorer pricing card promises "Social-ready image downloads" (`features/marketing/components/Pricing.tsx`), but the editor has no PNG download, only sharing (and the paid SVG blueprint). Either reword it (e.g. "Share your art on X and Facebook") or add a download of the share card.
+- H1: the X post text does not mention an account. The root metadata names `@diceify` as `twitter:creator`; if that handle is Diceify's, add `via=diceify` to the X intent (`core/share/urls.ts`) and keep `twitter:site` on share pages.
+- H1: deleting a project keeps its shares (the share is a snapshot, `project_id` → null) and there is no unshare (user decision). If a takedown is ever needed: delete the `shares` row and `share-images/<id>.jpg` with the service role.
+- H1: when a CSP is added (E1 item above), `img-src` needs the Supabase host for `share-images` on `/share` and `blob:` for the modal preview.
 
 For F2:
 
@@ -47,18 +49,30 @@ For F2:
 - B1: `lib/image/*` canvas paths (`drawRegion`, `rasterizeSvg`) have no unit tests (node env). If a DOM environment is ever added (`jsdom` + `canvas`), `cropToPixels` on a 2×2 image with rotation 90 is the first test to write.
 - E2: no test covers the report sites in `autosave.ts`/`useProjects.ts` (network paths; the integration suites are opt-in).
 
+Editor redesign (Phase G):
+
+- G1: with projects unlimited on every plan, Studio's description ("…or create multiple pieces", `core/billing/plans.ts` `PRICING` + `PricingCards`) no longer names a difference from Creator; the remaining one is duration (monthly vs a 30-day pass). Copy decision.
+- G1: unlimited projects mean per-user storage has no cap (≤ 2048 px original + thumbnail per project). A soft cap or a storage alert may be wanted later.
+- G1: new projects are named "Untitled Project" (rename in Project settings). Defaulting to the photo's file name is a one-liner in `useStartProject`.
+- G1: legacy-migrated projects show the placeholder thumbnail until opened once (the editor writes `preview.jpg` then). A backfill would need the dice pipeline in `migrate-from-prisma.ts`.
+- G2: marketing `.btn-primary` / `.nav-cta` and the editor modals still put white text on `#FF2D92` (≈ 3.5:1). `--pink-strong` / `accent-pink-strong` is available for them.
+- G2/G3: no browser pass was run (CLAUDE.md: no manual browser tests unless asked); sizes come from the design canvas. Worth one look at 1280×720, 1440×900 and a 390×844 phone.
+
 Operational notes (no action; kept because they explain non-obvious behaviour):
 
 - C1: the local stack runs on ports 5433x (API 54331, db 54332, Studio 54333, Mailpit 54334) beside another stack on 5432x. `supabase status -o env` prints both the legacy JWT anon key and `sb_publishable_…`; either works. A missing `supabase/.env` is silent (empty Google credentials → GoTrue JSON 400 page on sign-in, not a modal error).
-- C1: `BEFORE INSERT` triggers run before CHECK/RLS, so a user at the limit gets `PROJECT_LIMIT` even for rows that would fail the folder CHECK. `supabase gen types` types `effective_plan`'s argument as the whole row — compute entitlements in TS.
+- C1: `supabase gen types` types `effective_plan`'s argument as the whole row — compute entitlements in TS.
 - C3: `flushKeepalive()` while a save is in flight sends a second CAS PATCH; whichever lands second misses (rare, tab hidden within ~1 s of a save). `documentJson()` round-trips through JSON to satisfy the generated `Json` type.
 - D1: `stripe listen` delivers payloads in the account's default API version regardless of the SDK pin (the webhook re-reads Stripe, so harmless); `functions serve` does not hot-reload `--env-file`; kong answers `OPTIONS` itself locally; the gateway's own 401 body is not our envelope (client maps to `INTERNAL`); PostgREST timestamps are `+00:00` not `Z`; the `stripe listen` secret is stable per account; `_shared/billing-sync.ts` reads root `current_period_end` through an `unknown` cast as a fallback.
 - D2: `handleCheckout` takes the email from the JWT; cancel/resume act on the stored row and answer 409 `STALE` after a re-sync when Stripe rejects; `stripe trigger checkout.session.completed` fires ~8 sibling events (all 200).
 - E1: the export writes `out/*.txt` RSC payloads and copies `public/.DS_Store` on macOS — harmless on Pages.
-- B5: `theme.colors.glass.border` (white/0.10) maps to `--border-glass` (white/0.08); `--glass-medium` is the exact old value. The Reddit banner in `EditorHeader` uses `mt-4 -mb-1` to keep its old y-position.
+- B5: `theme.colors.glass.border` (white/0.10) maps to `--border-glass` (white/0.08); `--glass-medium` is the exact old value.
+- G2: `next build` in the repo while `next dev` runs corrupts the shared `.next` (missing `vendor-chunks`/page modules); G2/G3 built from an rsync copy instead. Restart `next dev` (`rm -rf .next`) if it errors.
 - B1: `cropToPixels` never upscales (the old `getCanvas({ width: 2048 })` did), so tiny images sample at native resolution.
 
 ## Resolved
+
+- C3 "waiting draft only saved via the header dropdown" → a signed-in arrival saves it, plus Save on the Start screen and in the switcher (G1). B2/B5 viewport hooks → `CropperMain` sizes from its container via `useElementSize` (G2).
 
 - A1 `rules-of-hooks` warnings → `error` (B2). A1 `no-img-element` → rule off (E3). A1 svg-renderer dot layout → `core/dice/svg.ts` (A3/B1).
 - A2 `public/demo-portrait.jpg` placeholder → deleted (B5; verified E3). A2/A3/C1 root `tsconfig` `target` → `es2022` (E3). A2 `generateGrayscalePreview` duplication → `useDicePipeline` on core (B1).
@@ -74,3 +88,4 @@ Operational notes (no action; kept because they explain non-obvious behaviour):
 - E1 `sitemap.ts` `/auth/signin` + `robots.ts` `/api/`, `/auth/` → fixed (E3). E1 `NEXT_PUBLIC_APP_URL` unread → dropped (E3). E1 privacy "Vercel Analytics" + CLAUDE.md "Vercel/Railway" → `TODO(user)` comment + CLAUDE.md rewrite (E3). C2/E1 `.next/types` in `tsconfig.include` → kept on purpose (Next re-adds it; `rm -rf .next` documented) (E3).
 - E2 `publicEnv.sentryDsn` unread → dropped (E3). E2 Next 14 never calls `onRouterTransitionStart` — harmless, noted in the E2 step doc.
 - A3 `creator_pass` mapping → `mapUserToProfile` (`plan='creator'`, `plan_expires_at=subscriptionExpiresAt`; 0 `isPro && explorer` rows in prod) (F1). D1/D2 Node sync → `stripe@20.4.1` exact devDependency, `_shared/billing-sync.ts` imported directly from the script (F1). C3 legacy `.env.local` vars → `DATABASE_URL` is still read as the `LEGACY_DATABASE_URL` fallback until F2; trim the rest after cut-over (F1 note).
+- C3 legacy `.env.local` vars → trimmed to the public pair + `LEGACY_DATABASE_URL`, Google creds moved to `supabase/.env`, root `.env` and `.env.example` deleted, layout table in `README.md` (post-F1 env cleanup).

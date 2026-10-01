@@ -111,7 +111,7 @@ describe('mapGrayToDie', () => {
     expect(mapGrayToDie(100, { ...DEFAULT_DICE_PARAMS, gamma: 2, contrast: 40 })).toEqual({ face: 3, color: 'white' })
   })
   it('omits rotate90 unless the die is rotated', () => {
-    const params = { ...DEFAULT_DICE_PARAMS, rotate6: true }
+    const params = { ...DEFAULT_DICE_PARAMS, contrast: 0, rotate6: true }
     expect(mapGrayToDie(70, params)).toEqual({ face: 6, color: 'black', rotate90: true })
     expect(mapGrayToDie(30, params)).toEqual({ face: 3, color: 'black' })
     expect('rotate90' in mapGrayToDie(30, params)).toBe(false)

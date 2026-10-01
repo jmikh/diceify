@@ -2,13 +2,14 @@ import { Suspense } from 'react'
 import Script from 'next/script'
 import Navbar from '@/features/marketing/components/Navbar'
 import Hero from '@/features/marketing/components/Hero'
-
+import DicePalette from '@/features/marketing/components/DicePalette'
 import Gallery from '@/features/marketing/components/Gallery'
 import BlogSection from '@/features/marketing/components/BlogSection'
 import Pricing from '@/features/marketing/components/Pricing'
 import FAQ from '@/features/marketing/components/FAQ'
 import Footer from '@/components/Footer'
 import { HashScrollHandler } from '@/features/marketing/components/HashScrollHandler'
+import DiceGridBackground from '@/features/marketing/components/DiceGridBackground'
 
 export default function Home() {
   const jsonLd = {
@@ -89,6 +90,7 @@ export default function Home() {
   return (
     <>
       <HashScrollHandler />
+      <DiceGridBackground />
       <Script
         id="json-ld"
         type="application/ld+json"
@@ -105,7 +107,7 @@ export default function Home() {
         <Navbar />
         <main>
           <Hero />
-
+          <DicePalette />
           <Gallery />
           <BlogSection />
           <Suspense fallback={<div className="py-24" />}>

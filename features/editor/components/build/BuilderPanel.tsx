@@ -1,256 +1,62 @@
 'use client'
 
-import { useState } from 'react'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download } from 'lucide-react'
-import { RiProgress5Line } from 'react-icons/ri'
-import { FaAmazon } from 'react-icons/fa'
+import { ChevronLeft } from 'lucide-react'
 import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
-import { useBuildNavigation } from '@/features/editor/hooks/useBuildNavigation'
-import { useBlueprintDownload } from '@/features/editor/hooks/useBlueprintDownload'
-import { DICE_PURCHASE_URL } from './constants'
-import { sendGAEvent } from '@next/third-parties/google'
-import DiceStatsCard from '../tune/DiceStatsCard'
-import ProgressPreviewModal from '@/features/editor/components/build/ProgressPreviewModal'
+import { useBuildProgress } from '@/features/editor/hooks/useBuildProgress'
+import { Inspector, InspectorSection, InspectorToolButton } from '../common/Inspector'
+import { ghostButton } from '../common/ui'
+import { DiceColorBar } from '../tune/DiceStats'
+import { BuildProgressBar, formatBuildPercent } from './BuildProgressBar'
+import { useBuildTools } from './BuildTools'
 
-// --- ProgressBar Component (Exported for reuse) ---
+/** Desktop inspector for the build step: progress, the black/white split and tools (navigation, row/col and zoom live in BuildControlBar). */
+export default function BuilderPanel() {
+    // Leaving with progress goes through the reset confirmation (mounted in the page)
+    const { goBack } = useStepNavigation()
+    const { tools, modal } = useBuildTools()
 
-interface ProgressBarProps {
-    percentage: number
-    showComplete?: boolean
-    className?: string
-}
-
-export function ProgressBar({ percentage, showComplete = true, className = '' }: ProgressBarProps) {
     return (
-        <div className={className}>
-            <div className="h-2 rounded-full overflow-hidden"
-                style={{ backgroundColor: 'var(--border-glass)' }}>
-                <div
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{
-                        width: `${percentage}%`,
-                        backgroundColor: 'var(--pink)'
-                    }}
-                />
-            </div>
-            <div className="text-center mt-1">
-                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    {percentage === 100 && showComplete ? 'Complete' : `${percentage.toFixed(1)}%`}
-                </span>
-            </div>
-        </div>
+        <Inspector
+            title="Build"
+            description="Place dice row by row, starting at the bottom left."
+            footer={
+                <button onClick={goBack} className={`${ghostButton} h-12 flex-1 text-sm`}>
+                    <ChevronLeft size={17} />
+                    Back to Tune
+                </button>
+            }
+        >
+            <BuildProgressSection />
+
+            <InspectorSection label="Dice">
+                <DiceColorBar barClassName="flex-1" />
+            </InspectorSection>
+
+            <InspectorSection label="Tools">
+                <div className="flex flex-col gap-1.5">
+                    {tools.map(tool => (
+                        <InspectorToolButton key={tool.key} icon={tool.icon} label={tool.label} onClick={tool.onSelect} />
+                    ))}
+                </div>
+            </InspectorSection>
+
+            {modal}
+        </Inspector>
     )
 }
 
-// --- BuilderPanel Component ---
-
-export default function BuilderPanel() {
-    const {
-        current,
-        percent,
-        navigatePrev,
-        navigateNext,
-        navigatePrevDiff,
-        navigateNextDiff,
-        canNavigate
-    } = useBuildNavigation()
-
-    // Leaving with progress goes through the reset confirmation (mounted in the page)
-    const { goBack } = useStepNavigation()
-
-    // Modal state for progress preview
-    const [showProgressModal, setShowProgressModal] = useState(false)
-
-    const handleDownloadSvg = useBlueprintDownload()
+function BuildProgressSection() {
+    const { currentIndex, totalDice, percent } = useBuildProgress()
 
     return (
-        <>
-            {/* Build Progress Controls */}
-            <div>
-                <div className="space-y-6">
-                    {/* Stats Section */}
-                    <DiceStatsCard />
-
-                    {/* Coordinates & Controls Section */}
-                    <div className="flex flex-col gap-4">
-
-                        {/* Row 1: Coordinates (Bigger) */}
-                        <div className="flex justify-center gap-4">
-                            {/* X Square */}
-                            <fieldset className="relative"
-                                style={{
-                                    width: '64px',
-                                    height: '64px',
-                                    backgroundColor: 'var(--glass-medium)',
-                                    border: `2px solid var(--border-glass)`,
-                                    borderRadius: '12px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    margin: 0,
-                                    padding: 0
-                                }}
-                            >
-                                <legend style={{
-                                    padding: '0 6px',
-                                    marginLeft: 'auto',
-                                    marginRight: 'auto',
-                                    color: 'var(--text-muted)',
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    lineHeight: '1',
-                                    transform: 'translateY(-2px)'
-                                }}>
-                                    Col
-                                </legend>
-                                <span className="text-white text-2xl font-bold" data-testid="build-pos-x">
-                                    {current.x + 1}
-                                </span>
-                            </fieldset>
-
-                            {/* Y Square */}
-                            <fieldset className="relative"
-                                style={{
-                                    width: '64px',
-                                    height: '64px',
-                                    backgroundColor: 'var(--glass-medium)',
-                                    border: `2px solid var(--border-glass)`,
-                                    borderRadius: '12px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    margin: 0,
-                                    padding: 0
-                                }}
-                            >
-                                <legend style={{
-                                    padding: '0 6px',
-                                    marginLeft: 'auto',
-                                    marginRight: 'auto',
-                                    color: 'var(--text-muted)',
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    lineHeight: '1',
-                                    transform: 'translateY(-2px)'
-                                }}>
-                                    Row
-                                </legend>
-                                <span className="text-white text-2xl font-bold" data-testid="build-pos-y">
-                                    {current.y + 1}
-                                </span>
-                            </fieldset>
-                        </div>
-
-                        {/* Row 2: Navigation Controls */}
-                        <div className="flex items-center justify-center gap-2">
-                            <button
-                                onClick={navigatePrevDiff}
-                                disabled={!canNavigate.prevDiff}
-                                className={`p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer bg-white/5 hover:bg-white/20 ${canNavigate.prevDiff ? 'text-white/90' : 'text-white/50'}`}
-                                title="Previous different dice"
-                            >
-                                <ChevronsLeft size={24} />
-                            </button>
-
-                            <button
-                                onClick={navigatePrev}
-                                disabled={!canNavigate.prev}
-                                className={`p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer bg-white/5 hover:bg-white/20 ${canNavigate.prev ? 'text-white/90' : 'text-white/50'}`}
-                                title="Previous dice"
-                            >
-                                <ChevronLeft size={24} />
-                            </button>
-
-                            <button
-                                onClick={navigateNext}
-                                disabled={!canNavigate.next}
-                                className={`p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer bg-white/5 hover:bg-white/20 ${canNavigate.next ? 'text-white/90' : 'text-white/50'}`}
-                                title="Next dice"
-                            >
-                                <ChevronRight size={24} />
-                            </button>
-
-                            <button
-                                onClick={navigateNextDiff}
-                                disabled={!canNavigate.nextDiff}
-                                className={`p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer bg-white/5 hover:bg-white/20 ${canNavigate.nextDiff ? 'text-white/90' : 'text-white/50'}`}
-                                title="Next different dice"
-                            >
-                                <ChevronsRight size={24} />
-                            </button>
-                        </div>
-                        {/* Progress Bar */}
-                        <div className="pt-2">
-                            <ProgressBar percentage={percent} />
-                        </div>
-
-                        {/* View Progress Button */}
-                        <div className="pt-4">
-                            <button
-                                onClick={() => setShowProgressModal(true)}
-                                className="w-full py-3 rounded-lg border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
-                            >
-                                <RiProgress5Line size={16} className="group-hover:scale-110 transition-transform" />
-                                <span>View Progress</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <InspectorSection label="Progress">
+            <div className="flex items-center gap-3 text-sm tabular-nums">
+                <BuildProgressBar percent={percent} />
+                <span className="text-white font-semibold">{formatBuildPercent(percent)}</span>
             </div>
-
-            {/* Purchase Dice Button */}
-            <div className="mt-4">
-                <a
-                    href={DICE_PURCHASE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => sendGAEvent('event', 'purchase_dice_click', { label: 'amazon_affiliate' })}
-                    className="w-full py-3 rounded-lg border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
-                >
-                    <FaAmazon size={16} className="group-hover:scale-110 transition-transform" />
-                    <span>Purchase Dice</span>
-                </a>
-            </div>
-
-            {/* Download Blueprint Button */}
-            <div className="mt-4 relative">
-                <button
-                    onClick={handleDownloadSvg}
-                    className="w-full py-3 rounded-lg border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-medium transition-all flex items-center justify-center gap-2 text-sm group"
-                >
-                    <Download size={16} className="group-hover:scale-110 transition-transform" />
-                    <span>Download Blueprint</span>
-                </button>
-                {/* PRO Badge */}
-                <div
-                    className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide"
-                    style={{
-                        background: 'linear-gradient(135deg, #FFD700, #FFA500)',
-                        color: '#1a1a2e',
-                        boxShadow: '0 2px 8px rgba(255, 215, 0, 0.4)'
-                    }}
-                >
-                    PRO
-                </div>
-            </div>
-
-            <div className="flex-grow" />
-
-            {/* Navigation Buttons */}
-            <div className="flex gap-3 mt-6 pt-6 border-t border-white/10 flex-shrink-0">
-                <button
-                    onClick={goBack}
-                    className="w-full py-3.5 rounded-full border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-semibold transition-all flex items-center justify-center gap-2 text-sm"
-                >
-                    ← Back
-                </button>
-            </div>
-
-            {/* Progress Preview Modal */}
-            <ProgressPreviewModal
-                isOpen={showProgressModal}
-                onClose={() => setShowProgressModal(false)}
-            />
-        </>
+            <span className="text-sm text-white/60 tabular-nums">
+                <b className="text-white font-semibold">{currentIndex.toLocaleString()}</b> / {totalDice.toLocaleString()} dice placed
+            </span>
+        </InspectorSection>
     )
 }

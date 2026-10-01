@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { mapStorageError, projectImagePath } from './storage'
+import { mapStorageError, previewPathFor, projectImagePath, projectPreviewPath } from './storage'
 
-describe('projectImagePath', () => {
+describe('projectImagePath / projectPreviewPath', () => {
   it('is {uid}/{projectId}/original.jpg', () => {
     expect(projectImagePath('u1', 'p1')).toBe('u1/p1/original.jpg')
+  })
+
+  it('puts the thumbnail next to the original', () => {
+    expect(projectPreviewPath('u1', 'p1')).toBe('u1/p1/preview.jpg')
+    expect(previewPathFor(projectImagePath('u1', 'p1'))).toBe(projectPreviewPath('u1', 'p1'))
   })
 })
 

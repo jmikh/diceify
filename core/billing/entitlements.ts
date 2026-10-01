@@ -1,7 +1,7 @@
 // Entitlements derived from the profile's billing snapshot. THE gating source for the client.
 //
-// MUST be mirrored by the SQL functions `effective_plan` / `project_limit` in
-// supabase/migrations/*_initial_schema.sql (C1): same priority, same statuses, same strict `>` on expiry.
+// MUST be mirrored by the SQL function `effective_plan` in supabase/migrations/*_initial_schema.sql (C1): same
+// priority, same statuses, same strict `>` on expiry. (Projects are unlimited since G1: no SQL limit any more.)
 
 import { PLAN_LIMITS, type Plan } from './plans'
 
@@ -22,7 +22,6 @@ export interface BillingState {
 export interface Entitlements {
   plan: Plan
   isPro: boolean
-  projectLimit: number
   /** `null` = unlimited (never `Infinity`). */
   builderRowLimit: number | null
   hasSvgExport: boolean

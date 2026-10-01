@@ -1,8 +1,14 @@
+/* Range input: the track colour is the element's own background (inline gradient), the thumb is styled here. */
 .slider {
     -webkit-appearance: none;
     appearance: none;
-    background: transparent;
-    /* Track background is handled by inline style */
+    height: 4px;
+    border-radius: 999px;
+    outline: none;
+}
+
+.slider:focus-visible {
+    box-shadow: 0 0 0 4px rgb(var(--pink-rgb) / 0.25);
 }
 
 /* WebKit (Chrome, Safari, Edge) */
@@ -12,73 +18,41 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: var(--pink);
-    border: none;
+    background: #fff;
+    border: 4px solid var(--pink);
     cursor: pointer;
-    box-shadow: 0 0 10px rgb(var(--pink-rgb) / 0.4);
-    transform: translateY(-30%);
-    transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease;
-    margin-top: 0;
+    box-shadow: 0 0 12px rgb(var(--pink-rgb) / 0.55);
+    transition: transform 0.1s ease;
 }
 
 .slider::-webkit-slider-thumb:hover {
-    transform: translateY(-30%) scale(1.1);
-    box-shadow: 0 0 15px rgb(var(--pink-rgb) / 0.6);
-    background: var(--pink);
+    transform: scale(1.1);
 }
 
 /* Firefox */
 .slider::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    border: none;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    background: var(--pink);
+    background: #fff;
+    border: 4px solid var(--pink);
     cursor: pointer;
-    box-shadow: 0 0 10px rgb(var(--pink-rgb) / 0.4);
-    transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease;
-}
-
-.slider::-moz-range-thumb:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 15px rgb(var(--pink-rgb) / 0.6);
-    background: var(--pink);
-}
-
-.slider::-webkit-slider-runnable-track {
-    width: 100%;
-    height: 4px;
-    cursor: pointer;
-    border-radius: 999px;
-}
-
-.slider::-moz-range-track {
-    width: 100%;
-    height: 4px;
-    cursor: pointer;
-    border-radius: 999px;
+    box-shadow: 0 0 12px rgb(var(--pink-rgb) / 0.55);
 }
 
 /* Large (touch) variant - bigger thumb and track for finger dragging */
+.sliderLg {
+    height: 6px;
+}
+
 .sliderLg::-webkit-slider-thumb {
     width: 28px;
     height: 28px;
-    transform: translateY(-38%);
-}
-
-.sliderLg::-webkit-slider-thumb:hover {
-    transform: translateY(-38%) scale(1.05);
+    border-width: 6px;
 }
 
 .sliderLg::-moz-range-thumb {
-    width: 28px;
-    height: 28px;
-}
-
-.sliderLg::-webkit-slider-runnable-track {
-    height: 6px;
-}
-
-.sliderLg::-moz-range-track {
-    height: 6px;
+    width: 16px;
+    height: 16px;
+    border-width: 6px;
 }

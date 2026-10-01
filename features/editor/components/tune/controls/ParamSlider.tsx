@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId } from 'react'
 import { LucideIcon } from 'lucide-react'
 import { useDocumentHistoryBatcher } from '@/features/editor/store/historyBatcher'
 import styles from './ParamSlider.module.css'
@@ -14,10 +14,11 @@ interface ParamSliderProps {
     value: number
     onChange: (value: number) => void
     formatValue?: (value: number) => string
-    /** Touch-friendly variant: label/value row above a full-width slider with a large thumb */
+    /** Touch-friendly variant: larger thumb and track */
     large?: boolean
 }
 
+/** Label + value above a full-width range input; a pointer drag is one undo entry. */
 export default function ParamSlider({
     icon: Icon,
     label,
@@ -29,81 +30,43 @@ export default function ParamSlider({
     formatValue,
     large = false
 }: ParamSliderProps) {
+    const id = useId()
     // A pointer drag is one history entry (the batcher collapses every onChange in between)
     const { startInteraction, endInteraction, batchAction } = useDocumentHistoryBatcher()
-    const [isDragging, setIsDragging] = useState(false)
 
     const percent = ((value - min) / (max - min)) * 100
     const display = formatValue ? formatValue(value) : String(value)
 
-    const handlePointerDown = () => {
-        setIsDragging(true)
-        startInteraction()
-    }
-    const handlePointerUp = () => {
-        setIsDragging(false)
-        endInteraction()
-    }
-
-    const input = (
-        <input
-            type="range"
-            min={min}
-            max={max}
-            step={step}
-            value={value}
-            onChange={(e) => {
-                const next = parseFloat(e.target.value)
-                batchAction(() => onChange(next))
-            }}
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-            className={`w-full rounded-lg cursor-pointer ${styles.slider} ${large ? `${styles.sliderLg} h-3` : 'h-2'}`}
-            style={{
-                background: `linear-gradient(to right, rgb(var(--pink-rgb)/0.5) 0%, rgb(var(--pink-rgb)/0.5) ${percent}%, var(--border-glass) ${percent}%, var(--border-glass) 100%)`
-            }}
-        />
-    )
-
-    if (large) {
-        return (
-            <div className="w-full">
-                <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                        <Icon size={16} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
-                        <span className="text-[11px] font-medium text-gray-300 uppercase tracking-wider">{label}</span>
-                    </div>
-                    <span className="text-base font-semibold text-white tabular-nums">{display}</span>
-                </div>
-                {input}
-            </div>
-        )
-    }
-
     return (
-        <div className="group flex items-center gap-4">
-            <div className="flex items-center gap-2 w-24 flex-shrink-0">
-                <Icon size={16} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
-                <span className="text-[10px] font-medium text-gray-300 uppercase tracking-wider">{label}</span>
-            </div>
-            <div className="relative flex-grow">
-                <div className="flex items-center">
-                    {input}
-                </div>
-                {/* Tooltip positioned above slider thumb - only visible when dragging */}
-                <div
-                    className={`absolute -top-4 px-2 py-1 text-xs rounded transition-opacity pointer-events-none whitespace-nowrap ${isDragging ? 'opacity-100' : 'opacity-0'}`}
-                    style={{
-                        left: `calc(0px + ${percent}%)`,
-                        transform: 'translateX(-50%)',
-                        backgroundColor: 'rgba(10, 0, 20, 0.95)',
-                        color: 'white'
-                    }}
-                >
+        <div className={`flex flex-col ${large ? 'gap-3.5' : 'gap-3'}`}>
+            <div className="flex items-center justify-between gap-2">
+                <label htmlFor={id} className={`flex items-center gap-2 font-medium text-white/90 ${large ? 'text-[15px]' : 'text-sm'}`}>
+                    <Icon size={16} className="text-white/60 flex-shrink-0" />
+                    {label}
+                </label>
+                <span className="min-w-[2.25rem] text-center text-[13px] font-semibold text-white tabular-nums px-2 py-0.5 rounded-md bg-white/[0.07]">
                     {display}
-                </div>
+                </span>
             </div>
+            <input
+                id={id}
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={value}
+                onChange={(e) => {
+                    const next = parseFloat(e.target.value)
+                    batchAction(() => onChange(next))
+                }}
+                onPointerDown={startInteraction}
+                onPointerUp={endInteraction}
+                onPointerCancel={endInteraction}
+                className={`w-full cursor-pointer ${styles.slider} ${large ? styles.sliderLg : ''}`}
+                style={{
+                    background: `linear-gradient(to right, var(--pink) 0%, var(--pink) ${percent}%, rgba(255, 255, 255, 0.12) ${percent}%, rgba(255, 255, 255, 0.12) 100%)`
+                }}
+            />
         </div>
     )
 }

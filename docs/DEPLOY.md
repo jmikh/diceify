@@ -17,10 +17,10 @@ npm run db:types      # regenerates lib/supabase/database.types.ts (commit it)
 npm run db:stop
 ```
 
-Env files (all gitignored except `.env.example`):
+Env files (all gitignored except `supabase/functions/.env.example`; full table in `README.md`):
 
-- `.env.local` — `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, optional
-  `NEXT_PUBLIC_SENTRY_DSN` (copy from `.env.example`; local values are printed by `db:status`).
+- `.env.local` — `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (printed by `db:status`), optional
+  `NEXT_PUBLIC_SENTRY_DSN`; `LEGACY_DATABASE_URL` for the migration until F2.
 - `supabase/.env` — `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, read by `env(...)` in `supabase/config.toml`. Add
   `http://127.0.0.1:54331/auth/v1/callback` as an authorized redirect URI on the Google OAuth client for local sign-in.
 - `supabase/functions/.env` — Stripe secrets for `npm run functions:serve` (template `supabase/functions/.env.example`; `docs/STRIPE_TESTING.md`).
@@ -64,7 +64,8 @@ Done from the CLI (2026-10-01): `supabase link --project-ref pmxvjcnxnwzuggnuhko
 Still to do, in order:
 
 1. **Schema**: `npm run db:push` — prompts for the database password (Dashboard → Project Settings → Database). Applies
-   `supabase/migrations/*.sql` (tables, RLS policies, triggers, the `project-images` bucket + storage policies).
+   `supabase/migrations/*.sql` (tables, RLS policies, triggers, the private `project-images` and public `share-images`
+   buckets + storage policies, the `get_share` RPC).
    Afterwards `npm run db:types:prod` must produce no diff.
 2. **Google provider**: Dashboard → Authentication → Providers → Google: enable, paste the client id/secret from
    `supabase/.env`, tick **Skip nonce check**. Google Cloud → the OAuth client's **Authorized redirect URIs** needs
@@ -156,6 +157,24 @@ npx wrangler pages deploy out --branch revamp --project-name diceify   # preview
 `wrangler` is not a repo dependency (Homebrew `wrangler` 4.x or `npx wrangler@4` both work). Environment variables are
 still read from the local `.env.local` by `next build` in this path, so build with the hosted values in that file.
 
+### Share links: the Pages Function (H1)
+
+`functions/s/[id].ts` serves `/s/<id>` (the static `share.html` with the share's `og:*`/`twitter:*` tags, so X and Facebook
+show the dice art). Pages compiles `functions/` from the repo root on its own (Git integration and `wrangler pages deploy out`
+run from the root alike) and invokes it only for `/s/*`. It reads `NEXT_PUBLIC_SUPABASE_URL` and
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` at runtime: the Pages project's environment variables (step 4 above) serve the build and
+the Functions, so nothing new to set — but they must exist for **both** Production and Preview. Free plan: 100k Function
+requests/day.
+
+- Local: `npm run build` then `npm run pages:dev` (`wrangler pages dev out`, http://localhost:8788) with a gitignored
+  `.dev.vars` holding the two values (`NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54331` + the local anon key). `next dev`
+  has no Functions: open `/share?id=<id>` there instead.
+- Check a live card after deploying: paste a `/s/<id>` URL into the Facebook Sharing Debugger
+  (developers.facebook.com/tools/debug, "Scrape Again") and into an X post draft. Each share URL is new, so stale caches
+  only matter for the site-wide card.
+- Card images are public objects on the Supabase host (`…supabase.co/storage/v1/object/public/share-images/<id>.jpg`,
+  no `robots.txt` there as of 2026-10-01). If a platform ever refuses to fetch them, proxy them through a second Function.
+
 ### Custom domain / DNS (F2)
 
 At cut-over: Pages project → Custom domains → add `diceify.art` and `www.diceify.art` (Cloudflare provisions the certificate;
@@ -204,8 +223,8 @@ npm run migrate:legacy -- --report=/tmp/migrate-1.json      # real run (local st
 npm run migrate:legacy -- --only=someone@example.com        # one user; --since=YYYY-MM-DD moves the activity cut-off
 ```
 
-Flags: `--dry-run`, `--since`, `--only`, `--no-sync-stripe`, `--no-ignore-limit` (let the plan-limit trigger reject the
-oldest projects; default keeps every project), `--report=<file>` (legacy ids; `--report-emails` adds emails), `--target=hosted`.
+Flags: `--dry-run`, `--since`, `--only`, `--no-sync-stripe`, `--report=<file>` (legacy ids; `--report-emails` adds
+emails), `--target=hosted`. Every project is migrated (projects are unlimited on every plan since G1).
 Idempotent: profiles by `legacy_id`/email, projects by `legacy_id`; a rerun re-applies the profile columns and skips
 existing projects. With a test-mode key every legacy (live) customer answers "customer not found in this Stripe mode" and
 keeps the legacy-mapped columns; the live sync at cut-over fills `cancel_at`/`current_period_end`/`plan_expires_at`.
@@ -239,7 +258,7 @@ Runbook (details per section above; the migration itself is F1):
    endpoint (pinned API version); Customer Portal configuration.
 2. Cloudflare Pages: merge `revamp` → `master`, production env variables set, build green on the production branch.
 3. Freeze the old site (logins keep bumping `User.updatedAt`, and the `--since` window is evaluated at run time).
-4. Migration, from a machine with the legacy `DATABASE_URL` in `.env.local` and the hosted values in the environment:
+4. Migration, from a machine with `LEGACY_DATABASE_URL` in `.env.local` and the hosted values in the environment:
    ```sh
    export SUPABASE_URL=https://<project-ref>.supabase.co SUPABASE_SERVICE_ROLE_KEY=<hosted service role key>
    export TARGET_DATABASE_URL='postgresql://postgres:<db password>@db.<project-ref>.supabase.co:5432/postgres'
@@ -249,7 +268,7 @@ Runbook (details per section above; the migration itself is F1):
    npm run migrate:legacy -- --target=hosted --report=migrate-prod-2.json   # rerun: 0 created, 0 migrated
    ```
    Keep the report files (legacy ids only). `TARGET_DATABASE_URL` must connect as `postgres` (the table owner): the script
-   toggles the `projects_enforce_limit` trigger per insert and writes explicit `created_at`s.
+   writes explicit `created_at`s.
 5. Smoke test: a migrated lifetime user, a migrated studio-canceled user (`cancel_at`/status from the live sync), a new user
    with a real Studio purchase (refund it afterwards).
 6. Move DNS `diceify.art` from Vercel to Pages (Custom domain section above); disable the old Vercel Stripe endpoint.

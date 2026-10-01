@@ -17,7 +17,7 @@ export const PRICING_CONFIG = {
         features: [
             { text: <><strong>Unlimited</strong> dice in Builder</>, icon: 'check' as const },
             { text: "Full resolution SVG blueprints", icon: 'check' as const },
-            { text: "1 project in the cloud", icon: 'check' as const },
+            { text: <><strong>Unlimited</strong> projects in the cloud</>, icon: 'check' as const },
             { text: "Access expires after 30 days", icon: 'clock' as const },
         ],
         // Additional features shown only on landing page
@@ -25,7 +25,7 @@ export const PRICING_CONFIG = {
             { text: "Generate dice art from any photo", icon: 'check' as const },
             { text: <><strong>Unlimited</strong> dice in Builder Studio</>, icon: 'check' as const },
             { text: "Full resolution SVG blueprints", icon: 'check' as const },
-            { text: "1 project in the cloud", icon: 'check' as const },
+            { text: <><strong>Unlimited</strong> projects in the cloud</>, icon: 'check' as const },
             { text: "Access expires after 30 days", icon: 'clock' as const },
         ],
     },
@@ -36,14 +36,14 @@ export const PRICING_CONFIG = {
         features: [
             { text: <><strong>Unlimited</strong> dice in Builder</>, icon: 'check' as const },
             { text: "Full resolution SVG blueprints", icon: 'check' as const },
-            { text: <><strong>5 projects</strong> in the cloud</>, icon: 'check' as const },
+            { text: <><strong>Unlimited</strong> projects in the cloud</>, icon: 'check' as const },
             { text: "Cancel anytime", icon: 'check' as const },
         ],
         landingFeatures: [
             { text: "Generate dice art from any photo", icon: 'check' as const },
             { text: <><strong>Unlimited</strong> dice in Builder Studio</>, icon: 'check' as const },
             { text: "Full resolution SVG blueprints", icon: 'check' as const },
-            { text: <><strong>5 projects</strong> in the cloud</>, icon: 'check' as const },
+            { text: <><strong>Unlimited</strong> projects in the cloud</>, icon: 'check' as const },
             { text: "Cancel anytime", icon: 'check' as const },
         ],
     },

@@ -4,7 +4,7 @@ import { X } from 'lucide-react'
 import Image from 'next/image'
 import { useBuildProgress } from '@/features/editor/hooks/useBuildProgress'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
-import { ProgressBar } from './BuilderPanel'
+import { BuildProgressBar } from './BuildProgressBar'
 
 /**
  * Confirmation shown when leaving the build step with progress (opened by
@@ -67,7 +67,10 @@ export default function ResetProgressModal() {
 
                     {/* Progress Bar */}
                     <div className="w-full mb-6">
-                        <ProgressBar percentage={percentage} showComplete={false} />
+                        <div className="flex">
+                            <BuildProgressBar percent={percentage} />
+                        </div>
+                        <div className="text-center mt-1 text-sm text-white/70">{percentage.toFixed(1)}%</div>
                     </div>
 
                     {/* Action Buttons */}

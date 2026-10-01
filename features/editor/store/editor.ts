@@ -14,7 +14,9 @@ export function uploadImage(blob: Blob): void {
   useDocumentStore.getState().resetForNewImage()
   useDocumentStore.temporal.getState().clear()
   useDerivedStore.getState().reset(null)
-  useEditorUiStore.getState().setStep('crop')
+  const ui = useEditorUiStore.getState()
+  ui.setStep('crop')
+  ui.closeStart()
 }
 
 /** A project row + its image become the current state (no history, derived grid seeded from the document). */
@@ -45,12 +47,12 @@ export function clearProject(): void {
   project.setSaveStatus('idle')
 }
 
-/** Back to an empty editor (project id is the caller's business, see `clearProject`). */
+/** Back to an empty editor, i.e. the Start screen (project id is the caller's business, see `clearProject`). */
 export function resetEditor(name: string = DEFAULT_PROJECT_NAME): void {
   useProjectStore.getState().setImage(null, null)
   useDocumentStore.getState().resetAll()
   useDocumentStore.getState().setName(name)
   useDocumentStore.temporal.getState().clear()
   useDerivedStore.getState().reset(null)
-  useEditorUiStore.getState().setStep('upload')
+  useEditorUiStore.getState().setStep('crop')
 }

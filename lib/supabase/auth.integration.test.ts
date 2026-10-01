@@ -68,7 +68,6 @@ describe.skipIf(!ENABLED)('client auth + profile + entitlements (local stack)', 
     const now = new Date()
     expect(deriveEntitlements(toBillingState(explorer!), now)).toMatchObject({
       plan: 'explorer',
-      projectLimit: 1,
       builderRowLimit: 5,
       hasSvgExport: false,
     })
@@ -85,7 +84,6 @@ describe.skipIf(!ENABLED)('client auth + profile + entitlements (local stack)', 
     expect(deriveEntitlements(toBillingState(studio!), now)).toMatchObject({
       plan: 'studio',
       isPro: true,
-      projectLimit: 5,
       builderRowLimit: null,
       hasSvgExport: true,
       renews: true,

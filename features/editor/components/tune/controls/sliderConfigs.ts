@@ -4,6 +4,8 @@ export interface TunerSliderConfig {
     key: 'numRows' | 'contrast' | 'gamma' | 'edgeSharpening'
     icon: LucideIcon
     label: string
+    /** Fits a mobile tool tab. */
+    shortLabel: string
     min: number
     max: number
     step: number
@@ -13,8 +15,8 @@ export interface TunerSliderConfig {
 // Single source of truth for the tuning sliders, shared by the desktop
 // panel and the mobile toolbar
 export const tunerSliders: TunerSliderConfig[] = [
-    { key: 'numRows', icon: Grid3x3, label: 'Rows', min: 20, max: 120, step: 1 },
-    { key: 'contrast', icon: Contrast, label: 'Contrast', min: 0, max: 100, step: 1 },
-    { key: 'gamma', icon: Sun, label: 'Brightness', min: 0.5, max: 1.5, step: 0.01, formatValue: (v) => `${((v - 1.0) * 100).toFixed(0)}%` },
-    { key: 'edgeSharpening', icon: Sparkles, label: 'Sharpening', min: 0, max: 100, step: 1 },
+    { key: 'numRows', icon: Grid3x3, label: 'Rows', shortLabel: 'Rows', min: 20, max: 120, step: 1 },
+    { key: 'contrast', icon: Contrast, label: 'Contrast', shortLabel: 'Contrast', min: 0, max: 100, step: 1 },
+    { key: 'gamma', icon: Sun, label: 'Brightness', shortLabel: 'Bright', min: 0.5, max: 1.5, step: 0.01, formatValue: (v) => `${((v - 1.0) * 100).toFixed(0)}%` },
+    { key: 'edgeSharpening', icon: Sparkles, label: 'Sharpening', shortLabel: 'Sharpen', min: 0, max: 100, step: 1 },
 ]

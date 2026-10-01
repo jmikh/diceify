@@ -9,7 +9,8 @@ import type { DiceColor, DiceFace, DiceGrid, GridPos } from './types'
 /** Symbol/side length every die is drawn in; the outer element scales it to 1 unit. */
 const DIE_SIZE = 100
 
-export const PROGRESS_PLACEHOLDER = { fill: '#eae3d2', stroke: '#dcd3bd', strokeWidth: 0.02 } as const
+/** Progress preview: cream background, unbuilt dice drawn as faint ghosts of the final art. */
+export const PROGRESS_STYLE = { background: '#eae3d2', unbuiltOpacity: 0.15 } as const
 
 const SVG_XMLNS = 'http://www.w3.org/2000/svg'
 
@@ -106,35 +107,24 @@ export function renderGridSvg(grid: DiceGrid, opts: GridSvgOptions = {}): string
   return wrapSvg(grid.width, grid.height, background, { width, height }, elements.join('\n'))
 }
 
-export interface ProgressSvgOptions extends Partial<SvgSize> {
-  placeholderFill?: string
-  placeholderStroke?: string
+export interface ProgressSvgOptions extends GridSvgOptions {
   /** Render every die as placed (the "Full" toggle). */
   showAll?: boolean
 }
 
-/** The grid with only the dice placed before `progress` drawn; the rest are placeholder squares. */
+/** The grid with the dice placed before `progress` drawn normally; the rest at `PROGRESS_STYLE.unbuiltOpacity`. */
 export function renderProgressSvg(grid: DiceGrid, progress: GridPos, opts: ProgressSvgOptions = {}): string {
-  const {
-    placeholderFill = PROGRESS_PLACEHOLDER.fill,
-    placeholderStroke = PROGRESS_PLACEHOLDER.stroke,
-    showAll = false,
-    width,
-    height,
-  } = opts
+  const { background = PROGRESS_STYLE.background, showAll = false, width, height } = opts
   const elements: string[] = []
   for (let x = 0; x < grid.width; x++) {
     for (let y = 0; y < grid.height; y++) {
-      if (showAll || isCompleted({ x, y }, progress)) {
-        elements.push(renderDieElement(grid, x, y))
-      } else {
-        elements.push(
-          `<rect x='${x}' y='${svgRow(y, grid.height)}' width='1' height='1' fill='${placeholderFill}' stroke='${placeholderStroke}' stroke-width='${PROGRESS_PLACEHOLDER.strokeWidth}' />`,
-        )
-      }
+      const die = renderDieElement(grid, x, y)
+      elements.push(
+        showAll || isCompleted({ x, y }, progress) ? die : `<g opacity='${PROGRESS_STYLE.unbuiltOpacity}'>${die}</g>`,
+      )
     }
   }
-  return wrapSvg(grid.width, grid.height, placeholderFill, { width, height }, elements.join('\n'))
+  return wrapSvg(grid.width, grid.height, background, { width, height }, elements.join('\n'))
 }
 
 /** Number of dice `renderProgressSvg` draws for `progress` (handy for tests and captions). */

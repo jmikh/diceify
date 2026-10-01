@@ -1,17 +1,19 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { FixedCropper, FixedCropperRef, ImageRestriction } from 'react-advanced-cropper'
 import 'react-advanced-cropper/dist/style.css'
 import 'react-advanced-cropper/dist/themes/corners.css'
 import styles from './Cropper.module.css'
 import { reportError } from '@/lib/report-error'
 import { cropParamsEqual, DEFAULT_ASPECT_RATIO, type CropParams } from '@/core/dice'
+import { useElementSize } from '@/features/editor/hooks/useElementSize'
 import { useDocumentHistoryBatcher } from '@/features/editor/store/historyBatcher'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import { aspectRatioOptions } from './CropperPanel'
 import { setCropperHandle } from './cropperHandle'
+import { useWheelZoom } from './useWheelZoom'
 
 // The widget reconciles in bursts (mount, ratio change, boundary refresh); one report per burst
 const REPORT_DELAY_MS = 100
@@ -39,7 +41,8 @@ function readCrop(cropper: FixedCropperRef, aspectRatio: CropParams['aspectRatio
  * drops the redo stack.
  */
 export default function CropperMain() {
-    const windowSize = useWindowSize()
+    const containerRef = useRef<HTMLDivElement>(null)
+    const containerSize = useElementSize(containerRef)
     const imageUrl = useProjectStore(state => state.imageSrc)
     const crop = useDocumentStore(state => state.crop)
     const setCrop = useDocumentStore(state => state.setCrop)
@@ -54,44 +57,20 @@ export default function CropperMain() {
     const [imageLoaded, setImageLoaded] = useState(false)
     const reportTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const interactingRef = useRef(false)
+    useWheelZoom(containerRef, cropperRef)
 
     const selectedOption = aspectRatioOptions.find(opt => opt.value === selectedRatio) || aspectRatioOptions[2]
 
-    // Calculate stencil size
-    const getStencilSize = useCallback(() => {
-        if (typeof window === 'undefined') return { width: 0, height: 0 }
-
-        // Adaptive sizing based on screen width
-        const isMobile = windowSize.width < 1024
-
-        // On mobile the cropper fills the screen, minus small shell padding
-        // On desktop, we subtract sidebar (350) + gap (24) + padding (32)
-        const sidebarOffset = isMobile ? 40 : (350 + 24 + 32)
-
-        const availableWidth = Math.min(900, windowSize.width - sidebarOffset)
-        // Mobile: step bar + bottom toolbar; desktop: header + stepper
-        const verticalOffset = 180
-        const containerHeight = Math.max(300, Math.min(800, windowSize.height - verticalOffset))
-
-        const availableHeight = containerHeight - 32
-
-        const maxWidth = availableWidth * 0.95 // Use slightly more space
-        const maxHeight = availableHeight * 0.95
-
+    // The stencil: the selected ratio fitted into the canvas panel, with a margin around it
+    const stencilSize = useMemo(() => {
+        if (!containerSize) return { width: 0, height: 0 }
+        const margin = containerSize.width < 480 ? 16 : 40
+        const maxWidth = Math.max(0, containerSize.width - margin * 2)
+        const maxHeight = Math.max(0, containerSize.height - margin * 2)
         const ratio = selectedOption.ratio || 1
-
-        let width = maxWidth
-        let height = width / ratio
-
-        if (height > maxHeight) {
-            height = maxHeight
-            width = height * ratio
-        }
-
-        return { width, height }
-    }, [windowSize, selectedOption])
-
-    const stencilSize = getStencilSize()
+        const width = Math.min(maxWidth, maxHeight * ratio)
+        return { width, height: width / ratio }
+    }, [containerSize, selectedOption])
 
     // Create default coordinates from saved params
     const defaultCoordinates = crop ? {
@@ -162,65 +141,56 @@ export default function CropperMain() {
         }
     }, [crop, imageLoaded])
 
-    // Panel rotate: through the widget, so the one history entry carries the rotated coordinates
+    // Panel rotate / zoom: through the widget, so the one history entry carries the resulting coordinates
     useEffect(() => {
+        const command = (apply: (cropper: FixedCropperRef) => void) => {
+            const cropper = cropperRef.current
+            if (!cropper) return
+            apply(cropper)
+            report(true)
+        }
         setCropperHandle({
-            rotate: (degrees) => {
-                cropperRef.current?.rotateImage(degrees)
-                report(true)
-            },
+            rotate: (degrees) => command(cropper => cropper.rotateImage(degrees)),
+            zoom: (factor) => command(cropper => cropper.zoomImage(factor)),
         })
         return () => setCropperHandle(null)
     }, [report])
 
     useEffect(() => cancelPendingReport, [cancelPendingReport])
 
-    if (!imageUrl) return null
-
     return (
-        <FixedCropper
-            ref={cropperRef}
-            src={imageUrl}
-            className={`h-full ${styles.cropper}`}
-            stencilProps={{
-                aspectRatio: selectedOption.ratio || undefined,
-                grid: true,
-                overlayClassName: styles.overlay,
-                handlers: false,
-                lines: true,
-                movable: false,
-                resizable: false,
-            }}
-            stencilSize={stencilSize}
-            defaultTransforms={{ rotate: cropRotation }}
-            defaultCoordinates={defaultCoordinates}
-            imageRestriction={ImageRestriction.stencil}
-            backgroundWrapperProps={{
-                scaleImage: { wheel: { ratio: 0.1 } }
-            }}
-            onReady={() => {
-                setImageLoaded(true)
-                // Refresh to ensure proper sizing; the first crop is reported by the change this triggers
-                cropperRef.current?.refresh()
-                scheduleUntrackedReport()
-            }}
-            onChange={handleChange}
-            onInteractionStart={handleInteractionStart}
-            onInteractionEnd={handleInteractionEnd}
-        />
+        <div ref={containerRef} className="w-full h-full">
+            {imageUrl && containerSize && (
+                <FixedCropper
+                    ref={cropperRef}
+                    src={imageUrl}
+                    className={`h-full ${styles.cropper}`}
+                    stencilProps={{
+                        aspectRatio: selectedOption.ratio || undefined,
+                        grid: true,
+                        overlayClassName: styles.overlay,
+                        handlers: false,
+                        lines: true,
+                        movable: false,
+                        resizable: false,
+                    }}
+                    stencilSize={stencilSize}
+                    defaultTransforms={{ rotate: cropRotation }}
+                    defaultCoordinates={defaultCoordinates}
+                    imageRestriction={ImageRestriction.stencil}
+                    // Wheel zoom is ours (useWheelZoom); touch pinch stays the widget's
+                    backgroundWrapperProps={{ scaleImage: { wheel: false } }}
+                    onReady={() => {
+                        setImageLoaded(true)
+                        // Refresh to ensure proper sizing; the first crop is reported by the change this triggers
+                        cropperRef.current?.refresh()
+                        scheduleUntrackedReport()
+                    }}
+                    onChange={handleChange}
+                    onInteractionStart={handleInteractionStart}
+                    onInteractionEnd={handleInteractionEnd}
+                />
+            )}
+        </div>
     )
-}
-
-/** Viewport size for the stencil maths. The desktop-first default matches the shell's `useMediaQuery` server value. */
-function useWindowSize() {
-    const [windowSize, setWindowSize] = useState({ width: 800, height: 600 })
-
-    useEffect(() => {
-        const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight })
-        handleResize()
-        window.addEventListener('resize', handleResize)
-        return () => window.removeEventListener('resize', handleResize)
-    }, [])
-
-    return windowSize
 }

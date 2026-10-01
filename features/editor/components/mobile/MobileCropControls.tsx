@@ -1,42 +1,26 @@
 'use client'
 
 import { RotateCw } from 'lucide-react'
-import { aspectRatioOptions, useCropControls } from '@/features/editor/components/crop/CropperPanel'
+import { AspectRatioChips, useCropControls } from '@/features/editor/components/crop/CropperPanel'
+import { MobileStepNext } from './MobileStepButtons'
+import { mainRow, toolRow } from './rows'
 
-/**
- * Mobile crop toolbar: aspect-ratio pills plus a rotate button, so the
- * cropper itself can fill the screen.
- */
+/** Mobile crop toolbar: the aspect-ratio chips then next, above rotate. */
 export default function MobileCropControls() {
-    const { selectedRatio, setSelectedRatio, rotate } = useCropControls()
-
+    const { rotate } = useCropControls()
     return (
-        <div className="bg-[#0f0f12]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 flex items-center gap-2">
-            <div
-                className="flex-1 flex items-center justify-between gap-1.5 overflow-x-auto [&::-webkit-scrollbar]:hidden"
-                style={{ scrollbarWidth: 'none' }}
-            >
-                {aspectRatioOptions.map(option => (
-                    <button
-                        key={option.value}
-                        onClick={() => setSelectedRatio(option.value)}
-                        className={`h-11 px-3.5 flex-1 rounded-xl text-xs font-semibold whitespace-nowrap border transition-colors ${selectedRatio === option.value
-                            ? 'bg-accent-pink/10 border-accent-pink text-accent-pink'
-                            : 'bg-white/5 border-white/10 text-gray-400 active:bg-white/10'
-                            }`}
-                    >
-                        {option.label}
-                    </button>
-                ))}
+        <>
+            <div className={`${mainRow} flex gap-2`}>
+                <AspectRatioChips className="flex-1 grid grid-cols-5 gap-2" chipClassName={mainRow} />
+                <MobileStepNext className="w-12 rounded-xl" />
             </div>
-
             <button
                 onClick={rotate}
-                className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-gray-300 active:bg-white/10 transition-colors"
-                aria-label="Rotate 90°"
+                className={`${toolRow} flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] text-sm font-medium text-white active:bg-white/[0.12]`}
             >
                 <RotateCw size={18} />
+                Rotate 90°
             </button>
-        </div>
+        </>
     )
 }

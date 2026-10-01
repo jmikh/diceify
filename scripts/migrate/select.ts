@@ -72,7 +72,7 @@ export function buildUserSelection(opts: { since: Date; only?: string }): SqlQue
   }
 }
 
-/** A user's projects, newest first (a limit-enforcing run keeps the most recent ones). */
+/** A user's projects, newest first. */
 export function buildProjectSelection(userId: string): SqlQuery {
   return {
     text: `select ${quoted(LEGACY_PROJECT_COLUMNS, 'p')} from "Project" p where p."userId" = $1 order by p."updatedAt" desc, p.id`,

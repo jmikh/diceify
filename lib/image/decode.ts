@@ -81,16 +81,32 @@ export async function dataUrlToPixels(src: string, maxSide = 2048): Promise<Pixe
   return canvasToPixels(drawRegion(img, fullRegion(img), maxSide))
 }
 
+export function encodeJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Failed to encode image'))), 'image/jpeg', quality)
+  })
+}
+
 /** Re-encode an uploaded image as a JPEG no larger than `maxSide` (the immutable per-project original). */
 export async function downscaleForUpload(file: File | Blob, maxSide = 2048, quality = 0.85): Promise<Blob> {
   const url = URL.createObjectURL(file)
   try {
     const img = await loadImage(url)
-    const canvas = drawRegion(img, fullRegion(img), maxSide)
-    return await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Failed to encode image'))), 'image/jpeg', quality)
-    })
+    return await encodeJpeg(drawRegion(img, fullRegion(img), maxSide), quality)
   } finally {
     URL.revokeObjectURL(url)
   }
+}
+
+/** A project thumbnail: the JPEG Blob to store and a data URL to show right away. */
+export interface Thumbnail {
+  blob: Blob
+  dataUrl: string
+}
+
+/** A small JPEG of `region` of an image URL (the project thumbnail: the cropped photo). */
+export async function makeThumbnail(src: string, region: CropRegion, maxSide = 192, quality = 0.8): Promise<Thumbnail> {
+  const img = await loadImage(src)
+  const canvas = drawRegion(img, region, maxSide)
+  return { blob: await encodeJpeg(canvas, quality), dataUrl: canvas.toDataURL('image/jpeg', quality) }
 }

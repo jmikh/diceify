@@ -38,3 +38,18 @@ export async function getAccessToken(): Promise<string | null> {
   const { data } = await getSupabase().auth.getSession()
   return data.session?.access_token ?? null
 }
+
+export class NotSignedInError extends Error {
+  constructor() {
+    super('Not signed in')
+    this.name = 'NotSignedInError'
+  }
+}
+
+/** The signed-in user's id for writes that name the owner (rows, storage paths); throws `NotSignedInError`. */
+export async function currentUserId(): Promise<string> {
+  const { data } = await getSupabase().auth.getSession()
+  const id = data.session?.user.id
+  if (!id) throw new NotSignedInError()
+  return id
+}

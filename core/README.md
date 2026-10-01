@@ -15,7 +15,7 @@ and validated against `core/dice/__fixtures__/*.json`.
   row number users see). Pixel row `r` of the downsampled image (0 = top) becomes grid row `y = height - 1 - r`.
 - **`Die`** `{ face: 1..6, color: 'black' | 'white', rotate90?: true }` — `rotate90` is present only when true.
 - **`DiceParams`** `{ numRows, colorMode: 'both' | 'black' | 'white', contrast: 0..100, gamma, edgeSharpening:
-  0..100, rotate6, rotate3, rotate2 }`. Defaults: `DEFAULT_DICE_PARAMS` (30 rows, both, 0, 1, 0, all false).
+  0..100, rotate6, rotate3, rotate2 }`. Defaults: `DEFAULT_DICE_PARAMS` (70 rows, both, 25, 1, 5, all false).
 
 ## Pipeline (`generateDiceGrid(px, params)`)
 
