@@ -42,7 +42,8 @@ Billing locally: `npm run functions:serve` in one terminal, `npm run stripe:list
 
 | Command | What |
 |---|---|
-| `npm run dev` / `npm run build` | dev server / static export to `out/` |
+| `npm run dev` / `npm run build` | dev server / static export to `out/` (local Supabase stack) |
+| `npm run dev:prod` / `npm run build:prod` | same against the hosted Supabase project via `.env.prod.local` (see `docs/DEPLOY.md`) |
 | `npm test` / `npm run test:watch` | vitest unit tests (integration suites opt in with `SUPABASE_TEST=1`, `STRIPE_TEST=1`) |
 | `npm run lint` / `npm run typecheck` | ESLint (0 warnings policy) / `tsc` for the app and `core/` |
 | `npm run db:*` | `start`, `stop`, `status`, `reset`, `migration -- <name>`, `types` (regenerates `lib/supabase/database.types.ts`), `push` |

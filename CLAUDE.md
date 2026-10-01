@@ -69,11 +69,12 @@ never import `features/editor`; nothing imports `app`. `app` → `@/features`, `
 
 | Command | What |
 |---|---|
-| `npm run dev` / `npm run build` | Next dev server / static export to `out/` |
+| `npm run dev` (= `dev:local`) / `npm run build` | Next dev server / static export to `out/` against the LOCAL stack (`.env.local`) |
+| `npm run dev:prod` / `npm run build:prod` | same against the HOSTED project (`.env.prod.local`, gitignored; hosted functions, no local serve) |
 | `npm test` / `npm run test:watch` | vitest (node env; `core/`, `lib/`, `features/`, `supabase/functions/_shared/`, `scripts/`) |
 | `npm run lint` | ESLint 9 flat config — must be 0 errors, 0 warnings |
 | `npm run typecheck` | `tsc --noEmit && tsc -p core` (covers `scripts/`; `rm -rf .next` first after deleting a route) |
-| `npm run db:start\|stop\|status\|reset\|migration\|types\|push` | local Supabase stack (ports 5433x) / hosted push |
+| `npm run db:start\|stop\|status\|reset\|migration\|types\|push` | local Supabase stack (ports 5433x) / hosted push; `db:types:prod` diffs types against the linked project |
 | `npm run functions:serve\|check\|deploy` | edge functions locally (`supabase/functions/.env`) / `deno check` / deploy |
 | `npm run stripe:listen` | forward Stripe webhooks to the local `stripe-webhook` function |
 | `npm run gen-fixtures` | regenerate `core/dice/__fixtures__` (sharp) |

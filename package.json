@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "next dev",
+    "dev:prod": "node --env-file=.env.prod.local node_modules/next/dist/bin/next dev",
     "build": "next build",
+    "build:prod": "node --env-file=.env.prod.local node_modules/next/dist/bin/next build",
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -17,6 +20,7 @@
     "db:migration": "supabase migration new",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --local --schema public > lib/supabase/database.types.ts",
+    "db:types:prod": "supabase gen types typescript --linked --schema public > lib/supabase/database.types.ts",
     "functions:serve": "supabase functions serve --env-file supabase/functions/.env",
     "functions:deploy": "supabase functions deploy",
     "functions:check": "deno check --config supabase/functions/deno.json supabase/functions/billing/index.ts supabase/functions/stripe-webhook/index.ts",

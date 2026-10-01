@@ -55,20 +55,45 @@ scopes (the old People API birthday scope is gone).
 
 ## Hosted Supabase project (E1 / F2)
 
-F2 creates the hosted project (`supabase link --project-ref <ref>`, `supabase db push`, `supabase functions deploy`,
-`supabase secrets set`, Google provider with client id/secret + "Skip nonce check"). Two console settings that the static
-site depends on (Authentication → URL Configuration):
+Project **diceify**, ref `pmxvjcnxnwzuggnuhkol`, URL `https://pmxvjcnxnwzuggnuhkol.supabase.co`. Created 2026-10-01.
 
-- **Site URL**: `https://diceify.art`.
-- **Redirect URLs** (the app's `redirectTo` is `${window.location.origin}/editor?restored=true` or `/account`, so every host the
-  site is served from needs a wildcard entry):
-  - `http://localhost:3000/**` — local `next dev`
-  - `https://diceify.art/**` — production
-  - `https://*.diceify.pages.dev/**` — every Cloudflare Pages preview (`revamp.diceify.pages.dev`, `<hash>.diceify.pages.dev`)
+Done from the CLI (2026-10-01): `supabase link --project-ref pmxvjcnxnwzuggnuhkol` (ref saved in `supabase/.temp/`),
+`npm run functions:deploy` (`billing`, `stripe-webhook`). `.env.prod.local` (gitignored) holds the hosted URL + anon key for
+`npm run dev:prod` / `npm run build:prod`.
 
-  The local stack keeps only `http://localhost:3000/**` (`additional_redirect_urls` in `supabase/config.toml`).
-- Google Cloud → the OAuth client's **Authorized redirect URIs** also needs `https://<project-ref>.supabase.co/auth/v1/callback`
-  (Google returns to Supabase, never to the app, so no `pages.dev` entry there).
+Still to do, in order:
+
+1. **Schema**: `npm run db:push` — prompts for the database password (Dashboard → Project Settings → Database). Applies
+   `supabase/migrations/*.sql` (tables, RLS policies, triggers, the `project-images` bucket + storage policies).
+   Afterwards `npm run db:types:prod` must produce no diff.
+2. **Google provider**: Dashboard → Authentication → Providers → Google: enable, paste the client id/secret from
+   `supabase/.env`, tick **Skip nonce check**. Google Cloud → the OAuth client's **Authorized redirect URIs** needs
+   `https://pmxvjcnxnwzuggnuhkol.supabase.co/auth/v1/callback` (Google returns to Supabase, never to the app).
+3. **URL configuration** (Authentication → URL Configuration). The app's `redirectTo` is
+   `${window.location.origin}/editor?restored=true` or `/account`, so every host needs a wildcard entry:
+   - **Site URL**: `https://diceify.art`
+   - **Redirect URLs**: `http://localhost:3000/**` (local `next dev`, incl. `dev:prod`), `https://diceify.art/**`,
+     `https://*.diceify.pages.dev/**` (every Cloudflare Pages preview).
+4. **Function secrets**: `supabase secrets set --env-file supabase/functions/.env.production` where that file (gitignored,
+   never committed) holds `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (from the live webhook endpoint below), the three
+   price ids and `APP_URL=https://diceify.art`. Until go-live you can point it at the **test** keys instead
+   (`cp supabase/functions/.env supabase/functions/.env.production`, set `APP_URL` to the URL you are testing from) so the
+   preview and `dev:prod` exercise checkout with test cards; swap to live keys at cut-over.
+5. **Stripe webhook** (per mode): endpoint `https://pmxvjcnxnwzuggnuhkol.supabase.co/functions/v1/stripe-webhook`, events
+   listed in the Stripe section, API version pinned to `STRIPE_API_VERSION` in `supabase/functions/_shared/stripe.ts`.
+
+The local stack keeps only `http://localhost:3000/**` (`additional_redirect_urls` in `supabase/config.toml`).
+
+### Local dev against local vs hosted Supabase
+
+| command | Supabase | env file |
+|---|---|---|
+| `npm run dev` / `npm run dev:local` | local stack (`npm run db:start`) | `.env.local` |
+| `npm run dev:prod` | hosted project | `.env.prod.local` (loaded with `node --env-file`; already-set vars win over `.env.local`) |
+| `npm run build:prod` | hosted project | `.env.prod.local` (for a `wrangler pages deploy out` direct upload) |
+
+`dev:prod` uses the hosted database and functions but the Next dev server on `localhost:3000`, which is why
+`http://localhost:3000/**` must stay in the hosted redirect allow-list. Functions are not served locally in that mode.
 
 ## Cloudflare Pages (E1)
 
