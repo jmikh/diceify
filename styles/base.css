@@ -32,7 +32,7 @@
   --text-primary: rgba(255, 255, 255, 0.9);
   --text-secondary: rgba(255, 255, 255, 0.7);
   --text-muted: rgba(255, 255, 255, 0.5);
-  --text-dim: #555555;
+  --text-dim: #858585;                  /* dimmest text; passes 4.5:1 on every dark surface (#555 did not) */
   --white: #FFFFFF;
   --white-soft: #E0E0E0;
 
@@ -148,7 +148,7 @@ body {
 
   /* Nav CTA Button - Compact primary button for navigation */
   .nav-cta {
-    background: var(--pink);
+    background: var(--pink-strong);
     color: var(--white);
     padding: 0.6rem 1.25rem;
     border-radius: 100px;
@@ -169,7 +169,7 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 0.6rem;
-    background: var(--pink);
+    background: var(--pink-strong);
     color: var(--white);
     padding: 1rem 1.75rem;
     border-radius: 100px;

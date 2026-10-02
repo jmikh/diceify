@@ -1,5 +1,7 @@
 import { Suspense } from 'react'
-import Script from 'next/script'
+import type { Metadata } from 'next'
+import JsonLd from '@/components/JsonLd'
+import { DEFAULT_DESCRIPTION, pageMetadata } from '@/lib/seo'
 import Navbar from '@/features/marketing/components/Navbar'
 import Hero from '@/features/marketing/components/Hero'
 import DicePalette from '@/features/marketing/components/DicePalette'
@@ -10,6 +12,8 @@ import FAQ from '@/features/marketing/components/FAQ'
 import Footer from '@/components/Footer'
 import { HashScrollHandler } from '@/features/marketing/components/HashScrollHandler'
 import DiceGridBackground from '@/features/marketing/components/DiceGridBackground'
+
+export const metadata: Metadata = pageMetadata({ description: DEFAULT_DESCRIPTION, path: '/' })
 
 export default function Home() {
   const jsonLd = {
@@ -91,16 +95,8 @@ export default function Home() {
     <>
       <HashScrollHandler />
       <DiceGridBackground />
-      <Script
-        id="json-ld"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <Script
-        id="faq-json-ld"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
+      <JsonLd data={faqJsonLd} />
 
       {/* Content */}
       <div className="relative z-[2] max-w-[1400px] mx-auto w-full">

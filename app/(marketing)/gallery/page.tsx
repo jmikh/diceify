@@ -1,25 +1,14 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
-import Script from 'next/script'
+import JsonLd from '@/components/JsonLd'
+import { pageMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
-    title: 'Dice Art Gallery | Portraits & Abstract Mosaics | Diceify',
+export const metadata: Metadata = pageMetadata({
+    title: 'Dice Art Gallery | Portraits & Abstract Mosaics',
     description: 'Browse dice art portraits and abstract mosaics created with Diceify. See how photos of celebrities, loved ones, and creative designs are transformed into buildable dice patterns.',
-    alternates: {
-        canonical: 'https://diceify.art/gallery',
-        languages: {
-            'en': 'https://diceify.art/gallery',
-            'x-default': 'https://diceify.art/gallery',
-        },
-    },
-    openGraph: {
-        title: 'Dice Art Gallery | Portraits & Abstract Mosaics',
-        description: 'Browse dice art portraits and abstract mosaics created with Diceify.',
-        url: 'https://diceify.art/gallery',
-        type: 'website',
-    },
-}
+    path: '/gallery',
+})
 
 const portraits = [
     { src: '/images/dali-51x51.webp', alt: 'Salvador Dali dice art portrait', name: 'Salvador Dali' },
@@ -95,23 +84,15 @@ function GalleryCard({ item }: { item: { src: string; alt: string; name: string 
 export default function GalleryPage() {
     return (
         <>
-            <Script
-                id="gallery-page-jsonld"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(galleryJsonLd) }}
-            />
-            <Script
-                id="gallery-breadcrumb-jsonld"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{
-                    __html: JSON.stringify({
-                        "@context": "https://schema.org",
-                        "@type": "BreadcrumbList",
-                        "itemListElement": [
-                            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://diceify.art" },
-                            { "@type": "ListItem", "position": 2, "name": "Gallery", "item": "https://diceify.art/gallery" }
-                        ]
-                    })
+            <JsonLd data={galleryJsonLd} />
+            <JsonLd
+                data={{
+                    "@context": "https://schema.org",
+                    "@type": "BreadcrumbList",
+                    "itemListElement": [
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://diceify.art" },
+                        { "@type": "ListItem", "position": 2, "name": "Gallery", "item": "https://diceify.art/gallery" }
+                    ]
                 }}
             />
 

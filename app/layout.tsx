@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Outfit, Syne } from 'next/font/google'
 import Analytics from '@/components/Analytics'
+import JsonLd from '@/components/JsonLd'
+import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, SITE_URL, socialMetadata } from '@/lib/seo'
 import '@/styles/base.css'
 
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit', display: 'swap' })
@@ -15,12 +17,12 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://diceify.art'),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Diceify — Free Dice Art Generator for Portraits & Mosaics',
+    default: DEFAULT_TITLE,
     template: '%s | Diceify'
   },
-  description: 'Create dice art portraits and mosaics from any photo. Diceify is a free dice art generator with contrast tuning, a step-by-step builder, and patterns you can build by hand.',
+  description: DEFAULT_DESCRIPTION,
   keywords: [
     'dice art',
     'dice portrait',
@@ -53,36 +55,8 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  openGraph: {
-    title: 'Diceify — Free Dice Art Generator for Portraits & Mosaics',
-    description: 'Create dice art portraits and mosaics from any photo. Free generator with contrast tuning and a step-by-step builder.',
-    url: 'https://diceify.art',
-    siteName: 'Diceify',
-    locale: 'en_US',
-    type: 'website',
-    images: [
-      {
-        url: '/images/og-card.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Diceify — Free Dice Art Generator for Portraits & Mosaics',
-      }
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Diceify — Free Dice Art Generator for Portraits & Mosaics',
-    description: 'Create dice art portraits and mosaics from any photo. Free generator with contrast tuning and a step-by-step builder.',
-    images: [
-      {
-        url: '/images/og-card.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Diceify — Free Dice Art Generator for Portraits & Mosaics',
-      }
-    ],
-    creator: '@diceify',
-  },
+  // No canonical/og:url here: children would inherit the homepage's. Each indexable page sets its own (pageMetadata).
+  ...socialMetadata(DEFAULT_TITLE, DEFAULT_DESCRIPTION),
   robots: {
     index: true,
     follow: true,
@@ -136,13 +110,6 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico',
   },
   manifest: '/manifest.json',
-  alternates: {
-    canonical: 'https://diceify.art',
-    languages: {
-      'en': 'https://diceify.art',
-      'x-default': 'https://diceify.art',
-    },
-  },
 }
 
 export default function RootLayout({
@@ -179,10 +146,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${outfit.variable} ${syne.variable}`}>
       <body className={outfit.className}>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
-        />
+        <JsonLd data={websiteJsonLd} />
         {children}
         <Analytics />
       </body>

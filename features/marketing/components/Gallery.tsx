@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import Script from 'next/script'
+import JsonLd from '@/components/JsonLd'
 
 const galleryItems = [
     { src: '/images/dali-51x51.webp', alt: 'Salvador Dali dice art mosaic', name: 'Salvador Dali Dice Art Mosaic' },
@@ -57,11 +57,7 @@ export default function Gallery() {
     return (
         <section className="gallery" id="gallery">
             {/* JSON-LD Structured Data for Image Gallery */}
-            <Script
-                id="gallery-jsonld"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(galleryJsonLd) }}
-            />
+            <JsonLd data={galleryJsonLd} />
 
             <div className="gallery-header">
                 <div>

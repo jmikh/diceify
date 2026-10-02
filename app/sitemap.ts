@@ -1,46 +1,21 @@
 import { MetadataRoute } from 'next'
+import { SITE_URL } from '@/lib/seo'
 import { blogPosts } from '@/features/marketing/blog/data'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://diceify.art'
-
-  // Static pages
+  // Static pages carry no lastModified: the build date would mark every page changed on every deploy, and Google
+  // ignores a site's lastmod once it proves unreliable (blog posts keep their real dates).
   const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 1,
-    },
-    {
-      url: `${baseUrl}/dice-art`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/gallery`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/editor`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/blog`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
+    { url: SITE_URL, changeFrequency: 'weekly', priority: 1 },
+    { url: `${SITE_URL}/dice-art`, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${SITE_URL}/gallery`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${SITE_URL}/editor`, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${SITE_URL}/blog`, changeFrequency: 'weekly', priority: 0.8 },
   ]
 
   // Blog post pages
   const blogPages: MetadataRoute.Sitemap = blogPosts.map((post) => ({
-    url: `${baseUrl}/blog/${post.slug}`,
+    url: `${SITE_URL}/blog/${post.slug}`,
     lastModified: new Date(post.date),
     changeFrequency: 'monthly' as const,
     priority: 0.7,

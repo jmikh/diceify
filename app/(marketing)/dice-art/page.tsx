@@ -1,25 +1,15 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
-import Script from 'next/script'
+import JsonLd from '@/components/JsonLd'
+import { pageMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
     title: 'Dice Art — The Complete Guide to Dice Portraits & Mosaics',
     description: 'Everything you need to know about dice art: what it is, how it works, the different types of dice portraits and mosaics, and how to create your own buildable dice art from any photo.',
-    alternates: {
-        canonical: 'https://diceify.art/dice-art',
-        languages: {
-            'en': 'https://diceify.art/dice-art',
-            'x-default': 'https://diceify.art/dice-art',
-        },
-    },
-    openGraph: {
-        title: 'Dice Art — The Complete Guide to Dice Portraits & Mosaics',
-        description: 'Everything you need to know about dice art: what it is, how it works, and how to create your own.',
-        url: 'https://diceify.art/dice-art',
-        type: 'article',
-    },
-}
+    path: '/dice-art',
+    article: {},
+})
 
 const jsonLd = {
     "@context": "https://schema.org",
@@ -102,28 +92,16 @@ const faqJsonLd = {
 export default function DiceArtPage() {
     return (
         <>
-            <Script
-                id="dice-art-jsonld"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-            />
-            <Script
-                id="dice-art-faq-jsonld"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-            />
-            <Script
-                id="dice-art-breadcrumb-jsonld"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{
-                    __html: JSON.stringify({
-                        "@context": "https://schema.org",
-                        "@type": "BreadcrumbList",
-                        "itemListElement": [
-                            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://diceify.art" },
-                            { "@type": "ListItem", "position": 2, "name": "Dice Art", "item": "https://diceify.art/dice-art" }
-                        ]
-                    })
+            <JsonLd data={jsonLd} />
+            <JsonLd data={faqJsonLd} />
+            <JsonLd
+                data={{
+                    "@context": "https://schema.org",
+                    "@type": "BreadcrumbList",
+                    "itemListElement": [
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://diceify.art" },
+                        { "@type": "ListItem", "position": 2, "name": "Dice Art", "item": "https://diceify.art/dice-art" }
+                    ]
                 }}
             />
 

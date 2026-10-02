@@ -1,12 +1,17 @@
 import { Metadata } from 'next'
 import '@/styles/editor.css'
+import JsonLd from '@/components/JsonLd'
+import { pageMetadata } from '@/lib/seo'
 
 import { ProfileProvider } from '@/features/account/useUser'
 import { AnalyticsTracker } from '@/features/account/AnalyticsTracker'
 
 export const metadata: Metadata = {
-  title: 'Dice Art Builder — Upload, Crop, Tune & Build',
-  description: 'Upload any photo, adjust contrast, and get step-by-step dice placement instructions. Free online dice art builder — no signup required.',
+  ...pageMetadata({
+    title: 'Dice Art Builder — Upload, Crop, Tune & Build',
+    description: 'Upload any photo, adjust contrast, and get step-by-step dice placement instructions. Free online dice art builder — no signup required.',
+    path: '/editor',
+  }),
   keywords: [
     'dice art builder',
     'dice art editor',
@@ -19,18 +24,6 @@ export const metadata: Metadata = {
     'custom portrait gift',
     'diy photo gift',
   ],
-  openGraph: {
-    title: 'Dice Art Builder — Upload, Crop, Tune & Build | Diceify',
-    description: 'Upload any photo, adjust contrast, and get step-by-step dice placement instructions. Free online dice art builder — no signup required.',
-    url: 'https://diceify.art/editor',
-  },
-  twitter: {
-    title: 'Dice Art Builder — Upload, Crop, Tune & Build | Diceify',
-    description: 'Upload any photo, adjust contrast, and get step-by-step dice placement instructions. Free online dice art builder — no signup required.',
-  },
-  alternates: {
-    canonical: 'https://diceify.art/editor',
-  },
 }
 
 const webAppJsonLd = {
@@ -57,10 +50,7 @@ const webAppJsonLd = {
 export default function EditorLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProfileProvider>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(webAppJsonLd) }}
-      />
+      <JsonLd data={webAppJsonLd} />
       {children}
       <AnalyticsTracker />
     </ProfileProvider>

@@ -296,7 +296,7 @@ export function StudioCard({
                         >
                             Yearly
                             <span className={`text-[10px] px-1 py-0.5 rounded-full ${studioInterval === 'yearly'
-                                ? 'bg-green-500 text-white'
+                                ? 'bg-green-500 text-green-950'
                                 : 'bg-green-500/20 text-green-400'
                                 }`}>
                                 -{STUDIO_YEARLY_SAVINGS_PERCENT}%
@@ -311,16 +311,16 @@ export function StudioCard({
                             <span className={`${styles.priceSize} font-bold`}>${PRICING_CONFIG.studio.monthlyPrice}</span>
                             <span className={`text-white/50 ${variant === 'compact' ? 'text-sm' : ''}`}>/month</span>
                         </div>
-                        <p className={`${styles.descriptionSize} text-white/40`}>Billed monthly</p>
+                        <p className={`${styles.descriptionSize} text-white/50`}>Billed monthly</p>
                     </div>
                 ) : (
                     <div className={styles.priceMargin}>
                         <div className="flex items-baseline gap-2 mb-0.5">
-                            <span className={`text-white/40 line-through ${variant === 'compact' ? 'text-base' : 'text-lg'}`}>${PRICING_CONFIG.studio.monthlyPrice}</span>
+                            <span className={`text-white/50 line-through ${variant === 'compact' ? 'text-base' : 'text-lg'}`}>${PRICING_CONFIG.studio.monthlyPrice}</span>
                             <span className={`${styles.priceSize} font-bold text-green-400`}>${STUDIO_YEARLY_MONTHLY_EFFECTIVE.toFixed(2)}</span>
                             <span className={`text-white/50 ${variant === 'compact' ? 'text-sm' : ''}`}>/month</span>
                         </div>
-                        <p className={`${styles.descriptionSize} text-white/40`}>Billed annually at ${PRICING_CONFIG.studio.yearlyPrice}</p>
+                        <p className={`${styles.descriptionSize} text-white/50`}>Billed annually at ${PRICING_CONFIG.studio.yearlyPrice}</p>
                     </div>
                 )}
                 <p className={`text-white/50 ${styles.descriptionSize}`}>{PRICING_CONFIG.studio.description}</p>

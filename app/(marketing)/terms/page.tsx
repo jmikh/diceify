@@ -1,10 +1,12 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import { pageMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
     title: 'Terms of Service',
     description: 'Terms of Service for Diceify - The rules and guidelines for using our dice mosaic art generator.',
-}
+    path: '/terms',
+})
 
 export default function TermsPage() {
     return (

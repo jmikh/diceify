@@ -16,6 +16,7 @@ export default function Footer() {
           <div className="flex gap-4 mt-1">
             <a
               href="https://www.tiktok.com/@diceify.art"
+              aria-label="Diceify on TikTok"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[var(--text-dim)] text-lg no-underline hover:text-[var(--pink)] transition-colors"
@@ -24,6 +25,7 @@ export default function Footer() {
             </a>
             <a
               href="https://www.instagram.com/diceify.art/"
+              aria-label="Diceify on Instagram"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[var(--text-dim)] text-lg no-underline hover:text-[var(--pink)] transition-colors"
@@ -32,6 +34,7 @@ export default function Footer() {
             </a>
             <a
               href="https://www.reddit.com/r/DicePortraits"
+              aria-label="r/DicePortraits on Reddit"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[var(--text-dim)] text-lg no-underline hover:text-[var(--pink)] transition-colors"

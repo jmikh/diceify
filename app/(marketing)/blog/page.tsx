@@ -1,19 +1,14 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import { pageMetadata } from '@/lib/seo'
 import { getVisibleBlogPosts } from '@/features/marketing/blog/data'
 import BlogCard from '@/features/marketing/components/BlogCard'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
     title: 'Blog',
     description: 'Stories, tutorials, and inspiration from the Diceify community. Learn how creators around the world are using dice art.',
-    alternates: {
-        canonical: 'https://diceify.art/blog',
-        languages: {
-            'en': 'https://diceify.art/blog',
-            'x-default': 'https://diceify.art/blog',
-        },
-    },
-}
+    path: '/blog',
+})
 
 export default function BlogPage() {
     const visiblePosts = getVisibleBlogPosts()

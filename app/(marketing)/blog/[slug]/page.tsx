@@ -1,7 +1,8 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import Script from 'next/script'
 import { notFound } from 'next/navigation'
+import JsonLd from '@/components/JsonLd'
+import { pageMetadata } from '@/lib/seo'
 import { getBlogBySlug, getAllBlogSlugs } from '@/features/marketing/blog/data'
 
 // Blog content components
@@ -30,26 +31,14 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
         return { title: 'Blog Post Not Found' }
     }
 
-    const postUrl = `https://diceify.art/blog/${slug}`
-
     return {
-        title: `${post.title} Blog`,
-        description: post.description,
-        authors: [{ name: post.author, url: post.authorUrl }],
-        alternates: {
-            canonical: postUrl,
-            languages: {
-                'en': postUrl,
-                'x-default': postUrl,
-            },
-        },
-        openGraph: {
-            title: `Diceify | ${post.title}`,
+        ...pageMetadata({
+            title: post.title,
             description: post.description,
-            type: 'article',
-            publishedTime: post.date,
-            authors: [post.author],
-        },
+            path: `/blog/${slug}`,
+            article: { publishedTime: post.date, authors: [post.author] },
+        }),
+        authors: [{ name: post.author, url: post.authorUrl }],
     }
 }
 
@@ -116,24 +105,16 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
     return (
         <>
             {/* JSON-LD Structured Data for AI/Search Engines */}
-            <Script
-                id="blog-json-ld"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-            />
-            <Script
-                id="blog-breadcrumb-jsonld"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{
-                    __html: JSON.stringify({
-                        "@context": "https://schema.org",
-                        "@type": "BreadcrumbList",
-                        "itemListElement": [
-                            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://diceify.art" },
-                            { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://diceify.art/blog" },
-                            { "@type": "ListItem", "position": 3, "name": post.title, "item": `https://diceify.art/blog/${slug}` }
-                        ]
-                    })
+            <JsonLd data={jsonLd} />
+            <JsonLd
+                data={{
+                    "@context": "https://schema.org",
+                    "@type": "BreadcrumbList",
+                    "itemListElement": [
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://diceify.art" },
+                        { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://diceify.art/blog" },
+                        { "@type": "ListItem", "position": 3, "name": post.title, "item": `https://diceify.art/blog/${slug}` }
+                    ]
                 }}
             />
 

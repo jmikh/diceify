@@ -20,11 +20,13 @@ core/          PURE TS (no DOM, no React, no app imports; own tsconfig, lib es20
                README.md = algorithm spec (Swift-portable). Fixtures + tests.
 lib/           browser/platform adapters: supabase/ (client, auth, profile, projects, shares, storage, keepalive, billing,
                generated database.types.ts), image/ (decode, crop, rasterize, shareCard), report-error.ts (the only Sentry importer),
-               analytics.ts (the only PostHog / sendGAEvent importer + the event catalog), env.public.ts, media-query.ts
+               analytics.ts (the only PostHog / sendGAEvent importer + the event catalog), env.public.ts, media-query.ts,
+               seo.ts (`pageMetadata`: every indexable page's title, self-canonical, og/twitter + share image)
 features/      editor/ (store/, hooks/, components/{shell,start,crop,tune,build,project,share,account,mobile,common}, steps.ts),
                marketing/ (components incl. ShareView, blog/data.ts), account/ (useUser, SignInModal, AnalyticsTracker), billing/ (cards, AccountScreen)
 worker/        Cloudflare Worker script (own tsconfig): index.ts routes /s/<id> → share.ts = share page + its og/twitter tags
-components/    Logo, Footer, BackgroundOrbs (shared, dumb), Analytics (GA4 tag + PostHog start, root layout)
+components/    Logo, Footer, BackgroundOrbs (shared, dumb), Analytics (GA4 tag + PostHog start, root layout),
+               JsonLd (structured data as a static <script>; never next/script, which only injects it client-side)
 styles/        base.css, marketing.css, editor.css       supabase/  config.toml, migrations/, functions/{_shared,billing,stripe-webhook}
 scripts/       gen-fixtures.ts, migrate-from-prisma.ts (+ migrate/ helpers)   docs/  DEPLOY.md, STRIPE_TESTING.md   plans/revamp/  plan + step docs
 ```

@@ -1,10 +1,12 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import { pageMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
     title: 'Privacy Policy',
     description: 'Privacy Policy for Diceify - Learn how we collect, use, and protect your data.',
-}
+    path: '/privacy',
+})
 
 export default function PrivacyPage() {
     return (
