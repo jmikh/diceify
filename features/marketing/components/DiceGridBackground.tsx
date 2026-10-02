@@ -1,10 +1,17 @@
-import { DICE_RENDERING, getDotPositions, type DiceFace } from '@/core/dice'
+'use client'
 
-/** Matches the 60px `.grid-overlay` lines (styles/base.css), so each die sits inside a grid cell. */
+import { useEffect, useRef } from 'react'
+import { DICE_RENDERING, getDotPositions, type DiceFace } from '@/core/dice'
+import { useMediaQuery } from '@/lib/media-query'
+
+/** Same pitch as the 60px `.grid-overlay` lines (styles/base.css); at the top of the page each die sits in a cell. */
 const CELL = 60
 const DIE_INSET = 9
 /** The pattern tile is TILE × TILE dice; big enough that the repeat is hard to spot. */
 const TILE = 10
+const TILE_PX = CELL * TILE
+/** The dice move at this fraction of the scroll speed, so they read as a layer behind the content. */
+const PARALLAX = 0.35
 const SIZE = 100
 const FACES = [1, 2, 3, 4, 5, 6] as const
 
@@ -16,13 +23,34 @@ function tileFaces(): DiceFace[] {
   })
 }
 
-/** Fixed, very faint grid of die outlines + pips behind the landing page. */
+/** Fixed, very faint grid of die outlines + pips behind the landing page, with a slow parallax on scroll. */
 export default function DiceGridBackground() {
+  const ref = useRef<SVGSVGElement>(null)
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const dieSize = CELL - DIE_INSET * 2
+
+  // Shift by the scaled scroll offset modulo one tile; the SVG is a tile taller than the viewport, so the pattern
+  // never runs out and the wrap is invisible.
+  useEffect(() => {
+    const svg = ref.current
+    if (!svg || reduceMotion) return
+    const update = () => {
+      svg.style.transform = `translate3d(0, ${-((window.scrollY * PARALLAX) % TILE_PX)}px, 0)`
+    }
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', update)
+      svg.style.transform = ''
+    }
+  }, [reduceMotion])
+
   return (
     <svg
+      ref={ref}
       aria-hidden="true"
-      className="fixed inset-0 w-full h-full pointer-events-none z-[1] text-white opacity-[0.035]"
+      className="fixed top-0 left-0 w-full pointer-events-none z-[1] text-white opacity-[0.035] will-change-transform"
+      style={{ height: `calc(100% + ${TILE_PX}px)` }}
     >
       <defs>
         {FACES.map((face) => (
@@ -37,7 +65,7 @@ export default function DiceGridBackground() {
             ))}
           </symbol>
         ))}
-        <pattern id="bg-dice-tile" width={CELL * TILE} height={CELL * TILE} patternUnits="userSpaceOnUse">
+        <pattern id="bg-dice-tile" width={TILE_PX} height={TILE_PX} patternUnits="userSpaceOnUse">
           {tileFaces().map((face, i) => (
             <use
               key={i}

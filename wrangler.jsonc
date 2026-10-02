@@ -1,0 +1,23 @@
+// The production site: one Cloudflare Worker (Workers Builds, Git integration) serving the static export in out/.
+// Static files never invoke the script; worker/index.ts runs only for `run_worker_first` (/s/* share pages).
+// Dashboard setup, build and runtime variables: docs/DEPLOY.md → "Cloudflare Worker".
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "diceify",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/s/*"]
+  },
+  // Explicit, so adding the custom domain routes at cut-over does not switch off workers.dev and the branch previews.
+  "workers_dev": true,
+  "preview_urls": true,
+  // NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are runtime variables set in the dashboard (Production and
+  // Previews base); without this, every deploy would delete them. Local `wrangler dev` reads them from .dev.vars.
+  "keep_vars": true,
+  "observability": { "enabled": true }
+}

@@ -1,12 +1,11 @@
 // GET /s/<id>: the static share page (out/share.html) with the share's own title, description, canonical and social
-// card tags, so X, Facebook & co. (whose crawlers do not run JavaScript) show the dice art. Cloudflare Pages invokes
-// Functions only for /s/*; everything else stays static. Plan: plans/revamp/revamp-step-H1.md.
+// card tags, so X, Facebook & co. (whose crawlers do not run JavaScript) show the dice art. Plan: plans/revamp/revamp-step-H1.md.
 
-import { isShareId, parseShareRows, shareCopy, shareImageUrl, shareMetaTags, sharePath, type ShareInfo } from '../../core/share'
+import { isShareId, parseShareRows, shareCopy, shareImageUrl, shareMetaTags, sharePath, type ShareInfo } from '../core/share'
 
-interface Env {
+export interface ShareEnv {
   ASSETS: Fetcher
-  // The Pages project's variables (the same ones the build inlines) reach Functions at runtime too.
+  // Runtime variables of the Worker (dashboard, Production and Previews base): the values the build inlines.
   NEXT_PUBLIC_SUPABASE_URL: string
   NEXT_PUBLIC_SUPABASE_ANON_KEY: string
 }
@@ -15,7 +14,7 @@ interface Env {
 const REPLACED_TAGS = ['meta[property^="og:"]', 'meta[name^="twitter:"]', 'meta[name="description"]', 'link[rel="canonical"]']
 
 /** `get_share` (public RPC, anon key): the share once its image exists, else null. Throws on a failed request. */
-async function fetchShare(env: Env, id: string): Promise<ShareInfo | null> {
+async function fetchShare(env: ShareEnv, id: string): Promise<ShareInfo | null> {
   const res = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_share`, {
     method: 'POST',
     headers: {
@@ -35,9 +34,8 @@ function respond(shell: Response, status: number, cacheControl: string): Respons
   return new Response(shell.body, { status, headers })
 }
 
-export const onRequestGet: PagesFunction<Env, 'id'> = async ({ params, env, request }) => {
+export async function serveShare(request: Request, env: ShareEnv, id: string): Promise<Response> {
   const shell = await env.ASSETS.fetch(new URL('/share', request.url))
-  const id = String(params.id)
   // Unknown ids still get the page (it shows "doesn't exist"), with a 404 so nothing indexes or caches it as a card
   if (!isShareId(id)) return respond(shell, 404, 'public, max-age=300')
 

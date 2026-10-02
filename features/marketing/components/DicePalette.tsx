@@ -18,7 +18,6 @@ export default function DicePalette() {
                     ))}
                 </div>
                 <span className="dice-palette-label dice-palette-label--light">Light</span>
-                <p className="dice-palette-caption">Every photo is remapped onto the only palette a die has.</p>
             </div>
         </section>
     )

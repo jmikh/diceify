@@ -7,7 +7,7 @@ import { isShareId, shareImageUrl } from '@/core/share'
 import Logo from '@/components/Logo'
 import { publicEnv } from '@/lib/env.public'
 
-/** `/s/<id>` (served by the Pages Function) or `/share?id=<id>` (next dev, where there is no function). */
+/** `/s/<id>` (served by the Worker) or `/share?id=<id>` (next dev, where there is no Worker). */
 function shareIdFromLocation(): string | null {
   const fromPath = window.location.pathname.match(/^\/s\/([^/]+)\/?$/)?.[1]
   const candidate = fromPath ?? new URLSearchParams(window.location.search).get('id')

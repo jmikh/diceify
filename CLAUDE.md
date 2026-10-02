@@ -5,10 +5,10 @@
 
 # Diceify
 
-Photo → dice-art editor. **No server of our own**: a static Next.js 14 export (`output: 'export'`, `out/`) on
-Cloudflare Pages, the browser talks to Supabase (Auth + Postgres + Storage) directly under RLS, and the only server
-code is two Supabase Edge Functions (`billing`, `stripe-webhook`) plus one Cloudflare Pages Function (`functions/s/[id].ts`:
-social card tags for share links). Sentry client-side only; GA4 via `@next/third-parties`.
+Photo → dice-art editor. **No server of our own**: a static Next.js 14 export (`output: 'export'`, `out/`) served as a
+Cloudflare Worker's static assets (`wrangler.jsonc`), the browser talks to Supabase (Auth + Postgres + Storage) directly under
+RLS, and the only server code is two Supabase Edge Functions (`billing`, `stripe-webhook`) plus the Worker's script
+(`worker/`, runs only for `/s/*`: social card tags for share links). Sentry client-side only; GA4 via `@next/third-parties`.
 
 ## Architecture map
 
@@ -22,7 +22,7 @@ lib/           browser/platform adapters: supabase/ (client, auth, profile, proj
                env.public.ts, media-query.ts
 features/      editor/ (store/, hooks/, components/{shell,start,crop,tune,build,project,share,account,mobile,common}, steps.ts),
                marketing/ (components incl. ShareView, blog/data.ts), account/ (useUser, SignInModal, AnalyticsTracker), billing/ (cards, AccountScreen)
-functions/     Cloudflare Pages Functions (Workers runtime, own tsconfig): s/[id].ts = share page + its og/twitter tags
+worker/        Cloudflare Worker script (own tsconfig): index.ts routes /s/<id> → share.ts = share page + its og/twitter tags
 components/    Logo, Footer, BackgroundOrbs (shared, dumb)
 styles/        base.css, marketing.css, editor.css       supabase/  config.toml, migrations/, functions/{_shared,billing,stripe-webhook}
 scripts/       gen-fixtures.ts, migrate-from-prisma.ts (+ migrate/ helpers)   docs/  DEPLOY.md, STRIPE_TESTING.md   plans/revamp/  plan + step docs
@@ -32,7 +32,7 @@ Import rules (ESLint `no-restricted-imports`, all `error`): `core` → only `cor
 `lib`, `components` (never `features`/`app`). `features/*` → `core`, `lib`, `components`; `features/{marketing,account,billing}`
 never import `features/editor`; nothing imports `app`. `app` → `@/features`, `@/components`, `@/lib`, `@/core`, `@/styles`.
 `supabase/functions`: a function imports its own folder + `../_shared`; `_shared` only itself; bare specifiers from `deno.json`.
-`functions/` (Pages): its own folder + `core/share` only (relative).
+`worker/`: its own folder + `core/share` only (relative).
 `@sentry/*` only in `lib/report-error.ts` (+ `instrumentation-client.ts`, `next.config.js`) — use `reportError`/`setErrorUser`.
 
 ## Core (`core/dice`)
@@ -59,7 +59,7 @@ never import `features/editor`; nothing imports `app`. `app` → `@/features`, `
 
 ## Sharing
 
-`/s/<id>` = static `share.html` + the Pages Function's meta tags. A share = immutable `shares` row + `share-images/<id>.jpg`
+`/s/<id>` = static `share.html` + the Worker's meta tags. A share = immutable `shares` row + `share-images/<id>.jpg`
 (public bucket, 1200×630 card rendered client-side); row first, then upload (storage policy needs the own row); public read
 only via the `get_share` RPC; no update/delete/unshare. Sign-in required, free on every plan. Links carry UTM tags
 (`core/share/urls.ts`); GA4 events `share_create`, `share`, `share_view`, `share_cta_click`.
@@ -88,11 +88,11 @@ only via the `get_share` RPC; no update/delete/unshare. Sign-in required, free o
 | `npm run dev:prod` / `npm run build:prod` | same against the HOSTED project (`.env.prod.local`, gitignored; hosted functions, no local serve) |
 | `npm test` / `npm run test:watch` | vitest (node env; `core/`, `lib/`, `features/`, `supabase/functions/_shared/`, `scripts/`) |
 | `npm run lint` | ESLint 9 flat config — must be 0 errors, 0 warnings |
-| `npm run typecheck` | `tsc --noEmit && tsc -p core && tsc -p functions` (covers `scripts/`; `rm -rf .next` first after deleting a route) |
+| `npm run typecheck` | `tsc --noEmit && tsc -p core && tsc -p worker` (covers `scripts/`; `rm -rf .next` first after deleting a route) |
 | `npm run db:start\|stop\|status\|reset\|migration\|types\|push` | local Supabase stack (ports 5433x) / hosted push; `db:types:prod` diffs types against the linked project |
 | `npm run functions:serve\|check\|deploy` | edge functions locally (`supabase/functions/.env`) / `deno check` / deploy |
 | `npm run stripe:listen` | forward Stripe webhooks to the local `stripe-webhook` function |
-| `npm run pages:dev` | `wrangler pages dev out` (after `npm run build`): the static site + the share Function, vars from `.dev.vars` |
+| `npm run worker:dev` | `wrangler dev` (after `npm run build`): the static site + the share Worker, vars from `.dev.vars`, else `.env.local` |
 | `npm run gen-fixtures` | regenerate `core/dice/__fixtures__` (sharp) |
 | `npm run migrate:legacy -- [--dry-run] …` | legacy Prisma DB → Supabase (read-only source; local target unless `--target=hosted`; `docs/DEPLOY.md`) |
 

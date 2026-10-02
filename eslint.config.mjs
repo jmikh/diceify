@@ -37,7 +37,7 @@ const boundary = (files, group, extra = {}) => ({
 
 export default defineConfig(
   {
-    ignores: ['.next/**', 'out/**', 'node_modules/**', 'public/**', '.agent/**', 'next-env.d.ts'],
+    ignores: ['.next/**', 'out/**', '.wrangler/**', 'node_modules/**', 'public/**', '.agent/**', 'next-env.d.ts'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -135,14 +135,14 @@ export default defineConfig(
     },
   },
   {
-    // Cloudflare Pages Functions (Workers runtime, bundled by wrangler): relative imports of core/share only.
-    files: ['functions/**/*.ts'],
+    // The Cloudflare Worker (bundled by wrangler): relative imports of core/share only.
+    files: ['worker/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
-            { regex: '^(?!\\./|(\\.\\./)+core/share(/|$))', message: 'Pages Functions import their own folder and core/share only.' },
+            { regex: '^(?!\\./|(\\.\\./)+core/share(/|$))', message: 'The Worker imports its own folder and core/share only.' },
             NO_SENTRY,
           ],
         },

@@ -5,9 +5,9 @@ placement instructions. Live at [diceify.art](https://diceify.art).
 
 ## Stack
 
-- **Next.js 14** (App Router) as a static site generator: `output: 'export'` → `out/`, hosted on **Cloudflare Pages**.
-  There is no application server; one Cloudflare Pages Function (`functions/s/[id].ts`) adds the social card tags to
-  share links (`/s/<id>`).
+- **Next.js 14** (App Router) as a static site generator: `output: 'export'` → `out/`, served as the static assets of one
+  **Cloudflare Worker** (`wrangler.jsonc`). There is no application server; the Worker's script (`worker/`) only runs for
+  share links (`/s/<id>`), where it adds the social card tags.
 - **Supabase**: Google OAuth, Postgres (projects, profiles, shares) under row-level security, Storage for the project
   photo (private) and share card images (public).
   The browser talks to it directly with `supabase-js`.
@@ -38,7 +38,7 @@ they are inlined into the static bundle, so no secret ever goes in a root file; 
 | `supabase/.env` | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` for local Google sign-in (read by `supabase/config.toml`) |
 | `supabase/functions/.env` | Stripe **test** secrets for `npm run functions:serve` (template: `supabase/functions/.env.example`) |
 | `supabase/functions/.env.production` | Stripe **live** secrets, pushed with `supabase secrets set` (`docs/DEPLOY.md`) |
-| `.dev.vars` | the two `NEXT_PUBLIC_SUPABASE_*` values for the share-link Pages Function under `npm run pages:dev` |
+| `.dev.vars` | optional: runtime variables for `npm run worker:dev` (without it `wrangler dev` reads `.env.local`) |
 
 Billing locally: `npm run functions:serve` in one terminal, `npm run stripe:listen` in another; flows, cards and
 `stripe trigger` recipes are in `docs/STRIPE_TESTING.md`.
@@ -50,7 +50,8 @@ Billing locally: `npm run functions:serve` in one terminal, `npm run stripe:list
 | `npm run dev` / `npm run build` | dev server / static export to `out/` (local Supabase stack) |
 | `npm run dev:prod` / `npm run build:prod` | same against the hosted Supabase project via `.env.prod.local` (see `docs/DEPLOY.md`) |
 | `npm test` / `npm run test:watch` | vitest unit tests (integration suites opt in with `SUPABASE_TEST=1`, `STRIPE_TEST=1`) |
-| `npm run lint` / `npm run typecheck` | ESLint (0 warnings policy) / `tsc` for the app and `core/` |
+| `npm run lint` / `npm run typecheck` | ESLint (0 warnings policy) / `tsc` for the app, `core/` and `worker/` |
+| `npm run worker:dev` | `wrangler dev` after `npm run build`: the static site + the share Worker (http://localhost:8787) |
 | `npm run db:*` | `start`, `stop`, `status`, `reset`, `migration -- <name>`, `types` (regenerates `lib/supabase/database.types.ts`), `push` |
 | `npm run functions:*` | `serve`, `check` (`deno check`), `deploy` |
 | `npm run stripe:listen` | forward Stripe webhooks to the local function |
@@ -58,6 +59,6 @@ Billing locally: `npm run functions:serve` in one terminal, `npm run stripe:list
 
 ## Deploy and testing
 
-- Deployment (Cloudflare Pages, hosted Supabase, Stripe endpoint, DNS): `docs/DEPLOY.md`.
+- Deployment (Cloudflare Worker, hosted Supabase, Stripe endpoint, DNS): `docs/DEPLOY.md`.
 - Billing flows and Stripe test recipes: `docs/STRIPE_TESTING.md`.
 - Revamp plan and per-step design docs: `plans/revamp/`.

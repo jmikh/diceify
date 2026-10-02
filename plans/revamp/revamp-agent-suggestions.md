@@ -25,7 +25,7 @@ Product / policy decisions (not made by any step):
 - E1: no CSP in `public/_headers`. Needs `script-src` for `googletagmanager.com` + Next's inline scripts, `connect-src` for the Supabase URL/`*.google-analytics.com`, `img-src data: blob:`, `form-action` to `checkout.stripe.com`/`billing.stripe.com`. Start with `Content-Security-Policy-Report-Only` once the hosted Supabase URL is fixed (F2).
 - E2: `withSentryConfig`'s default `errorHandler` throws, so with `SENTRY_AUTH_TOKEN` set a failed source-map upload fails the Pages build. Pass `errorHandler: (err) => console.warn(err)` if deploys should survive that.
 - E2: the Sentry runtime is bundled without a DSN (`/editor` first-load JS 388 kB). `bundleSizeOptimizations: { excludeTracing, excludeReplayShadowDom, excludeReplayIframe, excludeReplayWorker }` could trim it — measure first.
-- E2: release naming is the bundler plugin's default (git `HEAD` sha). Verify the `release` tag on the first preview event; if empty, set `release: { name: process.env.CF_PAGES_COMMIT_SHA }`.
+- E2: release naming is the bundler plugin's default (git `HEAD` sha). Verify the `release` tag on the first preview event; if empty, set `release: { name: process.env.WORKERS_CI_COMMIT_SHA }`.
 - E2 (plan "Not now"): Next 15 upgrade — no Sentry changes needed; needs the React 19 peer audit of cropper/motion/gesture libs.
 - E3: `npm audit` (6 findings, all major bumps): `next@14.2.35` (critical/high — image optimizer DoS etc., server-side features a static export does not run; fix = Next 16), `postcss` via `next`, `@next/third-parties` (via `next`), `vitest@3` (moderate, `@vitest/mocker`; fix = vitest 5, blocked by the A1 npm issue), `sharp@0.34` (high, libvips/libheif; fix = `sharp@0.35`, dev-only fixture generator — a bump must be followed by `npm run gen-fixtures` to confirm a clean diff). No fix applied.
 - E3: `public/android-chrome-{192,512}.png` are referenced by nothing (`manifest.json` lists only `favicon.svg`). Add them to the manifest `icons` or delete them.
@@ -40,6 +40,8 @@ Product / policy decisions (not made by any step):
 
 For F2:
 
+- E4: `www.diceify.art` — attach it as a second custom domain (serves the same site; canonical tags point at the apex) or add a Cloudflare redirect rule `www` → apex. Decide at cut-over.
+- E4: Workers Builds and `npx wrangler preview` were not exercised (dashboard-only). After the first `revamp` build check: the preview URL serves the site, sign-in works from it (redirect allow-list), and a `/s/<id>` page carries the share's `og:image` (runtime variables in both scopes).
 - F1: the Stripe sync could not be exercised in the rehearsal (test key vs live customer ids → 87× "customer not found", columns kept). The first live `syncBillingFromStripe` therefore happens during the hosted run; consider a `--only=<lifetime user>` real run first and check the row before migrating everyone.
 - F1: 20 of the 148 migrated projects had legacy `completedDice = 0` / `percentComplete = 0` while `currentX/currentY` recorded build progress (the old client updated the two independently). `completed_dice` is now derived from the progress (`documentStats`, what the editor displays), so those projects show a non-zero percentage after the migration. The other 128 match within rounding.
 - F1: `profiles.updated_at` is not preserved (the `profiles_set_updated_at` BEFORE UPDATE trigger stamps the migration time); `created_at` is, and both project timestamps are.

@@ -1,5 +1,5 @@
-// What the Pages Function (functions/s/[id].ts) puts into a share page's <head> for crawlers, and how it reads the
-// `get_share` RPC answer. Pure so it is tested here; the function only fetches and rewrites.
+// What the Worker (worker/share.ts) puts into a share page's <head> for crawlers, and how it reads the
+// `get_share` RPC answer. Pure so it is tested here; the Worker only fetches and rewrites.
 
 import { SHARE_CARD } from './card'
 import { isShareId } from './ids'

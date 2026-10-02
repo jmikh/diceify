@@ -52,7 +52,7 @@ Thumbs.db
 
 .agent/
 
-# Cloudflare Pages local dev (wrangler pages dev: state + Function variables)
+# Cloudflare Worker local dev (wrangler dev: state + runtime variables)
 .wrangler/
 .dev.vars
 

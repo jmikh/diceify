@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import ShareView from '@/features/marketing/components/ShareView'
 
-// The static shell behind /s/<id>: the Pages Function (functions/s/[id].ts) serves this page with the share's own
+// The static shell behind /s/<id>: the Worker (worker/share.ts) serves this page with the share's own
 // title, description, canonical and social card tags in place of these. Not indexed (user content); not in the sitemap.
 export const metadata: Metadata = {
   title: 'Shared dice art',

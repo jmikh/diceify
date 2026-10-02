@@ -1,7 +1,7 @@
 # Deploying Diceify
 
-Backend = Supabase (Auth + Postgres + Storage + two edge functions). Frontend = static Next.js export on Cloudflare Pages.
-This file is filled in step by step (C1 local dev → D1 Stripe → E1 Pages → F2 cut-over); see `plans/revamp/revamp-tiered-plan.md`.
+Backend = Supabase (Auth + Postgres + Storage + two edge functions). Frontend = static Next.js export served by a Cloudflare Worker.
+This file is filled in step by step (C1 local dev → D1 Stripe → E1/E4 Cloudflare → F2 cut-over); see `plans/revamp/revamp-tiered-plan.md`.
 
 ## Local dev (C1)
 
@@ -49,7 +49,7 @@ scopes (the old People API birthday scope is gone).
   → Providers → Google (same id/secret, "Skip nonce check" on).
 - **Redirect allow-list** (Supabase Auth → URL Configuration; local: `additional_redirect_urls` in `config.toml`): the app's
   `redirectTo` is `${origin}/editor?restored=true`, so allow `http://localhost:3000/**` (local), `https://diceify.art/**` and
-  `https://*.diceify.pages.dev/**` (E1 previews). Site URL: `http://localhost:3000` local, `https://diceify.art` hosted.
+  the Worker's `workers.dev` URLs (Cloudflare Worker section). Site URL: `http://localhost:3000` local, `https://diceify.art` hosted.
 - Headless check without a browser: `SUPABASE_TEST=1 SUPABASE_SERVICE_ROLE_KEY=… npx vitest run lib/supabase/auth.integration.test.ts`
   (password sign-in → own `profiles` row through RLS → plan change → entitlements).
 
@@ -74,7 +74,8 @@ Still to do, in order:
    `${window.location.origin}/editor?restored=true` or `/account`, so every host needs a wildcard entry:
    - **Site URL**: `https://diceify.art`
    - **Redirect URLs**: `http://localhost:3000/**` (local `next dev`, incl. `dev:prod`), `https://diceify.art/**`,
-     `https://*.diceify.pages.dev/**` (every Cloudflare Pages preview).
+     `https://diceify.<sub>.workers.dev/**` and `https://*-diceify.<sub>.workers.dev/**` (the Worker's production and
+     preview URLs; `<sub>` = the account's `workers.dev` subdomain, Cloudflare Worker section).
 4. **Function secrets**: `supabase secrets set --env-file supabase/functions/.env.production` where that file (gitignored,
    never committed) holds `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (from the live webhook endpoint below), the three
    price ids and `APP_URL=https://diceify.art`. Until go-live you can point it at the **test** keys instead
@@ -91,84 +92,102 @@ The local stack keeps only `http://localhost:3000/**` (`additional_redirect_urls
 |---|---|---|
 | `npm run dev` / `npm run dev:local` | local stack (`npm run db:start`) | `.env.local` |
 | `npm run dev:prod` | hosted project | `.env.prod.local` (loaded with `node --env-file`; already-set vars win over `.env.local`) |
-| `npm run build:prod` | hosted project | `.env.prod.local` (for a `wrangler pages deploy out` direct upload) |
+| `npm run build:prod` | hosted project | `.env.prod.local` (for a manual `npx wrangler deploy`) |
 
 `dev:prod` uses the hosted database and functions but the Next dev server on `localhost:3000`, which is why
 `http://localhost:3000/**` must stay in the hosted redirect allow-list. Functions are not served locally in that mode.
 
-## Cloudflare Pages (E1)
+## Cloudflare Worker (E1, E4)
 
-The site is a static export: `next.config.js` has `output: 'export'` and `npm run build` writes `out/` (`index.html`,
-`editor.html`, `account.html`, `blog.html`, `blog/<slug>.html`, `dice-art.html`, `gallery.html`, `privacy.html`, `terms.html`,
-`404.html`, `sitemap.xml`, `robots.txt`, `_headers`, `_next/**`). Pages resolves `/editor` → `editor.html` and
-`/blog/<slug>` → `blog/<slug>.html` on its own and serves `404.html` (status 404) for unknown paths, so there is no
-`_redirects` file. `public/_headers` adds the security headers (`nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`,
-`Permissions-Policy`); no CSP yet. The social card is the static `public/images/og-card.jpg` (1200×630); the old
-`opengraph-image`/`twitter-image` routes are gone. There is no server: no `app/api`, no middleware, no Vercel analytics.
+The site is a static export (`next.config.js` `output: 'export'`; `npm run build` writes `out/`: `index.html`,
+`editor.html`, `account.html`, `blog.html`, `blog/<slug>.html`, `dice-art.html`, `gallery.html`, `privacy.html`,
+`share.html`, `terms.html`, `404.html`, `sitemap.xml`, `robots.txt`, `_headers`, `_next/**`) served as the static assets of
+one Cloudflare Worker, `diceify` (`wrangler.jsonc`; E4 replaced the E1 Pages project before it was ever created). Assets
+`html_handling: auto-trailing-slash` resolves `/editor` → `editor.html` and `/blog/<slug>` → `blog/<slug>.html` (and
+redirects `/editor.html` → `/editor`); `not_found_handling: 404-page` serves `404.html` with status 404, so there is no
+`_redirects`. `public/_headers` adds the security headers (`nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`,
+`Permissions-Policy`); no CSP yet. Static requests never invoke the script: `worker/index.ts` runs only for
+`assets.run_worker_first` (`/s/*`, share links below). `wrangler` is a pinned devDependency (Worker Previews need ≥ 4.135).
 
-### Git integration (recommended)
+### Workers Builds (Git integration)
 
-One-time, in the Cloudflare dashboard (nothing is scripted — `wrangler` was not logged in on the machine that ran E1):
+One-time, in the Cloudflare dashboard:
 
-1. Workers & Pages → **Create** → **Pages** → **Connect to Git** → pick this GitHub repo. Project name `diceify`
-   (gives `https://diceify.pages.dev`; previews are `https://<branch>.diceify.pages.dev`).
-2. **Production branch**: `master`. Preview deployments: "All non-Production branches" (so pushing `revamp` publishes
-   `https://revamp.diceify.pages.dev`; until the cut-over `master` still deploys the old Vercel site and the Pages
-   production build of `master` is unused).
-3. **Build settings**: framework preset "None" (or "Next.js (Static HTML Export)"), build command `npm run build`,
-   build output directory `out`, root directory `/`.
-4. **Environment variables** (set for both Production and Preview; they are inlined at build time, none is a secret):
+1. GitHub → Settings → Applications → **Cloudflare Workers and Pages** → Configure → Repository access: add
+   `jmikh/diceify` (otherwise it is missing from Cloudflare's repository list).
+2. Workers & Pages → **Create application** → import `jmikh/diceify` (not "Continue to Pages", not "Clone a public
+   repository via Git URL").
+3. **Set up your application**:
+   - Project name `diceify` — must equal `name` in `wrangler.jsonc`.
+   - Build command `npm run build`, deploy command `npx wrangler deploy`, preview command `npx wrangler preview`,
+     **Enable Preview builds** on.
+   - **Build variables** (inlined by `next build`; Workers keeps them apart from runtime variables; none is a secret
+     except the Sentry token):
 
-   | Variable | Production | Preview (`revamp`) |
-   |---|---|---|
-   | `NODE_VERSION` | `20` | `20` |
-   | `NEXT_PUBLIC_SUPABASE_URL` | `https://<project-ref>.supabase.co` | same hosted project (the local stack is not reachable from Pages) |
-   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | hosted anon key | same |
-   | `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN (optional, unset = inert) | same or unset |
-   | `SENTRY_AUTH_TOKEN` | Sentry auth token (optional; enables the source-map upload — keep it a Pages *secret*) | same or unset |
-   | `SENTRY_ORG` | Sentry org slug (with the token) | same |
-   | `SENTRY_PROJECT` | Sentry project slug (with the token) | same |
+     | Variable | Value |
+     |---|---|
+     | `NEXT_PUBLIC_SUPABASE_URL` | `https://pmxvjcnxnwzuggnuhkol.supabase.co` (as in `.env.prod.local`) |
+     | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the hosted anon key (as in `.env.prod.local`) |
+     | `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN (optional, unset = inert) |
+     | `SENTRY_AUTH_TOKEN` | Sentry auth token (optional; enables the source-map upload — add it as a build *secret*) |
+     | `SENTRY_ORG`, `SENTRY_PROJECT` | Sentry org / project slugs (with the token) |
 
-   A build with the `NEXT_PUBLIC_*` values missing still succeeds (`lib/env.public.ts` validates on first access), so a
-   misconfigured project fails at sign-in/save in the browser, not at build time — check the variables first when that happens.
-   Do **not** set `NODE_ENV=production` or `NPM_FLAGS=--omit=dev` on the project: `typescript`, `tailwindcss`, `postcss` and
-   `@types/*` are devDependencies and `next build` needs them (Pages' default `npm install`/`npm ci` includes them).
-5. Save and deploy. Preview URL after the first `revamp` build: `https://revamp.diceify.pages.dev` (not created yet — see the
-   step log in `plans/revamp/revamp-tiered-plan.md`).
+     Node: the build image's default (24) matches local development; set `NODE_VERSION` only if a build needs another.
+     Do **not** set `NODE_ENV=production` or skip devDependencies: `next build` needs `typescript`, `tailwindcss`,
+     `postcss` and `@types/*`, the deploy needs `wrangler`.
+4. **Deploy.** The first build runs on the repository's default branch `master`, which has no `wrangler.jsonc` before the
+   cut-over: it fails (or deploys the old app to the `workers.dev` URL). Harmless; if Cloudflare opens a pull request with
+   a generated Wrangler config, close it.
+5. Settings → Build → **Branch control**: production branch **`revamp`** until the cut-over (no custom domain yet, so
+   "production" is just the `workers.dev` URL), preview builds for all other branches.
+6. Settings → **Variables and Secrets** — the Worker's **runtime** variables (read by the share script), needed in both
+   scopes because Previews do not inherit production settings:
+   - **Production**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (type Text, the same values as above).
+   - Switch to **Previews base**: the same two. A Preview copies the base when it is created, so set them before the first
+     preview build (or redeploy the preview).
+
+   `keep_vars: true` in `wrangler.jsonc` keeps the dashboard values across deploys.
+7. Deployments → retry the latest build (or push to `revamp`). URLs, `<sub>` = the account's `workers.dev` subdomain
+   (Workers & Pages overview, right column):
+   - production (`revamp` until the cut-over): `https://diceify.<sub>.workers.dev`
+   - previews: `https://<branch>-diceify.<sub>.workers.dev`
+8. Supabase redirect allow-list: add both (hosted project, step 3 above).
+
+A build with the `NEXT_PUBLIC_*` build variables missing still succeeds (`lib/env.public.ts` validates on first access), so
+a misconfigured build fails at sign-in/save in the browser ("Missing or invalid public env"), not at build time — check
+the build variables first when that happens.
 
 ### Sentry (optional)
 
 Client-side only (`instrumentation-client.ts`; the static export has no server). Create a Sentry project (platform
 "Next.js"), put its DSN in `NEXT_PUBLIC_SENTRY_DSN`; without it the SDK is inert (no network, no console noise). For
 readable stack traces set `SENTRY_AUTH_TOKEN` (an org auth token with `project:releases` + `org:read`), `SENTRY_ORG`
-and `SENTRY_PROJECT` in the Pages build env: `withSentryConfig` (next.config.js) then generates hidden source maps,
+and `SENTRY_PROJECT` as build variables (Workers Builds): `withSentryConfig` (next.config.js) then generates hidden source maps,
 uploads them and deletes them from `out/`. Without the token no maps are generated at all. A failed upload fails the
 build (the plugin's default). Events are tagged `where=<site>` (see `lib/report-error.ts`) and carry the user id.
 
-### Direct upload (alternative, no Git integration)
+### Manual deploy (alternative, no Git integration)
 
 ```sh
-npx wrangler login                                     # once, opens the browser
-npx wrangler pages project create diceify --production-branch master   # once
-npm run build
-npx wrangler pages deploy out --branch revamp --project-name diceify   # preview; --branch master = production
+npx wrangler login            # once, opens the browser
+npm run build:prod            # static export with the hosted NEXT_PUBLIC_* values from .env.prod.local
+npx wrangler deploy           # production; `npx wrangler versions upload` uploads a version without deploying it
 ```
 
-`wrangler` is not a repo dependency (Homebrew `wrangler` 4.x or `npx wrangler@4` both work). Environment variables are
-still read from the local `.env.local` by `next build` in this path, so build with the hosted values in that file.
+Runtime variables stay the dashboard's (`keep_vars`).
 
-### Share links: the Pages Function (H1)
+### Share links: the Worker script (H1, E4)
 
-`functions/s/[id].ts` serves `/s/<id>` (the static `share.html` with the share's `og:*`/`twitter:*` tags, so X and Facebook
-show the dice art). Pages compiles `functions/` from the repo root on its own (Git integration and `wrangler pages deploy out`
-run from the root alike) and invokes it only for `/s/*`. It reads `NEXT_PUBLIC_SUPABASE_URL` and
-`NEXT_PUBLIC_SUPABASE_ANON_KEY` at runtime: the Pages project's environment variables (step 4 above) serve the build and
-the Functions, so nothing new to set — but they must exist for **both** Production and Preview. Free plan: 100k Function
-requests/day.
+`worker/index.ts` routes `/s/<id>` to `worker/share.ts` (the static `share.html` with the share's `og:*`/`twitter:*` tags,
+so X and Facebook show the dice art); any other `/s/*` path falls through to the assets (404 page). It reads
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` at runtime (step 6 above); without them every share page
+falls back to the site card and the Worker logs `[share] get_share failed` (Workers Logs: `observability` in
+`wrangler.jsonc`; Worker → Logs). Free plan: 100k Worker requests/day; static asset requests do not invoke the script and
+are not counted.
 
-- Local: `npm run build` then `npm run pages:dev` (`wrangler pages dev out`, http://localhost:8788) with a gitignored
-  `.dev.vars` holding the two values (`NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54331` + the local anon key). `next dev`
-  has no Functions: open `/share?id=<id>` there instead.
+- Local: `npm run build` then `npm run worker:dev` (`wrangler dev`, http://localhost:8787). Runtime variables come from a
+  gitignored `.dev.vars` if present, else from `.env.local` (the local stack values `next dev` uses). `next dev` has no
+  Worker: open `/share?id=<id>` there instead.
 - Check a live card after deploying: paste a `/s/<id>` URL into the Facebook Sharing Debugger
   (developers.facebook.com/tools/debug, "Scrape Again") and into an X post draft. Each share URL is new, so stale caches
   only matter for the site-wide card.
@@ -177,9 +196,21 @@ requests/day.
 
 ### Custom domain / DNS (F2)
 
-At cut-over: Pages project → Custom domains → add `diceify.art` and `www.diceify.art` (Cloudflare provisions the certificate;
-if the zone is not on Cloudflare, point a `CNAME` at `diceify.pages.dev`), then remove the domain from the Vercel project.
-The Supabase Site URL and the edge functions' `APP_URL` secret are already `https://diceify.art`.
+Workers custom domains need the zone on Cloudflare (Workers does not support domains whose nameservers Cloudflare does not
+manage, and an apex domain cannot be a `CNAME` anyway). `diceify.art` is on Google Cloud DNS today
+(`ns-cloud-c*.googledomains.com`, apex `A` → Vercel). Ahead of the cut-over, without downtime:
+
+1. Cloudflare → **Add a domain** → `diceify.art` (Free plan). Compare the imported records with the current zone (the
+   Vercel `A`/`CNAME`, any `MX`/`TXT` such as mail or Google Search Console verification) before continuing.
+2. At the registrar, replace the nameservers with the two Cloudflare ones; wait until the zone is **Active**. The site keeps
+   pointing at Vercel through the imported records.
+
+At cut-over: delete the imported apex/`www` records that point at Vercel, then Worker → Settings → **Domains & Routes** →
+Add → Custom domain `diceify.art` and `www.diceify.art` (Cloudflare creates the DNS records and certificates), and remove
+the domain from the Vercel project. Alternatively put them in `wrangler.jsonc` (`"routes": [{ "pattern": "diceify.art",
+"custom_domain": true }, …]`) to keep the config the source of truth; `workers_dev` and `preview_urls` are explicit there so
+the `workers.dev` URLs survive either way. The Supabase Site URL and the edge functions' `APP_URL` secret are already
+`https://diceify.art`.
 
 ## Stripe (D1)
 
@@ -256,7 +287,7 @@ Runbook (details per section above; the migration itself is F1):
 1. Hosted Supabase project: `supabase link`, `npm run db:push`, `npm run functions:deploy`, `supabase secrets set --env-file
    supabase/functions/.env.production`, Google provider + redirect URLs, Site URL `https://diceify.art`; Stripe live webhook
    endpoint (pinned API version); Customer Portal configuration.
-2. Cloudflare Pages: merge `revamp` → `master`, production env variables set, build green on the production branch.
+2. Cloudflare Worker: merge `revamp` → `master`, Branch control → production branch `master`, build green.
 3. Freeze the old site (logins keep bumping `User.updatedAt`, and the `--since` window is evaluated at run time).
 4. Migration, from a machine with `LEGACY_DATABASE_URL` in `.env.local` and the hosted values in the environment:
    ```sh
@@ -271,5 +302,6 @@ Runbook (details per section above; the migration itself is F1):
    writes explicit `created_at`s.
 5. Smoke test: a migrated lifetime user, a migrated studio-canceled user (`cancel_at`/status from the live sync), a new user
    with a real Studio purchase (refund it afterwards).
-6. Move DNS `diceify.art` from Vercel to Pages (Custom domain section above); disable the old Vercel Stripe endpoint.
+6. Attach `diceify.art` + `www` as the Worker's custom domains (zone moved to Cloudflare beforehand — Custom domain section
+   above); disable the old Vercel Stripe endpoint.
 7. Keep the old database read-only for 30 days, then delete the Vercel project.

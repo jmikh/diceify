@@ -1,5 +1,5 @@
 // The words around a share: page title/description (meta tags), the card image's alt text and the prefilled post.
-// One source for the editor (post text), the Pages Function (meta tags) and the card image.
+// One source for the editor (post text), the Worker (meta tags) and the card image.
 
 export interface ShareGrid {
   cols: number
