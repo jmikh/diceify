@@ -85,7 +85,7 @@ export default function PrivacyPage() {
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
                                 2.4 Analytics Data
                             </h3>
-                            {/* TODO(user): Vercel Analytics is no longer used; Google Analytics + Sentry (client error reporting) are */}
+                            {/* TODO(user): Vercel Analytics is no longer used; Google Analytics, PostHog (product analytics + session replay, linked to the account id once signed in — so not "anonymized") and Sentry (client error reporting) are. Draft wording: plans/revamp/revamp-agent-suggestions.md (I1) */}
                             <p>
                                 We use Google Analytics and Vercel Analytics to understand how users interact with our Service. This includes information such as pages visited, time spent on pages, and general usage patterns. This data is anonymized and used to improve our Service.
                             </p>

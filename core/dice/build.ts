@@ -86,6 +86,22 @@ export function rowLimitAllows(target: GridPos, rowLimit: number | null): boolea
   return rowLimit === null || target.y < rowLimit
 }
 
+/** Build-progress percentages reported to analytics when first passed (100 = the last die is reached). */
+export const BUILD_MILESTONES = [25, 50, 75, 100] as const
+
+/** Percent of the build done at build index `index`; the last die counts as 100 (there is no position past it). */
+function reachedPercent(index: number, total: number): number {
+  return index >= total - 1 ? 100 : (index / total) * 100
+}
+
+/** Milestones passed by a forward move from build index `from` to `to` on a grid of `total` dice. */
+export function buildMilestonesCrossed(from: number, to: number, total: number): number[] {
+  if (total <= 0 || to <= from) return []
+  const before = reachedPercent(from, total)
+  const after = reachedPercent(to, total)
+  return BUILD_MILESTONES.filter((m) => before < m && after >= m)
+}
+
 // ---------------------------------------------------------------------------
 // Viewer geometry. 1 viewBox unit = 1 die; SVG rows count from the top.
 // ---------------------------------------------------------------------------

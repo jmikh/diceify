@@ -19,10 +19,18 @@ const CORE_RESTRICTED_GLOBALS = [
 ]
 const CORE_RESTRICTED_IMPORTS = ['react', 'next', 'next/*', '@/lib/*', '@/features/*', '@/app/*', '@/components/*']
 
-// Sentry is reached through lib/report-error.ts only (plan → "Sentry"). `no-restricted-imports` options are replaced,
+// SDK adapters: Sentry is reached through lib/report-error.ts only (plan → "Sentry"), PostHog and GA4 events through
+// lib/analytics.ts only (plan step I1). `no-restricted-imports` options are replaced,
 // not merged, by a later block for the same file, so the pattern rides along in every block below.
 const NO_SENTRY = { group: ['@sentry/*', '@sentry/*/**'], message: 'Use reportError/setErrorUser from @/lib/report-error.' }
 const SENTRY_IMPORTERS = ['lib/report-error.ts', 'instrumentation-client.ts', 'next.config.js']
+const NO_POSTHOG = { group: ['posthog-js', 'posthog-js/**'], message: 'Use track/identifyUser from @/lib/analytics.' }
+const NO_GA_EVENT = {
+  group: ['@next/third-parties/google'],
+  importNames: ['sendGAEvent'],
+  message: 'Use track from @/lib/analytics.',
+}
+const ADAPTERS_ONLY = [NO_SENTRY, NO_POSTHOG, NO_GA_EVENT]
 
 // Import boundaries (plan → "Import rules"). `app` → features/components/lib/core; features/marketing|account|billing
 // never reach into the editor; lib/components never import features or app.
@@ -32,7 +40,7 @@ const NO_EDITOR = ['@/features/editor', '@/features/editor/*']
 const boundary = (files, group, extra = {}) => ({
   files,
   ...extra,
-  rules: { 'no-restricted-imports': ['error', { patterns: [{ group }, NO_SENTRY] }] },
+  rules: { 'no-restricted-imports': ['error', { patterns: [{ group }, ...ADAPTERS_ONLY] }] },
 })
 
 export default defineConfig(
@@ -66,7 +74,7 @@ export default defineConfig(
     // Everything without a boundary block below (root files, scripts, tests): Sentry only through the wrapper.
     files: ['**/*.{js,mjs,cjs,ts,tsx}'],
     ignores: SENTRY_IMPORTERS,
-    rules: { 'no-restricted-imports': ['error', { patterns: [NO_SENTRY] }] },
+    rules: { 'no-restricted-imports': ['error', { patterns: ADAPTERS_ONLY }] },
   },
   {
     // CommonJS config files at the root (next.config.js, postcss.config.js).
@@ -78,7 +86,7 @@ export default defineConfig(
     files: ['core/**/*.ts'],
     rules: {
       'no-restricted-globals': ['error', ...CORE_RESTRICTED_GLOBALS],
-      'no-restricted-imports': ['error', { patterns: [{ group: CORE_RESTRICTED_IMPORTS }, NO_SENTRY] }],
+      'no-restricted-imports': ['error', { patterns: [{ group: CORE_RESTRICTED_IMPORTS }, ...ADAPTERS_ONLY] }],
     },
   },
   {
@@ -112,7 +120,7 @@ export default defineConfig(
           patterns: [
             { regex: '^\\.\\./(?!_shared/)', message: 'A function may import only its own folder and ../_shared.' },
             { regex: '^(?!\\.{1,2}/)(?!(stripe|zod|@supabase/supabase-js)$)', message: 'Edge functions import relative paths or the specifiers in deno.json only.' },
-            NO_SENTRY,
+            ...ADAPTERS_ONLY,
           ],
         },
       ],
@@ -128,7 +136,7 @@ export default defineConfig(
           patterns: [
             { regex: '^\\.\\./', message: '_shared may import only _shared.' },
             { regex: '^(?!\\.{1,2}/)(?!(stripe|zod|@supabase/supabase-js)$)', message: 'Edge functions import relative paths or the specifiers in deno.json only.' },
-            NO_SENTRY,
+            ...ADAPTERS_ONLY,
           ],
         },
       ],
@@ -143,7 +151,7 @@ export default defineConfig(
         {
           patterns: [
             { regex: '^(?!\\./|(\\.\\./)+core/share(/|$))', message: 'The Worker imports its own folder and core/share only.' },
-            NO_SENTRY,
+            ...ADAPTERS_ONLY,
           ],
         },
       ],
@@ -151,11 +159,16 @@ export default defineConfig(
   },
   boundary(['features/marketing/**', 'features/account/**', 'features/billing/**'], [...NO_EDITOR, ...NO_APP]),
   boundary(['features/editor/**'], NO_APP),
-  boundary(['lib/**', 'components/**'], [...NO_FEATURES, ...NO_APP], { ignores: ['lib/report-error.ts'] }),
+  boundary(['lib/**', 'components/**'], [...NO_FEATURES, ...NO_APP], { ignores: ['lib/report-error.ts', 'lib/analytics.ts'] }),
   {
     // The Sentry wrapper keeps the lib boundary without the Sentry ban.
     files: ['lib/report-error.ts'],
-    rules: { 'no-restricted-imports': ['error', { patterns: [...NO_FEATURES, ...NO_APP] }] },
+    rules: { 'no-restricted-imports': ['error', { patterns: [{ group: [...NO_FEATURES, ...NO_APP] }, NO_POSTHOG, NO_GA_EVENT] }] },
+  },
+  {
+    // The analytics wrapper keeps the lib boundary without the PostHog / GA event bans.
+    files: ['lib/analytics.ts'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [{ group: [...NO_FEATURES, ...NO_APP] }, NO_SENTRY] }] },
   },
   {
     // app/ is routing glue: it may import only features, components, lib, core and styles.
@@ -166,7 +179,7 @@ export default defineConfig(
         {
           patterns: [
             { regex: '^@/(?!features/|components/|lib/|core/|styles/)', message: 'app may import only @/features, @/components, @/lib, @/core, @/styles.' },
-            NO_SENTRY,
+            ...ADAPTERS_ONLY,
           ],
         },
       ],

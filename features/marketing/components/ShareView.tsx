@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { sendGAEvent } from '@next/third-parties/google'
+import { rememberShareReferral, track } from '@/lib/analytics'
 import { isShareId, shareImageUrl } from '@/core/share'
 import Logo from '@/components/Logo'
 import { publicEnv } from '@/lib/env.public'
@@ -24,11 +24,15 @@ export default function ShareView() {
   useEffect(() => {
     const shareId = shareIdFromLocation()
     setId(shareId)
-    if (!shareId) setStatus('missing')
-    else sendGAEvent('event', 'share_view', { share_id: shareId })
+    if (!shareId) {
+      setStatus('missing')
+      return
+    }
+    track('share_view', { share_id: shareId })
+    rememberShareReferral(shareId)
   }, [])
 
-  const onCta = () => sendGAEvent('event', 'share_cta_click', { share_id: id ?? 'none' })
+  const onCta = () => track('share_cta_click', { share_id: id ?? 'none' })
 
   return (
     <div className="relative z-[2] max-w-[880px] mx-auto w-full px-6 py-8 md:py-12">

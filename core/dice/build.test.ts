@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   bufferedWindow,
   buildIndex,
+  buildMilestonesCrossed,
   computeViewBox,
   countCompleted,
   findNextDiff,
@@ -111,6 +112,22 @@ describe('stepping', () => {
     expect(rowLimitAllows({ x: 9, y: 4 }, 5)).toBe(true)
     expect(rowLimitAllows({ x: 0, y: 5 }, 5)).toBe(false)
     expect(rowLimitAllows({ x: 0, y: 0 }, 0)).toBe(false)
+  })
+
+  it('buildMilestonesCrossed: milestones passed by a forward move, the last die counting as 100', () => {
+    expect(buildMilestonesCrossed(0, 24, 100)).toEqual([])
+    expect(buildMilestonesCrossed(24, 25, 100)).toEqual([25])
+    expect(buildMilestonesCrossed(25, 26, 100)).toEqual([])
+    expect(buildMilestonesCrossed(10, 80, 100)).toEqual([25, 50, 75])
+    expect(buildMilestonesCrossed(98, 99, 100)).toEqual([100])
+    expect(buildMilestonesCrossed(0, 99, 100)).toEqual([25, 50, 75, 100])
+  })
+
+  it('buildMilestonesCrossed: nothing for backward moves, no move or an empty grid', () => {
+    expect(buildMilestonesCrossed(80, 10, 100)).toEqual([])
+    expect(buildMilestonesCrossed(50, 50, 100)).toEqual([])
+    expect(buildMilestonesCrossed(0, 1, 0)).toEqual([])
+    expect(buildMilestonesCrossed(0, 0, 1)).toEqual([])
   })
 })
 

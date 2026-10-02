@@ -1,6 +1,6 @@
 "use client"
 
-import { sendGAEvent } from '@next/third-parties/google'
+import { track } from '@/lib/analytics'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 
 interface UpgradeButtonProps {
@@ -13,7 +13,7 @@ export const UpgradeButton = ({ className, source }: UpgradeButtonProps) => {
 
     const onUpgrade = () => {
         // Track the click event
-        sendGAEvent('event', 'click_upgrade', {
+        track('click_upgrade', {
             source: source || 'unknown',
         })
 

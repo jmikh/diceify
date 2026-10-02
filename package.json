@@ -38,6 +38,7 @@
     "lucide-react": "^0.542.0",
     "motion": "^12.23.12",
     "next": "^14.2.25",
+    "posthog-js": "^1.435.8",
     "react": "^18.3.1",
     "react-advanced-cropper": "^0.20.1",
     "react-countup": "^6.5.3",

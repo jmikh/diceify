@@ -6,6 +6,7 @@
 // 500 when Stripe or the database failed (Stripe retries with backoff).
 
 import type Stripe from 'stripe'
+import { capture, purchaseEvent } from '../_shared/analytics.ts'
 import { syncBillingFromStripe } from '../_shared/billing-sync.ts'
 import { error, json } from '../_shared/http.ts'
 import { assertStripeEnv, getStripe, stripeCryptoProvider } from '../_shared/stripe.ts'
@@ -68,6 +69,9 @@ Deno.serve(async (req) => {
       return json({ received: true, unknownCustomer: true })
     }
     console.log(`stripe-webhook: ${event.type} ${event.id}: ${customerId} → plan=${view.plan}`)
+    // Only after a successful sync: a failed one is retried by Stripe, and the uuid keeps the event single anyway
+    const purchase = await purchaseEvent(event, view.plan)
+    if (purchase) await capture(purchase)
     return json({ received: true })
   } catch (err) {
     console.error(`stripe-webhook: ${event.type} ${event.id}: sync failed:`, err)

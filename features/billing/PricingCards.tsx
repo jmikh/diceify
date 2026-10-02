@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Check, Loader2, Clock } from 'lucide-react'
-import { sendGAEvent } from '@next/third-parties/google'
+import { track } from '@/lib/analytics'
 import type { CheckoutPlan, Plan } from '@/core/billing'
 import { useUser } from '@/features/account/useUser'
 import { BillingError, reportBillingError, startCheckout } from '@/lib/supabase/billing'
@@ -118,6 +118,7 @@ const variantStyles = {
 async function goToCheckout(plan: CheckoutPlan, onAlreadyPro: () => void): Promise<boolean> {
     try {
         const { url } = await startCheckout(plan)
+        track('checkout_started', { plan })
         window.location.assign(url)
         return true
     } catch (error) {
@@ -147,7 +148,7 @@ export function CreatorCard({
     const { user, entitlements } = useUser()
 
     const onUpgrade = async () => {
-        sendGAEvent('event', 'click_upgrade', {
+        track('click_upgrade', {
             source,
             plan_type: 'creator'
         })
@@ -246,7 +247,7 @@ export function StudioCard({
     const onUpgrade = async () => {
         const plan: CheckoutPlan = studioInterval === 'monthly' ? 'studio_monthly' : 'studio_yearly'
 
-        sendGAEvent('event', 'click_upgrade', {
+        track('click_upgrade', {
             source,
             plan_type: plan
         })

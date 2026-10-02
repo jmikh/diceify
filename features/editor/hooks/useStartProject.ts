@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { useUser } from '@/features/account/useUser'
+import { track } from '@/lib/analytics'
 import { downscaleForUpload } from '@/lib/image/decode'
 import { reportError } from '@/lib/report-error'
 import { writeDraftImage } from '@/features/editor/store/draft'
@@ -25,6 +26,7 @@ export function useStartProject() {
       uploadImage(blob)
       await writeDraftImage(blob)
       if (user) await createFromDraft(useDocumentStore.getState().name)
+      track('photo_uploaded', { file_type: file.type, file_size: file.size })
     } catch (error) {
       reportError(error, { where: 'upload', extra: { type: file.type, size: file.size } })
       toast.error('Could not read that image. Please try another file.')

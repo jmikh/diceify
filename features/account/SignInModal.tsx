@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
-import { sendGAEvent } from '@next/third-parties/google'
+import { track } from '@/lib/analytics'
 import Image from 'next/image'
 import Logo from '@/components/Logo'
 import { signInWithGoogle } from '@/lib/supabase/auth'
@@ -46,7 +46,7 @@ export default function SignInModal({
   }
 
   const handleUnsupportedProvider = (providerName: string) => {
-    sendGAEvent('event', 'unsupported_login_provider_click', { provider: providerName })
+    track('unsupported_login_provider_click', { provider: providerName })
     setError(
       <>
         Sorry, we are working on supporting {providerName} login.

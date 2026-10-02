@@ -1,7 +1,7 @@
 'use client'
 
 import { useGate } from '@/features/editor/hooks/useGate'
-import { sendGAEvent } from '@next/third-parties/google'
+import { track } from '@/lib/analytics'
 
 export default function BuilderLimitToast() {
     const { ent, gate } = useGate()
@@ -10,10 +10,10 @@ export default function BuilderLimitToast() {
     if (ent.builderRowLimit === null) return null
 
     const handleUpgrade = () => {
-        sendGAEvent('event', 'click_upgrade', {
+        track('click_upgrade', {
             source: 'builder_limit_toast',
         })
-        gate(false, { signInMessage: 'Sign in to upgrade your account', modal: 'proFeature' })
+        gate(false, 'upgrade', { signInMessage: 'Sign in to upgrade your account', modal: 'proFeature' })
     }
 
     return (

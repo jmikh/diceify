@@ -5,7 +5,7 @@ import { useState } from 'react'
 import type { CheckoutPlan, Plan } from '@/core/billing'
 import { ProfileProvider } from '@/features/account/useUser'
 import SignInModal from '@/features/account/SignInModal'
-import { sendGAEvent } from '@next/third-parties/google'
+import { track } from '@/lib/analytics'
 import { CreatorCard, StudioCard } from '@/features/billing/PricingCards'
 
 /** The landing pricing section. Provides the profile context its cards read (the only marketing consumer). */
@@ -120,7 +120,7 @@ function PricingSection() {
                             </li>
                         </ul>
 
-                        <Link href="/editor" className="btn-secondary w-full justify-center text-sm mt-auto" onClick={() => sendGAEvent('event', 'go_to_editor', { source: 'pricing_free' })}>
+                        <Link href="/editor" className="btn-secondary w-full justify-center text-sm mt-auto" onClick={() => track('go_to_editor', { source: 'pricing_free' })}>
                             Start Free
                         </Link>
                     </div>

@@ -80,18 +80,8 @@ export async function renderShareCard(grid: DiceGrid): Promise<Blob> {
   glow(ctx, text.x + text.width, 0, 560, 'rgba(255, 45, 146, 0.28)')
   glow(ctx, art.x, layout.height, 520, 'rgba(124, 58, 237, 0.22)')
 
-  // The art, with rounded corners and a hairline border
-  ctx.save()
-  ctx.beginPath()
-  ctx.roundRect(art.x, art.y, art.width, art.height, 14)
-  ctx.clip()
+  // The art, flush with the card's left edge
   ctx.drawImage(artImage, art.x, art.y, art.width, art.height)
-  ctx.restore()
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)'
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.roundRect(art.x, art.y, art.width, art.height, 14)
-  ctx.stroke()
 
   // Text column, vertically centred: logo, dice count (shrunk to fit), grid size, call to action
   ctx.textBaseline = 'top'

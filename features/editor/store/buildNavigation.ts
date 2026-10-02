@@ -11,6 +11,7 @@ import {
   type DiceGrid,
   type GridPos,
 } from '@/core/dice'
+import { trackBuildMove } from '../analytics'
 import { useDerivedStore } from './useDerivedStore'
 import { useDocumentStore } from './useDocumentStore'
 
@@ -69,5 +70,6 @@ export function moveTo(target: GridPos | null, gate: BuildGate): boolean {
     return false
   }
   useDocumentStore.getState().setBuildProgress(target)
+  if (forward) trackBuildMove(progress, target, grid)
   return true
 }

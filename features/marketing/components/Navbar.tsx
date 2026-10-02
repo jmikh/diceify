@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { sendGAEvent } from '@next/third-parties/google'
+import { track } from '@/lib/analytics'
 
 export default function Navbar() {
     return (
@@ -39,7 +39,7 @@ export default function Navbar() {
             <Link
                 href="/editor"
                 className="nav-cta"
-                onClick={() => sendGAEvent('event', 'go_to_editor', { source: 'header' })}
+                onClick={() => track('go_to_editor', { source: 'header' })}
             >
                 Start creating
             </Link>

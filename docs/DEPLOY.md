@@ -20,7 +20,8 @@ npm run db:stop
 Env files (all gitignored except `supabase/functions/.env.example`; full table in `README.md`):
 
 - `.env.local` — `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (printed by `db:status`), optional
-  `NEXT_PUBLIC_SENTRY_DSN`; `LEGACY_DATABASE_URL` for the migration until F2.
+  `NEXT_PUBLIC_SENTRY_DSN`; `LEGACY_DATABASE_URL` for the migration until F2. Leave `NEXT_PUBLIC_POSTHOG_KEY` out of it
+  so local sessions do not land in the production PostHog project (PostHog section).
 - `supabase/.env` — `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, read by `env(...)` in `supabase/config.toml`. Add
   `http://127.0.0.1:54331/auth/v1/callback` as an authorized redirect URI on the Google OAuth client for local sign-in.
 - `supabase/functions/.env` — Stripe secrets for `npm run functions:serve` (template `supabase/functions/.env.example`; `docs/STRIPE_TESTING.md`).
@@ -78,7 +79,7 @@ Still to do, in order:
      preview URLs; `<sub>` = the account's `workers.dev` subdomain, Cloudflare Worker section).
 4. **Function secrets**: `supabase secrets set --env-file supabase/functions/.env.production` where that file (gitignored,
    never committed) holds `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (from the live webhook endpoint below), the three
-   price ids and `APP_URL=https://diceify.art`. Until go-live you can point it at the **test** keys instead
+   price ids, `APP_URL=https://diceify.art` and, optionally, `POSTHOG_KEY` (+ `POSTHOG_HOST`, PostHog section). Until go-live you can point it at the **test** keys instead
    (`cp supabase/functions/.env supabase/functions/.env.production`, set `APP_URL` to the URL you are testing from) so the
    preview and `dev:prod` exercise checkout with test cards; swap to live keys at cut-over.
 5. **Stripe webhook** (per mode): endpoint `https://pmxvjcnxnwzuggnuhkol.supabase.co/functions/v1/stripe-webhook`, events
@@ -131,6 +132,8 @@ One-time, in the Cloudflare dashboard:
      | `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN (optional, unset = inert) |
      | `SENTRY_AUTH_TOKEN` | Sentry auth token (optional; enables the source-map upload — add it as a build *secret*) |
      | `SENTRY_ORG`, `SENTRY_PROJECT` | Sentry org / project slugs (with the token) |
+     | `NEXT_PUBLIC_POSTHOG_KEY` | PostHog project API key `phc_…` (optional, unset = inert) |
+     | `NEXT_PUBLIC_POSTHOG_HOST` | `https://eu.i.posthog.com` for an EU project (optional, default `https://us.i.posthog.com`) |
 
      Node: the build image's default (24) matches local development; set `NODE_VERSION` only if a build needs another.
      Do **not** set `NODE_ENV=production` or skip devDependencies: `next build` needs `typescript`, `tailwindcss`,
@@ -165,6 +168,21 @@ readable stack traces set `SENTRY_AUTH_TOKEN` (an org auth token with `project:r
 and `SENTRY_PROJECT` as build variables (Workers Builds): `withSentryConfig` (next.config.js) then generates hidden source maps,
 uploads them and deletes them from `out/`. Without the token no maps are generated at all. A failed upload fails the
 build (the plugin's default). Events are tagged `where=<site>` (see `lib/report-error.ts`) and carry the user id.
+
+### PostHog (optional)
+
+Product analytics, client-side plus one server event (plan step I1; event catalog in `lib/analytics.ts`). Create a
+PostHog project and put its **project API key** (`phc_…`, public by design) in the `NEXT_PUBLIC_POSTHOG_KEY` build
+variable, plus `NEXT_PUBLIC_POSTHOG_HOST` when the project is in the EU cloud. Unset key = PostHog is never loaded. Set it
+for production only (not in `.env.local`), so development and preview sessions stay out of the data, or give previews a
+second PostHog project.
+
+- **Purchases** come from the `stripe-webhook` function (`purchase_completed`, the user id as `distinct_id`): set the
+  same key as the `POSTHOG_KEY` function secret (+ `POSTHOG_HOST` for EU). Unset = not sent; a PostHog error never fails
+  the webhook.
+- **Session replay** follows the PostHog project setting (Settings → Session replay); the client masks inputs and
+  blocks the user's photo (`blob:`/`data:` images and `ph-no-capture` elements). Leave canvas capture off.
+- GA4 keeps receiving every event (`track()` sends to both).
 
 ### Manual deploy (alternative, no Git integration)
 

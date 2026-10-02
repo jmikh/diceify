@@ -14,7 +14,7 @@ export function useBuildGate(): BuildGate {
     const { ent, gate } = useGate()
     return useMemo(() => ({
         rowLimit: ent.builderRowLimit,
-        onBlocked: () => { gate(false, { modal: 'limit' }) },
+        onBlocked: () => { gate(false, 'build_limit', { modal: 'limit' }) },
     }), [ent.builderRowLimit, gate])
 }
 

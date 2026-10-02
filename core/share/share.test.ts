@@ -91,10 +91,21 @@ describe('shareCardLayout', () => {
     expect(inside(art)).toBe(true)
     expect(inside(text)).toBe(true)
     expect(art.x + art.width).toBeLessThanOrEqual(text.x)
-    // The pair is centred horizontally (within rounding)
-    expect(Math.abs(art.x - (SHARE_CARD.width - (text.x + text.width)))).toBeLessThanOrEqual(1)
-    // The art is centred vertically
+    // The art is flush left and centred vertically
+    expect(art.x).toBe(0)
     expect(Math.abs(art.y - (SHARE_CARD.height - (art.y + art.height)))).toBeLessThanOrEqual(1)
+    // The text is centred in the space right of the art (within rounding)
+    expect(Math.abs(text.x - art.width - (SHARE_CARD.width - (text.x + text.width)))).toBeLessThanOrEqual(1)
+  })
+
+  it.each([
+    [48, 48],
+    [36, 48],
+    [20, 120],
+  ])('%i × %i: art that fits takes the full card height', (cols, rows) => {
+    const { art } = shareCardLayout(cols, rows)
+    expect(art.y).toBe(0)
+    expect(art.height).toBe(SHARE_CARD.height)
   })
 })
 

@@ -8,7 +8,8 @@
 Photo → dice-art editor. **No server of our own**: a static Next.js 14 export (`output: 'export'`, `out/`) served as a
 Cloudflare Worker's static assets (`wrangler.jsonc`), the browser talks to Supabase (Auth + Postgres + Storage) directly under
 RLS, and the only server code is two Supabase Edge Functions (`billing`, `stripe-webhook`) plus the Worker's script
-(`worker/`, runs only for `/s/*`: social card tags for share links). Sentry client-side only; GA4 via `@next/third-parties`.
+(`worker/`, runs only for `/s/*`: social card tags for share links). Sentry client-side only; analytics = GA4
+(`@next/third-parties`) + PostHog, both behind `lib/analytics.ts`.
 
 ## Architecture map
 
@@ -19,11 +20,11 @@ core/          PURE TS (no DOM, no React, no app imports; own tsconfig, lib es20
                README.md = algorithm spec (Swift-portable). Fixtures + tests.
 lib/           browser/platform adapters: supabase/ (client, auth, profile, projects, shares, storage, keepalive, billing,
                generated database.types.ts), image/ (decode, crop, rasterize, shareCard), report-error.ts (the only Sentry importer),
-               env.public.ts, media-query.ts
+               analytics.ts (the only PostHog / sendGAEvent importer + the event catalog), env.public.ts, media-query.ts
 features/      editor/ (store/, hooks/, components/{shell,start,crop,tune,build,project,share,account,mobile,common}, steps.ts),
                marketing/ (components incl. ShareView, blog/data.ts), account/ (useUser, SignInModal, AnalyticsTracker), billing/ (cards, AccountScreen)
 worker/        Cloudflare Worker script (own tsconfig): index.ts routes /s/<id> → share.ts = share page + its og/twitter tags
-components/    Logo, Footer, BackgroundOrbs (shared, dumb)
+components/    Logo, Footer, BackgroundOrbs (shared, dumb), Analytics (GA4 tag + PostHog start, root layout)
 styles/        base.css, marketing.css, editor.css       supabase/  config.toml, migrations/, functions/{_shared,billing,stripe-webhook}
 scripts/       gen-fixtures.ts, migrate-from-prisma.ts (+ migrate/ helpers)   docs/  DEPLOY.md, STRIPE_TESTING.md   plans/revamp/  plan + step docs
 ```
@@ -34,6 +35,8 @@ never import `features/editor`; nothing imports `app`. `app` → `@/features`, `
 `supabase/functions`: a function imports its own folder + `../_shared`; `_shared` only itself; bare specifiers from `deno.json`.
 `worker/`: its own folder + `core/share` only (relative).
 `@sentry/*` only in `lib/report-error.ts` (+ `instrumentation-client.ts`, `next.config.js`) — use `reportError`/`setErrorUser`.
+`posthog-js` and `sendGAEvent` only in `lib/analytics.ts` — use `track(event, props)` (typed by `AnalyticsEvents`; add new
+events there), `identifyUser`/`resetUser`. Put `NO_CAPTURE_CLASS` on anything showing the user's photo from a URL.
 
 ## Core (`core/dice`)
 
@@ -62,13 +65,14 @@ never import `features/editor`; nothing imports `app`. `app` → `@/features`, `
 `/s/<id>` = static `share.html` + the Worker's meta tags. A share = immutable `shares` row + `share-images/<id>.jpg`
 (public bucket, 1200×630 card rendered client-side); row first, then upload (storage policy needs the own row); public read
 only via the `get_share` RPC; no update/delete/unshare. Sign-in required, free on every plan. Links carry UTM tags
-(`core/share/urls.ts`); GA4 events `share_create`, `share`, `share_view`, `share_cta_click`.
+(`core/share/urls.ts`); events `share_create`, `share`, `share_view` (+ PostHog `ref_share_id` on later events), `share_cta_click`.
 
 ## Gating
 
 `useEntitlements()` / `useGate()` are the **only** gating sources (`deriveEntitlements` in `core/billing/entitlements.ts`;
 `builderRowLimit: null` = unlimited, never `Infinity`). SQL `effective_plan` in the initial migration **must mirror**
 `entitlements.ts` — change both together. Projects are unlimited on every plan (no SQL limit since G1).
+`gate(allowed, feature, options)` names the blocked `GatedFeature` and reports `paywall_shown` when it blocks.
 
 ## Data
 

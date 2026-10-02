@@ -33,11 +33,11 @@ they are inlined into the static bundle, so no secret ever goes in a root file; 
 
 | File | Holds |
 |---|---|
-| `.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (local stack), optional `NEXT_PUBLIC_SENTRY_DSN`; `LEGACY_DATABASE_URL` for `npm run migrate:legacy` until the F2 cut-over |
+| `.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (local stack), optional `NEXT_PUBLIC_SENTRY_DSN`; `LEGACY_DATABASE_URL` for `npm run migrate:legacy` until the F2 cut-over. Optional `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` (keep them out for normal development: they send to PostHog) |
 | `.env.prod.local` | the same public values for the hosted project (`npm run dev:prod` / `build:prod`) |
 | `supabase/.env` | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` for local Google sign-in (read by `supabase/config.toml`) |
 | `supabase/functions/.env` | Stripe **test** secrets for `npm run functions:serve` (template: `supabase/functions/.env.example`) |
-| `supabase/functions/.env.production` | Stripe **live** secrets, pushed with `supabase secrets set` (`docs/DEPLOY.md`) |
+| `supabase/functions/.env.production` | Stripe **live** secrets (+ optional `POSTHOG_KEY` / `POSTHOG_HOST` for the purchase event), pushed with `supabase secrets set` (`docs/DEPLOY.md`) |
 | `.dev.vars` | optional: runtime variables for `npm run worker:dev` (without it `wrangler dev` reads `.env.local`) |
 
 Billing locally: `npm run functions:serve` in one terminal, `npm run stripe:listen` in another; flows, cards and

@@ -1,4 +1,5 @@
 import { Dices } from 'lucide-react'
+import { NO_CAPTURE_CLASS } from '@/lib/analytics'
 
 interface ProjectThumbProps {
   /** Image URL, or null for the placeholder (a project whose thumbnail is not written yet). */
@@ -8,7 +9,7 @@ interface ProjectThumbProps {
   className?: string
 }
 
-/** Square project thumbnail. */
+/** Square project thumbnail (the cropped photo: hidden from session replay). */
 export default function ProjectThumb({ src, size, className = '' }: ProjectThumbProps) {
   const box = { width: size, height: size }
   if (!src) {
@@ -22,5 +23,5 @@ export default function ProjectThumb({ src, size, className = '' }: ProjectThumb
       </span>
     )
   }
-  return <img src={src} alt="" style={box} className={`block flex-shrink-0 rounded-[22%] object-cover ${className}`} />
+  return <img src={src} alt="" style={box} className={`block flex-shrink-0 rounded-[22%] object-cover ${NO_CAPTURE_CLASS} ${className}`} />
 }

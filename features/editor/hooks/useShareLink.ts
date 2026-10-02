@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { sendGAEvent } from '@next/third-parties/google'
+import { track } from '@/lib/analytics'
 import type { DiceGrid } from '@/core/dice'
 import { renderShareCard } from '@/lib/image/shareCard'
 import { reportError } from '@/lib/report-error'
@@ -30,7 +30,7 @@ function prepareShare(grid: DiceGrid, projectId: string | null): Promise<Prepare
   const promise = (async () => {
     const image = await renderShareCard(grid)
     const id = await createShare({ projectId, cols: grid.width, rows: grid.height, image })
-    sendGAEvent('event', 'share_create', { share_id: id, total_dice: grid.width * grid.height })
+    track('share_create', { share_id: id, total_dice: grid.width * grid.height })
     return { id, cardUrl: URL.createObjectURL(image) }
   })()
 

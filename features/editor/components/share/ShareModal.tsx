@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Check, Link2, Loader2, Share2, X } from 'lucide-react'
 import { FaFacebook, FaXTwitter } from 'react-icons/fa6'
 import { toast } from 'sonner'
-import { sendGAEvent } from '@next/third-parties/google'
+import { track } from '@/lib/analytics'
 import { postIntentUrl, sharePath, shareCopy, shareUrl, type PostPlatform, type ShareSource } from '@/core/share'
 import { useShareLink } from '@/features/editor/hooks/useShareLink'
 import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
@@ -13,7 +13,7 @@ import { ghostButton, primaryButton } from '../common/ui'
 
 /** GA4's recommended `share` event, one per button (the link itself carries the matching utm_source). */
 function trackShare(method: ShareSource, id: string): void {
-    sendGAEvent('event', 'share', { method, content_type: 'dice_art', item_id: id })
+    track('share', { method, content_type: 'dice_art', item_id: id })
 }
 
 /**

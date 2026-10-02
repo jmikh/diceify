@@ -19,7 +19,7 @@ export default function ShareButton({ compact = false }: { compact?: boolean }) 
   if (step === 'crop') return null
 
   const onClick = () => {
-    if (gate(user !== null, { signInMessage: 'Sign in to share your dice art.' })) openModal('share')
+    if (gate(user !== null, 'share', { signInMessage: 'Sign in to share your dice art.' })) openModal('share')
   }
 
   return (

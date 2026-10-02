@@ -2,10 +2,14 @@
 
 import { useCallback } from 'react'
 import type { Entitlements } from '@/core/billing'
+import { track } from '@/lib/analytics'
 import { useUser, type UserInfo } from '@/features/account/useUser'
 import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 
 export type GateModal = 'limit' | 'proFeature'
+
+/** What a gate protects (the `feature` of the `paywall_shown` event). */
+export type GatedFeature = 'build_limit' | 'blueprint' | 'share' | 'upgrade'
 
 export interface GateOptions {
   /** Copy for the sign-in modal shown to anonymous users (its default otherwise). */
@@ -29,8 +33,8 @@ export function resolveGate(allowed: boolean, signedIn: boolean, options: GateOp
 export interface Gate {
   ent: Entitlements
   user: UserInfo | null
-  /** Opens the right modal when `allowed` is false. Returns `allowed`. */
-  gate: (allowed: boolean, options?: GateOptions) => boolean
+  /** Opens the right modal (and reports `paywall_shown`) when `allowed` is false. Returns `allowed`. */
+  gate: (allowed: boolean, feature: GatedFeature, options?: GateOptions) => boolean
 }
 
 export function useGate(): Gate {
@@ -38,11 +42,13 @@ export function useGate(): Gate {
   const openModal = useEditorUiStore((state) => state.openModal)
 
   const gate = useCallback(
-    (allowed: boolean, options?: GateOptions) => {
+    (allowed: boolean, feature: GatedFeature, options?: GateOptions) => {
       const action = resolveGate(allowed, user !== null, options)
+      if (action.kind === 'allow') return true
       if (action.kind === 'signIn') openModal('signIn', { message: action.message })
-      else if (action.kind === 'modal') openModal(action.modal)
-      return action.kind === 'allow'
+      else openModal(action.modal)
+      track('paywall_shown', { feature, prompt: action.kind === 'signIn' ? 'sign_in' : action.modal })
+      return false
     },
     [user, openModal],
   )

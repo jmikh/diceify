@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { trackStepChange } from '../analytics'
 import { canAdvance, canEnter, needsResetConfirm, nextStep, prevStep, type Step } from '../steps'
 import { useDocumentStore } from '../store/useDocumentStore'
 import { useEditorUiStore } from '../store/useEditorUiStore'
@@ -19,6 +20,7 @@ export function useStepNavigation() {
       return
     }
     if (to === 'build') doc.enterBuild()
+    trackStepChange(ui.step, to)
     ui.setStep(to)
   }, [])
 

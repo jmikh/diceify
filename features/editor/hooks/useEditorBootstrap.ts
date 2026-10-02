@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useUser } from '@/features/account/useUser'
 import { markClean } from '@/features/editor/store/autosave'
+import { track } from '@/lib/analytics'
 import { reportError } from '@/lib/report-error'
 import { readDraft, readDraftImage } from '@/features/editor/store/draft'
 import { clearProject, loadDraftIntoEditor, resetEditor } from '@/features/editor/store/editor'
@@ -72,6 +73,7 @@ export function useEditorBootstrap() {
       if (status === 'authed') await bootSignedIn(projectParam)
       markClean()
       useProjectStore.getState().setBoot('ready')
+      track('editor_opened', { signed_in: status === 'authed', restored: useProjectStore.getState().imageBlob !== null })
       // Whatever the arrival URL said, it now reflects the outcome (strips ?restored and a stale ?project)
       router.replace(editorUrl(useProjectStore.getState().projectId), { scroll: false })
     }

@@ -1,35 +1,27 @@
 "use client"
 
-import { useEffect } from "react"
-import { sendGAEvent } from "@next/third-parties/google"
+import { useEffect, useRef } from "react"
+import { identifyUser, resetUser, setUserProperties } from "@/lib/analytics"
 import { useUser } from "./useUser"
 
-// gtag is installed on window by <GoogleAnalytics/> (@next/third-parties); the package does not expose it.
-declare global {
-    interface Window {
-        gtag?: (command: 'config', targetId: string, params: Record<string, unknown>) => void
-    }
-}
-
-/** Identifies the signed-in user in GA4. Mount inside a ProfileProvider. */
+/** Ties analytics to the signed-in user and their plan. Mount inside a ProfileProvider. */
 export function AnalyticsTracker() {
-    const userId = useUser().user?.id
+    const { user, profile, entitlements } = useUser()
+    const userId = user?.id ?? null
+    // Explorer defaults stand in while the profile loads: wait for the real plan
+    const plan = profile ? entitlements.plan : null
+    const previousUserId = useRef<string | null>(null)
 
     useEffect(() => {
-        if (userId) {
-            // Identifying the user in GA4
-            // Note: We use the 'config' command to set user_id for subsequent events
-            // Since @next/third-parties doesn't expose gtag directly easily, we can use the window object or send a custom event with user params
-
-            window.gtag?.('config', 'G-BDR76Z4JEE', { user_id: userId })
-
-            // Also send a login event
-            sendGAEvent('event', 'login', {
-                method: 'google', // Assuming google for now, or could pass provider
-                user_id: userId
-            })
-        }
+        if (userId) identifyUser(userId)
+        // Only a sign-out resets: a signed-out arrival would otherwise start a new anonymous visitor on every load
+        else if (previousUserId.current) resetUser()
+        previousUserId.current = userId
     }, [userId])
+
+    useEffect(() => {
+        if (userId && plan) setUserProperties({ plan })
+    }, [userId, plan])
 
     return null
 }

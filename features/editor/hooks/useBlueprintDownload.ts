@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { renderGridSvg } from '@/core/dice'
+import { track } from '@/lib/analytics'
 import { reportError } from '@/lib/report-error'
 import { useGate } from '@/features/editor/hooks/useGate'
 import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
@@ -12,7 +13,7 @@ export function useBlueprintDownload() {
     const { ent, gate } = useGate()
 
     return useCallback(() => {
-        if (!gate(ent.hasSvgExport, { signInMessage: 'You must be logged in to download blueprint.' })) return
+        if (!gate(ent.hasSvgExport, 'blueprint', { signInMessage: 'You must be logged in to download blueprint.' })) return
 
         const grid = useDerivedStore.getState().grid
         if (!grid) return
@@ -29,6 +30,7 @@ export function useBlueprintDownload() {
             a.click()
             document.body.removeChild(a)
             URL.revokeObjectURL(url)
+            track('blueprint_downloaded', { total_dice: grid.width * grid.height })
         } catch (error) {
             reportError(error, { where: 'blueprint-svg' })
         }

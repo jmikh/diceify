@@ -2,6 +2,7 @@
 
 import { useDropzone } from 'react-dropzone'
 import { ImagePlus, Loader2, Upload } from 'lucide-react'
+import { NO_CAPTURE_CLASS } from '@/lib/analytics'
 import { useStartProject } from '@/features/editor/hooks/useStartProject'
 import { primaryButton } from '../common/ui'
 
@@ -29,7 +30,8 @@ export default function PhotoDropzone() {
             : 'border-white/[0.16] bg-white/[0.025] hover:border-accent-pink/50 hover:bg-white/[0.04] cursor-pointer'
       }`}
     >
-      <input {...getInputProps()} aria-label="Choose a photo" />
+      {/* Replay records a file input's value (the file name) unmasked */}
+      <input {...getInputProps({ className: NO_CAPTURE_CLASS })} aria-label="Choose a photo" />
       <span className="w-16 h-16 lg:w-[76px] lg:h-[76px] rounded-[22px] bg-accent-pink/[0.12] text-accent-pink flex items-center justify-center shadow-[0_0_40px_rgb(var(--pink-rgb)/0.18)]">
         {isProcessing ? <Loader2 size={32} className="animate-spin" /> : <ImagePlus size={34} strokeWidth={1.8} />}
       </span>

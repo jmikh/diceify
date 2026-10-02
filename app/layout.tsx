@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Outfit, Syne } from 'next/font/google'
-import { GoogleAnalytics } from '@next/third-parties/google'
+import Analytics from '@/components/Analytics'
 import '@/styles/base.css'
 
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit', display: 'swap' })
@@ -184,7 +184,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
         {children}
-        <GoogleAnalytics gaId="G-BDR76Z4JEE" />
+        <Analytics />
       </body>
     </html>
   )

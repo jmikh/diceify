@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import Link from 'next/link'
-import { sendGAEvent } from '@next/third-parties/google'
+import { track } from '@/lib/analytics'
 import type { DiceColor, DiceFace } from '@/core/dice'
 import DiceLens from './DiceLens'
 import DieFace from './DieFace'
@@ -40,7 +40,7 @@ export default function Hero() {
                     <Link
                         href="/editor"
                         className="btn-primary"
-                        onClick={() => sendGAEvent('event', 'go_to_editor', { source: 'hero' })}
+                        onClick={() => track('go_to_editor', { source: 'hero' })}
                     >
                         <DieFace face={5} color="white" className="hero-button-die" />
                         Start creating
@@ -48,7 +48,7 @@ export default function Hero() {
                     <Link
                         href="/dice-art"
                         className="hero-link"
-                        onClick={() => sendGAEvent('event', 'hub_click', { source: 'hero' })}
+                        onClick={() => track('hub_click', { source: 'hero' })}
                     >
                         How dice art works →
                     </Link>

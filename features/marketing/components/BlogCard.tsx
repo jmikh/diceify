@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { sendGAEvent } from '@next/third-parties/google'
+import { track } from '@/lib/analytics'
 import type { BlogPost } from '@/features/marketing/blog/data'
 
 interface BlogCardProps {
@@ -18,7 +18,7 @@ export default function BlogCard({ post, source = 'blog', compact = false }: Blo
         <Link
             href={`/blog/${post.slug}`}
             className="blog-card group"
-            onClick={() => sendGAEvent('event', 'blog_click', { source, slug: post.slug })}
+            onClick={() => track('blog_click', { source, slug: post.slug })}
         >
             <div className={`blog-card-image ${compact ? 'blog-card-image--compact' : ''}`}>
                 {post.featuredImage ? (
