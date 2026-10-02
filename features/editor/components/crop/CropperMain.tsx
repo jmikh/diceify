@@ -5,8 +5,9 @@ import { FixedCropper, FixedCropperRef, ImageRestriction } from 'react-advanced-
 import 'react-advanced-cropper/dist/style.css'
 import 'react-advanced-cropper/dist/themes/corners.css'
 import styles from './Cropper.module.css'
+import { rotatedBounds } from '@/lib/image/decode'
 import { reportError } from '@/lib/report-error'
-import { cropParamsEqual, DEFAULT_ASPECT_RATIO, type CropParams } from '@/core/dice'
+import { cropParamsEqual, DEFAULT_ASPECT_RATIO, reframeCrop, type CropParams } from '@/core/dice'
 import { useElementSize } from '@/features/editor/hooks/useElementSize'
 import { useDocumentHistoryBatcher } from '@/features/editor/store/historyBatcher'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
@@ -141,7 +142,8 @@ export default function CropperMain() {
         }
     }, [crop, imageLoaded])
 
-    // Panel rotate / zoom: through the widget, so the one history entry carries the resulting coordinates
+    // Panel rotate / zoom: through the widget, so the one history entry carries the resulting coordinates.
+    // A new ratio is reframed here (the widget alone would zoom in on every switch) and reaches it via the sync effect.
     useEffect(() => {
         const command = (apply: (cropper: FixedCropperRef) => void) => {
             const cropper = cropperRef.current
@@ -152,9 +154,18 @@ export default function CropperMain() {
         setCropperHandle({
             rotate: (degrees) => command(cropper => cropper.rotateImage(degrees)),
             zoom: (factor) => command(cropper => cropper.zoomImage(factor)),
+            setAspectRatio: (aspectRatio) => {
+                const cropper = cropperRef.current
+                const state = cropper?.getState()
+                const current = cropper && readCrop(cropper, aspectRatio)
+                if (!state || !current) return
+                cancelPendingReport()
+                const { width, height } = state.imageSize
+                setCrop(reframeCrop(current, aspectRatio, rotatedBounds(width, height, state.transforms.rotate)))
+            },
         })
         return () => setCropperHandle(null)
-    }, [report])
+    }, [report, cancelPendingReport, setCrop])
 
     useEffect(() => cancelPendingReport, [cancelPendingReport])
 

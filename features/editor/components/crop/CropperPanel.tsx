@@ -3,7 +3,7 @@
 import { ChevronRight, Minus, Plus, RotateCw } from 'lucide-react'
 
 import { DEFAULT_ASPECT_RATIO, type AspectRatio } from '@/core/dice'
-import { rotateCrop, zoomCrop } from './cropperHandle'
+import { rotateCrop, setCropAspectRatio, zoomCrop } from './cropperHandle'
 import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 import { Inspector, InspectorSection } from '../common/Inspector'
@@ -87,10 +87,9 @@ export const aspectRatioOptions: AspectRatioOption[] = [
 /** Ratio / rotation / zoom controls shared by the desktop panel and the mobile toolbar. */
 export function useCropControls() {
     const crop = useDocumentStore(state => state.crop)
-    const updateCrop = useDocumentStore(state => state.updateCrop)
     return {
         selectedRatio: crop?.aspectRatio ?? DEFAULT_ASPECT_RATIO,
-        setSelectedRatio: (aspectRatio: AspectRatio) => updateCrop({ aspectRatio }),
+        setSelectedRatio: setCropAspectRatio,
         rotate: () => rotateCrop(90),
         zoomIn: () => zoomCrop(ZOOM_STEP),
         zoomOut: () => zoomCrop(1 / ZOOM_STEP),

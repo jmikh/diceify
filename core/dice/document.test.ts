@@ -9,6 +9,7 @@ import {
   migrateDocument,
   nearestAspectRatio,
   progressApplies,
+  reframeCrop,
   scaleCrop,
   type CropParams,
   type LegacyProjectRow,
@@ -198,6 +199,35 @@ describe('crop helpers', () => {
     expect(nearestAspectRatio(700, 1000)).toBe('2:3')
     expect(nearestAspectRatio(100, 0)).toBe('1:1')
     expect(nearestAspectRatio(NaN, 1)).toBe('1:1')
+  })
+
+  describe('reframeCrop', () => {
+    const landscape = { width: 4000, height: 3000 }
+    const square = (x: number, y: number, size: number): CropParams => ({ x, y, width: size, height: size, rotation: 0, aspectRatio: '1:1' })
+
+    it('switching presets back and forth does not zoom in', () => {
+      const wide = reframeCrop(square(500, 0, 3000), '16:9', landscape)
+      expect(wide).toEqual({ x: 0, y: 375, width: 4000, height: 2250, rotation: 0, aspectRatio: '16:9' })
+      expect(reframeCrop(wide, '1:1', landscape)).toEqual(square(500, 0, 3000))
+
+      const portrait = { width: 3000, height: 4000 }
+      const flat = reframeCrop(square(0, 500, 3000), '16:9', portrait)
+      expect(flat).toMatchObject({ x: 0, width: 3000, height: 1687.5 })
+      expect(reframeCrop(flat, '1:1', portrait)).toEqual(square(0, 500, 3000))
+    })
+
+    it('keeps the relative zoom and the centre', () => {
+      expect(reframeCrop(square(1250, 750, 1500), '16:9', landscape)).toEqual({
+        x: 1000, y: 937.5, width: 2000, height: 1125, rotation: 0, aspectRatio: '16:9',
+      })
+    })
+
+    it('moves the box back inside the image and keeps the rotation', () => {
+      const corner = { ...square(0, 0, 1500), rotation: 90 }
+      expect(reframeCrop(corner, '16:9', landscape)).toEqual({
+        x: 0, y: 187.5, width: 2000, height: 1125, rotation: 90, aspectRatio: '16:9',
+      })
+    })
   })
 
   it('scaleCrop scales the box only', () => {

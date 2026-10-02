@@ -219,6 +219,36 @@ export function nearestAspectRatio(width: number, height: number): AspectRatio {
   return best
 }
 
+/** The largest box of `ratio` (width / height) that fits in `bounds`. */
+function largestBox(bounds: { width: number; height: number }, ratio: number): { width: number; height: number } {
+  return bounds.width / bounds.height > ratio
+    ? { width: bounds.height * ratio, height: bounds.height }
+    : { width: bounds.width, height: bounds.width / ratio }
+}
+
+/**
+ * The crop for a new preset: as zoomed in relative to the largest box each preset allows, around the same centre
+ * (moved back inside `bounds`, the rotated image). Fitting the new ratio inside the old box instead would zoom in
+ * on every switch.
+ */
+export function reframeCrop(crop: CropParams, aspectRatio: AspectRatio, bounds: { width: number; height: number }): CropParams {
+  if (!(crop.width > 0 && crop.height > 0 && bounds.width > 0 && bounds.height > 0)) return { ...crop, aspectRatio }
+  const from = largestBox(bounds, crop.width / crop.height)
+  const zoom = Math.min(1, Math.max(crop.width / from.width, crop.height / from.height))
+  const to = largestBox(bounds, ratioOf(aspectRatio))
+  const width = to.width * zoom
+  const height = to.height * zoom
+  const clamp = (value: number, max: number) => Math.min(Math.max(value, 0), max)
+  return {
+    ...crop,
+    x: clamp(crop.x + (crop.width - width) / 2, bounds.width - width),
+    y: clamp(crop.y + (crop.height - height) / 2, bounds.height - height),
+    width,
+    height,
+    aspectRatio,
+  }
+}
+
 /** Rescale a crop box when the image it refers to is resized by `factor` (rotation and preset unchanged). */
 export function scaleCrop(crop: CropParams, factor: number): CropParams {
   return { ...crop, x: crop.x * factor, y: crop.y * factor, width: crop.width * factor, height: crop.height * factor }
