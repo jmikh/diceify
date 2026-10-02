@@ -17,7 +17,7 @@ interface BuildNavButtonsProps {
     children?: ReactNode
 }
 
-/** Previous change · previous · [children] · next (primary) · next change. */
+/** Previous change · previous · [children] · next · next change (primary). */
 export default function BuildNavButtons({ className, buttonClassName, children }: BuildNavButtonsProps) {
     const { canNavigate, navigatePrev, navigateNext, navigatePrevDiff, navigateNextDiff } = useBuildNavigation()
     return (
@@ -29,10 +29,10 @@ export default function BuildNavButtons({ className, buttonClassName, children }
                 <ChevronLeft size={24} />
             </button>
             {children}
-            <button onClick={navigateNext} disabled={!canNavigate.next} className={`${primaryFill} ${buttonClassName} rounded-2xl`} title="Next die" aria-label="Next die">
+            <button onClick={navigateNext} disabled={!canNavigate.next} className={`${secondary} ${buttonClassName}`} title="Next die" aria-label="Next die">
                 <ChevronRight size={24} />
             </button>
-            <button onClick={navigateNextDiff} disabled={!canNavigate.nextDiff} className={`${secondary} ${buttonClassName}`} title="Next different die" aria-label="Next different die">
+            <button onClick={navigateNextDiff} disabled={!canNavigate.nextDiff} className={`${primaryFill} ${buttonClassName} rounded-2xl`} title="Next different die" aria-label="Next different die">
                 <ChevronsRight size={24} />
             </button>
         </div>

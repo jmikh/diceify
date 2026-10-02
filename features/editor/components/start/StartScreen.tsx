@@ -50,9 +50,6 @@ export default function StartScreen() {
         <div className="mx-auto w-full max-w-[960px] min-h-full px-5 lg:px-6 pt-6 pb-10 lg:py-10 flex flex-col lg:justify-center gap-7">
           <div className="flex flex-col gap-2.5">
             <h1 className="font-syne text-[30px] lg:text-[40px] font-bold tracking-tight text-white leading-tight">Start a new project</h1>
-            <p className="text-[15px] lg:text-[17px] leading-relaxed text-white/70 max-w-[640px]">
-              Every project is built from one photo. Close-up portraits with clear light make the best dice art.
-            </p>
           </div>
 
           {hasDraft && <CurrentProjectCard />}
