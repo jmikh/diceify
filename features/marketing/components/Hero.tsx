@@ -110,7 +110,6 @@ export default function Hero() {
     )
 }
 
-const FREE_LINE = `Free: preview, exact black and white dice counts and the first ${PLAN_LIMITS.explorer.builderRowLimit} builder rows. No sign-up.`
 
 /**
  * A real file input in the hero: the photo is parked (`lib/pending-upload.ts`) and the editor starts a project with
@@ -187,7 +186,6 @@ function HeroUpload({ className = '' }: { className?: string }) {
                 />
             </label>
             {/* Spans, not <p>: `.hero p` sets a display size and a 2.5rem margin */}
-            <span className="block mt-3 text-sm leading-relaxed text-[var(--text-dim)]">{FREE_LINE}</span>
             {/* Always in the DOM (a live region that appears with its first message may not be announced) */}
             <span role="status" aria-live="polite" className={`block text-sm text-[var(--pink-light)] ${message ? 'mt-2' : ''}`}>
                 {message}
