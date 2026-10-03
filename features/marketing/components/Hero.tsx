@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { track } from '@/lib/analytics'
 import type { DiceColor, DiceFace } from '@/core/dice'
+import { DiceColorBar, GridSize } from '@/components/DiceStats'
 import DiceLens from './DiceLens'
 import DieFace from './DieFace'
 
@@ -11,10 +12,32 @@ import DieFace from './DieFace'
 // photo exactly where the dice are), and every portrait this size so the frame doesn't jump when switching.
 const PORTRAIT_SIZE = { width: 1240, height: 1096 }
 
+// `grid` and the counts are the dice visible in `{id}-dice.webp` (measured from the image); update them with the image.
 const PORTRAITS = [
-    { id: 'kids', label: 'Kids', alt: 'Portrait of a smiling boy turned into dice art' },
-    { id: 'pets', label: 'Pets', alt: 'Portrait of a tabby cat turned into dice art' },
-    { id: 'couples', label: 'Couples', alt: 'Portrait of a smiling couple turned into dice art' },
+    {
+        id: 'kids',
+        label: 'Kids',
+        alt: 'Portrait of a smiling boy turned into dice art',
+        grid: { width: 87, height: 77 },
+        blackCount: 4564,
+        whiteCount: 2135,
+    },
+    {
+        id: 'pets',
+        label: 'Pets',
+        alt: 'Portrait of a tabby cat turned into dice art',
+        grid: { width: 75, height: 65 },
+        blackCount: 2093,
+        whiteCount: 2782,
+    },
+    {
+        id: 'couples',
+        label: 'Couples',
+        alt: 'Portrait of a smiling couple turned into dice art',
+        grid: { width: 81, height: 71 },
+        blackCount: 3110,
+        whiteCount: 2641,
+    },
 ]
 
 const portraitImages = (id: string) => ({ dice: `/images/hero/${id}-dice.webp`, photo: `/images/hero/${id}-photo.webp` })
@@ -103,6 +126,12 @@ function HeroPortraits() {
                 ))}
             </div>
             <DiceLens {...portraitImages(portrait.id)} alt={portrait.alt} {...PORTRAIT_SIZE} />
+            <div className="hero-portrait-stats">
+                <GridSize {...portrait.grid} />
+                <div className="hero-portrait-split">
+                    <DiceColorBar blackCount={portrait.blackCount} whiteCount={portrait.whiteCount} barClassName="flex-1" />
+                </div>
+            </div>
             <figcaption>Move across the dice: the lens shows the original photo.</figcaption>
         </figure>
     )

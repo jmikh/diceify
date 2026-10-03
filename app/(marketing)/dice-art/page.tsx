@@ -2,49 +2,116 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import JsonLd from '@/components/JsonLd'
-import { pageMetadata } from '@/lib/seo'
+import { pageMetadata, SITE_URL } from '@/lib/seo'
+import { DICE_PARAM_BOUNDS, THRESHOLDS, type ColorMode } from '@/core/dice'
+import DiceScale from '@/features/marketing/components/DiceScale'
+
+const TITLE = 'Dice Art — The Complete Guide to Dice Portraits & Mosaics'
+const DESCRIPTION = 'What dice art is, how it works, how many dice you need and how big the piece gets, which dice and glue to use, and how to build your own from any photo.'
+const PAGE_URL = `${SITE_URL}/dice-art`
+const DATE_PUBLISHED = '2026-02-05'
+const DATE_MODIFIED = '2026-10-03'
 
 export const metadata: Metadata = pageMetadata({
-    title: 'Dice Art — The Complete Guide to Dice Portraits & Mosaics',
-    description: 'Everything you need to know about dice art: what it is, how it works, the different types of dice portraits and mosaics, and how to create your own buildable dice art from any photo.',
+    title: TITLE,
+    description: DESCRIPTION,
     path: '/dice-art',
-    article: {},
+    article: { publishedTime: DATE_PUBLISHED },
 })
+
+// --- Physical size: dice laid edge to edge, frame not included -------------------------------------------------
+
+const MM_PER_INCH = 25.4
+const MM_PER_FOOT = 304.8
+const GRID_SIDES = [20, 30, 40, 50, 70, 100]
+const EXAMPLE_SIDE = 50
+
+const formatCount = (n: number) => n.toLocaleString('en-US')
+const gridLabel = (side: number) => `${side}×${side}`
+/** Length of `dice` dice of `dieMm` in a row, e.g. "80 cm (31.5 in)". */
+const rowLength = (dice: number, dieMm: number) =>
+    `${Math.round((dice * dieMm) / 10)} cm (${((dice * dieMm) / MM_PER_INCH).toFixed(1)} in)`
+const dicePerSquareFoot = (dieMm: number) => Math.round((MM_PER_FOOT / dieMm) ** 2)
+
+// --- Answers: each is shown on the page verbatim and reused by the FAQ structured data -----------------------
+
+const ANSWERS = {
+    whatIs: 'Dice art is a mosaic made from ordinary six-sided dice. Each die is one pixel of the picture, and the face turned up sets its shade. Using black and white dice together gives 12 shades, enough to make a face recognizable.',
+    howItWorks: 'A dice art generator turns the photo to grayscale, splits it into a grid with one cell per die, averages each cell into a single brightness value, and picks the die color and face that best match it. Because every cell is averaged, even a low-resolution photo works.',
+    whyBoth: 'Even a black die showing 6 is still mostly black, and a white die showing 6 is still mostly white. So black dice alone can\'t make light tones, and white dice alone can\'t make dark ones. Together they cover the full range in 12 shades, which is what makes a portrait read clearly.',
+    howMany: `Multiply the grid's columns by its rows: a ${gridLabel(EXAMPLE_SIDE)} portrait uses ${formatCount(EXAMPLE_SIDE ** 2)} dice. Small portraits use about 400–900 dice (20×20 to 30×30), medium ones 1,600–2,500 (40×40 to 50×50), and large pieces 5,000 or more.`,
+    howBig: `Multiply the dice per side by the die size: a ${gridLabel(EXAMPLE_SIDE)} portrait is ${rowLength(EXAMPLE_SIDE, 16)} on each side with standard 16 mm dice, or ${rowLength(EXAMPLE_SIDE, 12)} with 12 mm dice. One square foot holds about ${dicePerSquareFoot(16)} dice at 16 mm (${dicePerSquareFoot(12)} at 12 mm).`,
+    whatSize: 'Use 16 mm six-sided dice with pips (dots): it is the standard die size and the easiest to find in bulk. 12 mm dice fit the same grid into a piece three-quarters the width. Buy all the dice from one batch so they match in size and pip style.',
+    glue: 'Either spread glue on the base and press each die in (slower, more control), or lay every die out dry and coat the top with resin or glue (faster, but bubbles or a cloudy coat can ruin the piece). Use a rigid base such as plywood or MDF, and test your adhesive on a small patch first.',
+    howLong: 'A small 20×20 portrait (400 dice) takes 2–4 hours. A 40×40 piece (1,600 dice) is a full day. Bigger than that and you\'re looking at multiple sessions over a few days.',
+    buyBulk: 'Amazon, gaming supply stores, and educational supply stores all sell packs of 100–1,000. Get uniform 16 mm dice: they give the cleanest grid.',
+    pixelArt: 'Both are grid-based. Pixel art uses colored squares (unlimited colors). Dice art uses six-sided dice (up to 12 shades) and has a physical, three-dimensional quality you can\'t get with flat media.',
+}
+
+type AnswerKey = keyof typeof ANSWERS
+
+/** Questions answered by the page's sections (the section opens with the answer). */
+const SECTION_QUESTIONS: { question: string; answer: AnswerKey }[] = [
+    { question: 'What is dice art?', answer: 'whatIs' },
+    { question: 'How does a dice art generator work?', answer: 'howItWorks' },
+    { question: 'Should I use black dice, white dice, or both?', answer: 'whyBoth' },
+    { question: 'How many dice do I need for dice art?', answer: 'howMany' },
+    { question: 'How big is a dice portrait?', answer: 'howBig' },
+    { question: 'What size dice should I use for dice art?', answer: 'whatSize' },
+    { question: 'How do you glue dice art?', answer: 'glue' },
+]
+
+/** Questions in the FAQ block at the end. */
+const FAQ_QUESTIONS: { question: string; answer: AnswerKey }[] = [
+    { question: 'How long does it take to build?', answer: 'howLong' },
+    { question: 'Where can I buy dice in bulk?', answer: 'buyBulk' },
+    { question: "What's the difference between dice art and pixel art?", answer: 'pixelArt' },
+]
+
+const STEPS = [
+    { id: 'pick-your-image', name: 'Pick your image', text: 'Choose a photo with one subject cropped close and clear contrast between the subject and the background. Resolution barely matters.' },
+    { id: 'generate-the-pattern', name: 'Generate the pattern', text: 'Upload the photo to a dice art generator such as Diceify, choose the grid size, and tune the contrast until the face reads clearly. Note the black and white dice counts.' },
+    { id: 'gather-materials', name: 'Gather materials', text: 'Get black and white dice from one batch plus spares, a rigid base such as plywood or MDF, glue, and a straight edge.' },
+    { id: 'glue-and-build', name: 'Glue and build', text: 'Place the dice row by row from one corner, following the pattern, and let the glue set as you go.' },
+]
+
+// The same photo in each color mode, rendered by scripts/gen-color-mode-examples.ts.
+const COLOR_MODE_EXAMPLES: { mode: ColorMode; label: string; alt: string }[] = [
+    { mode: 'black', label: 'Black dice only', alt: 'A boy\'s portrait as dice art made with black dice only: dark and murky' },
+    { mode: 'white', label: 'White dice only', alt: 'The same portrait made with white dice only: pale and washed out' },
+    { mode: 'both', label: 'Black + white dice', alt: 'The same portrait made with black and white dice: clear and high-contrast' },
+]
+const colorModeImage = (mode: ColorMode) => `/images/dice-art/kids-50x50-${mode}.webp`
+
+// --- Structured data ------------------------------------------------------------------------------------------
+
+const organization = { "@type": "Organization", "name": "Diceify", "url": SITE_URL }
 
 const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
-    "headline": "Dice Art — The Complete Guide to Dice Portraits & Mosaics",
-    "description": "Everything you need to know about dice art: what it is, how it works, the different types of dice portraits and mosaics, and how to create your own.",
-    "url": "https://diceify.art/dice-art",
-    "datePublished": "2026-02-05",
-    "dateModified": "2026-02-25",
-    "author": {
-        "@type": "Organization",
-        "name": "Diceify",
-        "url": "https://diceify.art"
-    },
+    "headline": TITLE,
+    "description": DESCRIPTION,
+    "url": PAGE_URL,
+    "image": `${SITE_URL}${colorModeImage('both')}`,
+    "datePublished": DATE_PUBLISHED,
+    "dateModified": DATE_MODIFIED,
+    "author": organization,
     "publisher": {
-        "@type": "Organization",
-        "name": "Diceify",
-        "url": "https://diceify.art",
+        ...organization,
         "logo": {
             "@type": "ImageObject",
-            "url": "https://diceify.art/favicon-192x192.png",
-            "creator": {
-                "@type": "Organization",
-                "name": "Diceify",
-                "url": "https://diceify.art"
-            },
+            "url": `${SITE_URL}/favicon-192x192.png`,
+            "creator": organization,
             "copyrightNotice": "© 2024 Diceify. All rights reserved.",
             "creditText": "Created with Diceify (diceify.art)",
-            "license": "https://diceify.art/terms",
-            "acquireLicensePage": "https://diceify.art/terms"
+            "license": `${SITE_URL}/terms`,
+            "acquireLicensePage": `${SITE_URL}/terms`
         }
     },
     "mainEntityOfPage": {
         "@type": "WebPage",
-        "@id": "https://diceify.art/dice-art"
+        "@id": PAGE_URL
     },
     "keywords": "dice art, dice portrait, dice mosaic, dice art generator, how to make dice art, dice art gift, personalized gift ideas, diy gift ideas",
     "inLanguage": "en-US"
@@ -53,57 +120,62 @@ const jsonLd = {
 const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "mainEntity": [
-        {
-            "@type": "Question",
-            "name": "What is dice art?",
-            "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Dice art is a form of mosaic art where standard six-sided dice are arranged in a grid to recreate an image. By combining both black dice (white pips) and white dice (black pips), you get 12 distinct brightness levels instead of just 6, producing much clearer and more detailed portraits."
-            }
-        },
-        {
-            "@type": "Question",
-            "name": "How many dice do I need for dice art?",
-            "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "The number of dice depends on the size and detail of your design. A small dice portrait might use 400–900 dice (20×20 to 30×30 grid), a medium project around 1,600–2,500 dice (40×40 to 50×50), and large-scale installations can use 5,000 or more dice."
-            }
-        },
-        {
-            "@type": "Question",
-            "name": "What kind of dice should I use for dice art?",
-            "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Standard 16mm six-sided dice with pips (dots) work best. For the best results, use both black dice with white pips AND white dice with black pips. This gives you 12 brightness levels instead of 6, producing much sharper images. Black dice alone also work, but white dice alone don't produce recognizable images."
-            }
-        },
-        {
-            "@type": "Question",
-            "name": "How does a dice art generator work?",
-            "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "A dice art generator converts a photograph into a grid pattern by mapping pixel brightness to dice faces. The image is divided into cells, each group of pixels is averaged into a single grayscale value, and the generator assigns the optimal die color and face number for each cell. This means even low-resolution images work well."
-            }
-        }
+    "mainEntity": [...SECTION_QUESTIONS, ...FAQ_QUESTIONS].map(({ question, answer }) => ({
+        "@type": "Question",
+        "name": question,
+        "acceptedAnswer": { "@type": "Answer", "text": ANSWERS[answer] }
+    }))
+}
+
+const howToJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to make dice art from a photo",
+    "description": ANSWERS.whatIs,
+    "image": `${SITE_URL}${colorModeImage('both')}`,
+    "supply": [
+        "Black and white six-sided dice with pips (16 mm or 12 mm)",
+        "A rigid base such as plywood or MDF",
+        "Wood glue, epoxy or construction adhesive",
+    ].map(name => ({ "@type": "HowToSupply", "name": name })),
+    "tool": [
+        "A dice art generator such as Diceify",
+        "A straight edge",
+    ].map(name => ({ "@type": "HowToTool", "name": name })),
+    "step": STEPS.map(({ id, name, text }) => ({
+        "@type": "HowToStep",
+        "name": name,
+        "text": text,
+        "url": `${PAGE_URL}#${id}`
+    }))
+}
+
+const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE_URL },
+        { "@type": "ListItem", "position": 2, "name": "Dice Art", "item": PAGE_URL }
     ]
 }
+
+// --- Page -----------------------------------------------------------------------------------------------------
+
+function StepHeading({ index }: { index: number }) {
+    const { id, name } = STEPS[index]
+    return <h3 id={id}>{index + 1}. {name}</h3>
+}
+
+const lastUpdated = new Date(DATE_MODIFIED).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
+const linkClass = 'text-[var(--pink)] hover:underline'
 
 export default function DiceArtPage() {
     return (
         <>
             <JsonLd data={jsonLd} />
             <JsonLd data={faqJsonLd} />
-            <JsonLd
-                data={{
-                    "@context": "https://schema.org",
-                    "@type": "BreadcrumbList",
-                    "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://diceify.art" },
-                        { "@type": "ListItem", "position": 2, "name": "Dice Art", "item": "https://diceify.art/dice-art" }
-                    ]
-                }}
-            />
+            <JsonLd data={howToJsonLd} />
+            <JsonLd data={breadcrumbJsonLd} />
 
             {/* Content */}
             <div className="relative z-[2] max-w-[800px] mx-auto w-full px-6 py-12">
@@ -130,81 +202,122 @@ export default function DiceArtPage() {
                             Discover how simple six-sided dice become stunning works of art, and why using both black and white dice makes all the difference.
                         </p>
                         <p className="text-sm text-[var(--text-dim)] mt-3">
-                            Last updated: February 25, 2026
+                            Last updated: {lastUpdated}
                         </p>
                     </header>
 
                     <div className="blog-content frosted-glass rounded-2xl p-8 md:p-12">
 
-                        {/* Section 1: What is Dice Art */}
                         <h2>What is dice art?</h2>
-                        <p>
-                            Dice art is <strong>mosaic art made from regular six-sided dice</strong>. Each face (1 through 6)
-                            reads as a different shade of gray, so when you line up enough of them in a grid, they form an image.
-                        </p>
+                        <p>{ANSWERS.whatIs}</p>
 
-                        {/* Section 2: How It Works — Brightness Mapping */}
                         <h2>How it works: brightness mapping</h2>
+                        <p>{ANSWERS.howItWorks}</p>
                         <p>
-                            Every die face covers a different amount of its surface with pips. A 1 is mostly blank,
-                            a 6 is heavily dotted. That difference in coverage maps directly to brightness:
+                            Every die face covers a different amount of its surface with pips. On a black die, more
+                            (white) pips read lighter; on a white die, more (black) pips read darker. Lined up by
+                            brightness, the two colors give one scale of 12 shades:
                         </p>
-                        <ol className="list-decimal pl-6 mb-5 space-y-2 text-[var(--text-secondary)]">
-                            <li>
-                                <strong>Convert the photo to grayscale</strong> — each pixel becomes a single brightness value.
-                            </li>
-                            <li>
-                                <strong>Divide it into a grid</strong> — each cell represents one die. A group of pixels
-                                gets averaged into one brightness value, which is why even low-res photos work fine.
-                            </li>
-                            <li>
-                                <strong>Assign a die to each cell</strong> — pick the die color and face number
-                                that best matches that cell's brightness.
-                            </li>
-                        </ol>
+                        <DiceScale showColorGroups />
                         <p>
-                            That's it. A{' '}
-                            <Link href="/editor" className="text-[var(--pink)] hover:underline">dice art generator</Link>{' '}
-                            does all of this automatically — upload a photo and it outputs the full grid pattern.
+                            A{' '}
+                            <Link href="/editor" className={linkClass}>dice art generator</Link>{' '}
+                            does the matching automatically: upload a photo and it outputs the full grid pattern.
                         </p>
 
-                        {/* Section 3: Why Both Colors */}
                         <h2>Why use both black and white dice?</h2>
+                        <p>{ANSWERS.whyBoth}</p>
+                        <figure className="my-8">
+                            <div className="grid grid-cols-3 gap-3">
+                                {COLOR_MODE_EXAMPLES.map(({ mode, label, alt }) => (
+                                    <figure key={mode}>
+                                        <div className="relative aspect-square rounded-lg overflow-hidden">
+                                            <Image
+                                                src={colorModeImage(mode)}
+                                                alt={alt}
+                                                fill
+                                                className="object-cover"
+                                                sizes="(max-width: 768px) 30vw, 230px"
+                                            />
+                                        </div>
+                                        <figcaption>
+                                            <strong className="text-[var(--text-primary)]">{label}</strong>
+                                            <br />
+                                            {THRESHOLDS[mode].length} shades
+                                        </figcaption>
+                                    </figure>
+                                ))}
+                            </div>
+                            <figcaption>
+                                {`One photo as a ${gridLabel(EXAMPLE_SIDE)} grid (${formatCount(EXAMPLE_SIDE ** 2)} dice), same settings; only the dice colors change.`}
+                            </figcaption>
+                        </figure>
                         <p>
-                            Black dice alone give you 6 shades. Add white dice (black pips) and you get <strong>12</strong> —
-                            white-1 is nearly pure white, black-1 is nearly pure black, and white-6 and black-6 meet
-                            in the middle. More shades means sharper detail and smoother gradients. White dice on their
-                            own don't work; they lack contrast.
+                            Black-only pieces still work, and some people like their moody look. White-only pieces
+                            come out pale and washed out.
                         </p>
 
-                        {/* Inline gallery preview */}
-                        <div className="grid grid-cols-3 gap-3 my-8 rounded-xl overflow-hidden">
-                            {[
-                                { src: '/images/dali-51x51.webp', alt: 'Salvador Dali dice art portrait' },
-                                { src: '/images/frida-54x54.webp', alt: 'Frida Kahlo dice portrait mosaic' },
-                                { src: '/images/monalisa.webp', alt: 'Mona Lisa recreated in dice art' },
-                            ].map((img, i) => (
-                                <div key={i} className="relative aspect-square rounded-lg overflow-hidden">
-                                    <Image src={img.src} alt={img.alt} fill className="object-cover" sizes="250px" />
-                                </div>
-                            ))}
-                        </div>
-                        <p className="text-sm text-[var(--text-dim)] text-center -mt-4 mb-8">
-                            Salvador Dali, Frida Kahlo, and the Mona Lisa — all made with{' '}
-                            <Link href="/editor" className="text-[var(--pink)] hover:underline">Diceify</Link>.
+                        <h2>How many dice do you need, and how big will it be?</h2>
+                        <p>{ANSWERS.howMany}</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Grid</th>
+                                    <th scope="col">Dice</th>
+                                    <th scope="col">Each side, 16 mm dice</th>
+                                    <th scope="col">Each side, 12 mm dice</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {GRID_SIDES.map(side => (
+                                    <tr key={side}>
+                                        <td>{gridLabel(side)}</td>
+                                        <td>{formatCount(side ** 2)}</td>
+                                        <td>{rowLength(side, 16)}</td>
+                                        <td>{rowLength(side, 12)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <p>{ANSWERS.howBig}</p>
+                        <p>
+                            The sizes are for the dice alone; add the frame on top. For a photo that isn't square,
+                            multiply columns by rows.{' '}
+                            <Link href="/editor" className={linkClass}>Diceify</Link> grids run from{' '}
+                            {DICE_PARAM_BOUNDS.numRows.min} to {DICE_PARAM_BOUNDS.numRows.max} rows, and the editor
+                            shows the exact number of black and white dice as you tune, so you know what to buy.
                         </p>
 
-                        {/* Section 4: How to Make Your Own */}
+                        <h2>What size dice should you use?</h2>
+                        <p>{ANSWERS.whatSize}</p>
+                        <ul>
+                            <li>
+                                <strong>16 mm</strong> is the standard die. A {gridLabel(EXAMPLE_SIDE)} portrait
+                                comes out at {rowLength(EXAMPLE_SIDE, 16)} on each side.
+                            </li>
+                            <li>
+                                <strong>12 mm</strong> packs more detail into the same wall space: the
+                                same portrait shrinks to {rowLength(EXAMPLE_SIDE, 12)}.
+                            </li>
+                            <li>
+                                <strong>Pips, not numerals.</strong> The dots are what make the shades; dice printed
+                                with numerals don't give a clean scale.
+                            </li>
+                            <li>
+                                <strong>Buy spares.</strong> Bulk packs can include chipped or misprinted dice.
+                            </li>
+                        </ul>
+
                         <h2>How to make your own</h2>
 
-                        <h3>1. Pick your image</h3>
+                        <StepHeading index={0} />
                         <p>
                             Zoom in tight. The more the subject fills the frame, the more detail you'll get. You don't
-                            need a high-res photo — the generator averages pixels anyway.
+                            need a high-res photo; the generator averages pixels anyway.
                         </p>
                         <ul>
                             <li>
-                                <strong>Faces work best</strong> when cropped close — one person per portrait.
+                                <strong>Faces work best</strong> when cropped close, one person per portrait.
                             </li>
                             <li>
                                 <strong>Contrast matters.</strong> Dark hair on a light background (or vice versa)
@@ -215,33 +328,52 @@ export default function DiceArtPage() {
                             </li>
                         </ul>
 
-                        <h3>2. Generate the pattern</h3>
+                        <StepHeading index={1} />
                         <p>
-                            <Link href="/editor" className="text-[var(--pink)] hover:underline">Diceify</Link>{' '}
-                            converts your photo into a dice grid and shows you a live preview. You can tweak
-                            contrast and brightness before committing — small adjustments make a big difference
-                            in how readable the final piece is.
+                            <Link href="/editor" className={linkClass}>Diceify</Link>{' '}
+                            converts your photo into a dice grid and shows you a live preview. Pick the grid size,
+                            then tweak contrast and brightness before committing: small adjustments make a big
+                            difference in how readable the final piece is.
                         </p>
 
-                        <h3>3. Materials</h3>
-                        <p>
-                            Standard 16mm dice in black and white (buy in bulk), a frame or backing board,
-                            and glue (wood glue or epoxy). A straight edge helps keep rows tight.
-                        </p>
+                        <StepHeading index={2} />
+                        <ul>
+                            <li>
+                                <strong>Dice:</strong> black and white six-sided dice with pips, all from one batch,
+                                plus some spares.
+                            </li>
+                            <li>
+                                <strong>A base:</strong> a rigid board such as plywood or MDF. Big pieces get heavy;{' '}
+                                <Link href="/blog/jeremy-dice-portraits-nieces" className={linkClass}>Jeremy</Link>{' '}
+                                backed his plywood with 2×4s so it wouldn't warp.
+                            </li>
+                            <li>
+                                <strong>Glue:</strong> wood glue, epoxy, or a construction adhesive such as Liquid
+                                Nails, which Jeremy used.
+                            </li>
+                            <li>
+                                <strong>A straight edge</strong> to keep the rows tight.
+                            </li>
+                        </ul>
 
-                        <h3>4. Build it</h3>
+                        <StepHeading index={3} />
+                        <p>{ANSWERS.glue}</p>
+                        <p>
+                            That happened on one of{' '}
+                            <Link href="/blog/why-i-built-diceify" className={linkClass}>our own builds</Link>, so test
+                            first. Jeremy laid all his dice out dry, then moved them to the board row by row.
+                        </p>
                         <p>
                             Follow the pattern row by row. Diceify's{' '}
-                            <Link href="/editor" className="text-[var(--pink)] hover:underline">step-by-step builder</Link>{' '}
+                            <Link href="/editor" className={linkClass}>step-by-step builder</Link>{' '}
                             highlights your current position and tells you exactly which die to place next.
                         </p>
 
                         <div className="blog-note">
                             <strong>Tip:</strong> Start from a corner, work in one direction. If gluing, let each
-                            row set for a minute before starting the next — keeps things from shifting.
+                            row set for a minute before starting the next; it keeps things from shifting.
                         </div>
 
-                        {/* Section 6: Gallery Teaser */}
                         <h2>Dice art examples</h2>
                         <p>
                             Here are some dice portraits and mosaics created with Diceify, each one built by hand from a
@@ -261,27 +393,13 @@ export default function DiceArtPage() {
                             ))}
                         </div>
 
-                        {/* Section 7: FAQ */}
                         <h2>FAQ</h2>
-
-                        <h3>How long does it take to build?</h3>
-                        <p>
-                            A small 20×20 portrait (400 dice) takes 2–4 hours. A 40×40 piece (1,600 dice) is a
-                            full day. Bigger than that and you're looking at multiple sessions over a few days.
-                        </p>
-
-                        <h3>Where can I buy dice in bulk?</h3>
-                        <p>
-                            Amazon, gaming supply stores, and educational supply stores all sell packs of 100–1,000.
-                            Get uniform 16mm dice — they give the cleanest grid.
-                        </p>
-
-                        <h3>What's the difference between dice art and pixel art?</h3>
-                        <p>
-                            Both are grid-based. Pixel art uses colored squares (unlimited colors). Dice art uses
-                            six-sided dice (up to 12 shades) and has a physical, three-dimensional quality you
-                            can't get with flat media.
-                        </p>
+                        {FAQ_QUESTIONS.map(({ question, answer }) => (
+                            <div key={answer}>
+                                <h3>{question}</h3>
+                                <p>{ANSWERS[answer]}</p>
+                            </div>
+                        ))}
 
                         {/* CTA */}
                         <div className="blog-cta">
@@ -298,19 +416,19 @@ export default function DiceArtPage() {
                         <h2>Further reading</h2>
                         <ul>
                             <li>
-                                <Link href="/gallery" className="text-[var(--pink)] hover:underline">
+                                <Link href="/gallery" className={linkClass}>
                                     Dice Art Gallery
                                 </Link>{' '}
                                 — browse portraits and abstract mosaics created with Diceify.
                             </li>
                             <li>
-                                <Link href="/blog/why-i-built-diceify" className="text-[var(--pink)] hover:underline">
+                                <Link href="/blog/why-i-built-diceify" className={linkClass}>
                                     Why I Built Diceify
                                 </Link>{' '}
                                 — the story behind Diceify and a video of building a dice portrait from scratch.
                             </li>
                             <li>
-                                <Link href="/blog/jeremy-dice-portraits-nieces" className="text-[var(--pink)] hover:underline">
+                                <Link href="/blog/jeremy-dice-portraits-nieces" className={linkClass}>
                                     How Jeremy Made Dice Portraits for His Nieces
                                 </Link>{' '}
                                 — a community story about making personalized dice art gifts.

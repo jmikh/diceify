@@ -185,6 +185,22 @@
   border-color: rgb(var(--pink-rgb) / 0.6);
 }
 
+/* Grid size + black/white split of the shown portrait (components/DiceStats); the split shrinks on narrow screens */
+.hero-portrait-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.hero-portrait-split {
+  flex: 0 1 22rem;
+  margin-left: auto;
+}
+
 .hero-visual figcaption {
   margin-top: 1rem;
   font-size: 0.85rem;
@@ -316,6 +332,49 @@
 
 .dice-palette-caption {
   grid-area: caption;
+}
+
+/* A bracket under the black (or white) half of the scale; spans its columns of .dice-palette-dice */
+.dice-palette-group {
+  border-top: 1px solid var(--border-glass-light);
+  padding-top: 0.4rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* The scale inside an article (/dice-art): the article column, not the landing section, sets its width */
+.blog-content .dice-palette-scale {
+  margin: 2rem 0;
+}
+
+.blog-content table {
+  width: 100%;
+  margin-bottom: 1.25rem;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.blog-content th,
+.blog-content td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-glass);
+  text-align: left;
+}
+
+.blog-content th {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.blog-content figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--text-muted);
 }
 
 .section-header {
