@@ -876,6 +876,118 @@
   border: none;
 }
 
+/* Guide prose (/dice-art): inline links are underlined, not colour-only (Lighthouse link-in-text-block). Buttons
+   (`.btn-*`) and standalone links keep their own styles. */
+.blog-content :is(p, li, td, figcaption) a:not([class*='btn']),
+.guide-byline a {
+  color: var(--pink);
+  text-decoration: underline;
+  text-decoration-color: var(--pink-glow);
+  text-underline-offset: 0.15em;
+  transition: text-decoration-color 0.2s ease;
+}
+
+.blog-content :is(p, li, td, figcaption) a:not([class*='btn']):hover,
+.guide-byline a:hover {
+  text-decoration-color: var(--pink);
+}
+
+.guide-byline {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+/* Table of contents under the intro: one jump link per H2 */
+.guide-toc {
+  margin-top: 2rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: 1rem;
+}
+
+.guide-toc-heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.guide-toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  columns: 2;
+  column-gap: 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.guide-toc li {
+  break-inside: avoid;
+  padding: 0.15rem 0;
+}
+
+.guide-toc a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.guide-toc a:hover {
+  color: var(--pink);
+  text-decoration: underline;
+}
+
+/* Section anchors land below the top edge rather than flush with it */
+.blog-content h2[id],
+.blog-content h3[id] {
+  scroll-margin-top: 1.5rem;
+}
+
+/* The text equivalent of the 12-die SVG scale */
+.guide-scale-text {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* A note on data the page does not publish yet */
+.guide-pending {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* The size table */
+.blog-content table {
+  width: 100%;
+  margin-bottom: 1.25rem;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.blog-content caption {
+  caption-side: bottom;
+  padding-top: 0.6rem;
+  font-size: 0.85rem;
+  text-align: left;
+  color: var(--text-muted);
+}
+
+.blog-content th,
+.blog-content td {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.blog-content th {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 /* =============================================================================
    RESPONSIVE DESIGN
    ============================================================================= */
@@ -925,6 +1037,10 @@
 
   .dice-palette h2 {
     font-size: 1.5rem;
+  }
+
+  .guide-toc ol {
+    columns: 1;
   }
 
   /* Dice get the full width; the Dark/Light labels move underneath */

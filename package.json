@@ -24,10 +24,11 @@
     "db:types:prod": "supabase gen types typescript --linked --schema public > lib/supabase/database.types.ts",
     "functions:serve": "supabase functions serve --env-file supabase/functions/.env",
     "functions:deploy": "supabase functions deploy",
-    "functions:check": "deno check --config supabase/functions/deno.json supabase/functions/billing/index.ts supabase/functions/stripe-webhook/index.ts",
+    "functions:check": "deno check --config supabase/functions/deno.json supabase/functions/billing/index.ts supabase/functions/stripe-webhook/index.ts supabase/functions/account/index.ts supabase/functions/revenuecat-webhook/index.ts",
     "stripe:listen": "stripe listen --project-name diceify --forward-to http://127.0.0.1:54331/functions/v1/stripe-webhook",
     "gen-fixtures": "tsx scripts/gen-fixtures.ts",
-    "migrate:legacy": "tsx scripts/migrate-from-prisma.ts"
+    "migrate:legacy": "tsx scripts/migrate-from-prisma.ts",
+    "backfill:grids": "tsx scripts/backfill-grids.ts"
   },
   "dependencies": {
     "@next/third-parties": "^14.2.35",

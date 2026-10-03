@@ -416,3 +416,10 @@ verify_jwt = false
 # then requires a signed-in user.
 [functions.billing]
 verify_jwt = true
+
+[functions.account]
+verify_jwt = true
+
+# RevenueCat sends the Authorization header value configured in its dashboard (REVENUECAT_WEBHOOK_SECRET), no JWT.
+[functions.revenuecat-webhook]
+verify_jwt = false

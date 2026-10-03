@@ -45,7 +45,7 @@ const boundary = (files, group, extra = {}) => ({
 
 export default defineConfig(
   {
-    ignores: ['.next/**', 'out/**', '.wrangler/**', 'node_modules/**', 'public/**', '.agent/**', 'next-env.d.ts'],
+    ignores: ['.next/**', 'out/**', '.wrangler/**', 'node_modules/**', 'public/**', '.agent/**', 'next-env.d.ts', 'ios/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

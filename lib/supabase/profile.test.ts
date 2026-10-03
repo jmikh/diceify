@@ -15,6 +15,12 @@ const row = (overrides: Partial<ProfileRow> = {}): ProfileRow => ({
   current_period_end: null,
   cancel_at: null,
   synced_at: null,
+  apple_plan: null,
+  apple_product_id: null,
+  apple_expires_at: null,
+  apple_will_renew: false,
+  apple_environment: null,
+  apple_synced_at: null,
   legacy_id: null,
   created_at: '2026-09-30T00:00:00.000Z',
   updated_at: '2026-09-30T00:00:00.000Z',
@@ -41,7 +47,16 @@ describe('toBillingState', () => {
       currentPeriodEnd: '2026-10-15T00:00:00.000Z',
       cancelAt: '2026-10-15T00:00:00.000Z',
       hasStripeCustomer: true,
+      applePlan: null,
+      appleExpiresAt: null,
+      appleWillRenew: false,
     })
+  })
+
+  it('maps the Apple columns and drops an unknown apple_plan', () => {
+    const apple = toBillingState(row({ apple_plan: 'studio', apple_expires_at: '2026-11-01T00:00:00.000Z', apple_will_renew: true }))
+    expect(apple).toMatchObject({ applePlan: 'studio', appleExpiresAt: '2026-11-01T00:00:00.000Z', appleWillRenew: true })
+    expect(toBillingState(row({ apple_plan: 'gold' })).applePlan).toBeNull()
   })
 
   it('has no Stripe customer for null or empty ids', () => {
@@ -61,5 +76,13 @@ describe('toBillingState', () => {
     expect(ent.plan).toBe('studio')
     expect(ent.builderRowLimit).toBeNull()
     expect(ent.accessUntil).toBe('2026-10-15T00:00:00.000Z')
+  })
+
+  it('feeds deriveEntitlements: an unexpired Apple studio row gets studio from the apple source', () => {
+    const ent = deriveEntitlements(
+      toBillingState(row({ apple_plan: 'studio', apple_expires_at: '2026-10-15T00:00:00.000Z', apple_will_renew: true })),
+      new Date('2026-09-30T12:00:00.000Z'),
+    )
+    expect(ent).toMatchObject({ plan: 'studio', source: 'apple', renews: true, accessUntil: '2026-10-15T00:00:00.000Z', canManageBilling: false })
   })
 })

@@ -1,7 +1,8 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { encodeGrid, type Fixture } from './__fixtures__/format'
+import type { Fixture } from './__fixtures__/format'
+import { encodeGrid } from './encoding'
 import { computeGridSize, generateDiceGrid } from './generate'
 import { DEFAULT_DICE_PARAMS, type Pixels } from './types'
 

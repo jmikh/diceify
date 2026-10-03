@@ -79,7 +79,8 @@ Still to do, in order:
      preview URLs; `<sub>` = the account's `workers.dev` subdomain, Cloudflare Worker section).
 4. **Function secrets**: `supabase secrets set --env-file supabase/functions/.env.production` where that file (gitignored,
    never committed) holds `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (from the live webhook endpoint below), the three
-   price ids, `APP_URL=https://diceify.art` and, optionally, `POSTHOG_KEY` (+ `POSTHOG_HOST`, PostHog section). Until go-live you can point it at the **test** keys instead
+   price ids, `APP_URL=https://diceify.art`, optionally `POSTHOG_KEY` (+ `POSTHOG_HOST`, PostHog section) and, for the iOS
+   app's purchases, `REVENUECAT_SECRET_KEY` + `REVENUECAT_WEBHOOK_SECRET` (RevenueCat section). Until go-live you can point it at the **test** keys instead
    (`cp supabase/functions/.env supabase/functions/.env.production`, set `APP_URL` to the URL you are testing from) so the
    preview and `dev:prod` exercise checkout with test cards; swap to live keys at cut-over.
 5. **Stripe webhook** (per mode): endpoint `https://pmxvjcnxnwzuggnuhkol.supabase.co/functions/v1/stripe-webhook`, events
@@ -252,6 +253,53 @@ Local testing (env, run order, cards, flows, hand-signed events): `docs/STRIPE_T
   method; cancellation may stay off — the app cancels through its own route). `POST /billing/portal` fails until it exists.
 - **Cut-over (F2)**: disable the old Vercel endpoint once this one is live; the customer ids carry over unchanged (the migration
   script copies `stripe_customer_id`, then `syncBillingFromStripe` fills the rest).
+
+## Sign in with Apple (iOS step 1)
+
+The iOS app signs in natively (`signInWithIdToken`, needs only the bundle id as an authorized client id); the web offers
+"Sign in with Apple" too (`lib/supabase/auth.ts` `signInWithApple`, same PKCE flow as Google), which needs the full web
+configuration on the Supabase Apple provider (Dashboard → Authentication → Providers → Apple):
+
+- **Client IDs**: the app's bundle id `art.diceify.app` (native) **and** a Services ID for the web (Apple Developer →
+  Identifiers → Services IDs → new, e.g. `art.diceify.web`, with Sign in with Apple enabled; its website URLs: domain
+  `pmxvjcnxnwzuggnuhkol.supabase.co`, return URL `https://pmxvjcnxnwzuggnuhkol.supabase.co/auth/v1/callback`).
+- **Secret key**: a Sign in with Apple key (Apple Developer → Keys → new, enable Sign in with Apple, download the `.p8`);
+  Supabase wants the generated client secret JWT (Team ID + Key ID + the `.p8`; the dashboard has a generator). It expires
+  after at most 6 months — put a reminder in.
+- The local stack has no Apple provider configured: the web button lands on a GoTrue error locally; test it on the hosted
+  project. Users who choose "Hide My Email" get a relay address, i.e. a separate account from a Google sign-in with the real one.
+
+## RevenueCat (iOS in-app purchases, iOS step 1 / step 6)
+
+Apple purchases never touch Stripe. The app buys through StoreKit via RevenueCat (`appUserID` = the Supabase user id), and
+RevenueCat tells the backend, which stores the result in `profiles.apple_*` (migration `*_apple_billing.sql`; written only
+by the functions, like the Stripe columns). Entitlements take the better of Stripe and Apple (`deriveEntitlements`,
+mirrored by SQL `effective_plan`).
+
+- **Functions**: `revenuecat-webhook` (`verify_jwt = false`; every event refetches the subscriber from the RevenueCat API and
+  recomputes the columns — idempotent, order-independent) and `POST /billing/apple-sync` (the app right after a purchase or
+  restore; 503 `NOT_CONFIGURED` until the key is set). `account` (`POST /delete`, `verify_jwt = true`) is the App Store's
+  required account deletion, offered on the web Account page as well.
+- **Secrets**: `REVENUECAT_SECRET_KEY` (RevenueCat project → API keys → secret key, `sk_…`) and `REVENUECAT_WEBHOOK_SECRET`
+  (any long random string; paste the same value as the webhook's "Authorization header value" in RevenueCat →
+  Integrations → Webhooks, URL `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook`). Optional
+  `REVENUECAT_API_URL` (tests only). Both webhook and route honour sandbox purchases (App Review buys in the sandbox).
+- **Products** (App Store Connect → the app → Subscriptions / In-App Purchases): auto-renewable `studio_monthly`, `studio_yearly`
+  in one subscription group "Studio"; non-renewing `creator_30d`. Product ids starting with `studio`/`creator` (after an
+  optional reverse-DNS prefix) are what `_shared/apple-snapshot.ts` recognises; the pass length is the 30 days of
+  `PRICING.creator.accessDays`.
+- Local check without RevenueCat: `supabase/functions/_shared/apple-sync.integration.test.ts` (stubbed subscriber) and the
+  served functions with `REVENUECAT_API_URL` pointing at a fake (plans/ios/ios-step-1.md).
+
+## Grid backfill (schema v2, iOS step 1)
+
+Project documents are v2: `grid.rows` stores every die (`core/dice/encoding.ts`) so the build step shows the same dice on
+every device; the browser fills it on the next generation and reads older documents through `migrateDocument`. Existing
+rows are filled once by `npm run backfill:grids -- --dry-run` then without the flag (local stack by default;
+`--target=hosted` with `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in the environment; `--only=<id>`, `--force`). Run it
+**after** the web deploy that reads v2. It crops with `sharp` (not the browser canvas), so a project with progress may get a
+grid that differs by a cell near a threshold; the log names those projects. A project whose stored grid size no longer
+matches its crop is resized when nothing was placed on it and reported (left alone) otherwise.
 
 ## Legacy data migration (F1)
 

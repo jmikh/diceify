@@ -28,7 +28,7 @@ export default function PrivacyPage() {
                         Privacy Policy
                     </h1>
                     <p className="text-[var(--text-dim)] mb-8">
-                        Last updated: January 23, 2025
+                        Last updated: October 3, 2026
                     </p>
 
                     <div className="space-y-8 text-[var(--text-secondary)]">
@@ -74,22 +74,36 @@ export default function PrivacyPage() {
                                 <li>Build progress data</li>
                             </ul>
                             <p className="mt-3">
-                                Your images are processed client-side in your browser. We store project data to enable you to save and continue your work across sessions.
+                                Your images are converted into dice patterns in your browser. Project data is stored only when you are signed in: it is saved to your account (database and file storage provided by Supabase) so you can continue your work across devices.
+                            </p>
+                            <p className="mt-3">
+                                <strong>Without an account:</strong> if you use the editor without signing in, your draft stays in your browser. The project settings are kept in your browser's local storage and the photo in its IndexedDB database. Nothing is uploaded to us until you sign in and save the project to your account.
+                            </p>
+                            <p className="mt-3">
+                                <strong>Share links:</strong> when you create a share link, the dice-pattern card for that share is public to anyone who has the link. It contains the dice pattern, not your original photo.
                             </p>
 
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
                                 2.3 Payment Information
                             </h3>
                             <p>
-                                If you purchase Pro access, payment processing is handled securely by Stripe. We do not store your credit card details. We only store a Stripe customer ID to manage your purchase status.
+                                If you purchase a subscription or a Creator Pass, payment processing is handled securely by Stripe. We do not store your credit card details. We store a Stripe customer ID and the status and dates of your purchase or subscription to manage your access.
                             </p>
 
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
-                                2.4 Analytics Data
+                                2.4 Analytics and Error Reporting
                             </h3>
-                            {/* TODO(user): Vercel Analytics is no longer used; Google Analytics, PostHog (product analytics + session replay, linked to the account id once signed in — so not "anonymized") and Sentry (client error reporting) are. Draft wording: plans/revamp/revamp-agent-suggestions.md (I1) */}
-                            <p>
-                                We use Google Analytics and Vercel Analytics to understand how users interact with our Service. This includes information such as pages visited, time spent on pages, and general usage patterns. This data is anonymized and used to improve our Service.
+                            <p className="mb-3">
+                                We use the following services to understand how people use Diceify and to find bugs:
+                            </p>
+                            <ul className="list-disc list-inside space-y-1 ml-4">
+                                <li><strong>Google Analytics 4:</strong> pages visited, the steps of the editor you use, and general usage patterns.</li>
+                                <li><strong>PostHog:</strong> product analytics (the same kind of events) and session replay, which records clicks, scrolling and page changes for some visits. Photos you upload and the dice previews generated from them are masked and never appear in a recording.</li>
+                                <li><strong>Cloudflare:</strong> hosts the site and serves it through its network; its Web Analytics beacon measures page loads.</li>
+                                <li><strong>Sentry:</strong> receives error reports from your browser when something in the Service fails.</li>
+                            </ul>
+                            <p className="mt-3">
+                                When you are signed in, analytics events and error reports are linked to your account ID (not your name or email) so that we can understand and fix problems for a specific account. Visitors who are not signed in are not identified.
                             </p>
                         </section>
 
@@ -114,7 +128,7 @@ export default function PrivacyPage() {
                                 4. Data Storage and Security
                             </h2>
                             <p>
-                                Your data is stored securely using industry-standard practices. We use PostgreSQL databases hosted on secure cloud infrastructure. All data transmission is encrypted using HTTPS. We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction.
+                                Your account, projects and uploaded images are stored by Supabase (authentication, a PostgreSQL database and file storage), with access rules that restrict each user's data to that user. The website itself is served by Cloudflare. All data transmission is encrypted using HTTPS. We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction.
                             </p>
                         </section>
 
@@ -126,7 +140,7 @@ export default function PrivacyPage() {
                                 We do not sell your personal data. We may share your information with:
                             </p>
                             <ul className="list-disc list-inside space-y-1 ml-4">
-                                <li><strong>Service Providers:</strong> Third-party services that help us operate our Service (e.g., Stripe for payments, cloud hosting providers)</li>
+                                <li><strong>Service Providers:</strong> Third-party services that process data on our behalf to operate the Service: Supabase (authentication, database and file storage for saved projects), Stripe (payments), Cloudflare (hosting, content delivery and web analytics), Google Analytics 4 and PostHog (analytics and session replay), and Sentry (error reporting)</li>
                                 <li><strong>Legal Requirements:</strong> When required by law or to protect our rights</li>
                             </ul>
                         </section>
@@ -136,7 +150,7 @@ export default function PrivacyPage() {
                                 6. Data Retention
                             </h2>
                             <p>
-                                We retain your account data and projects for as long as your account is active. If you delete your account, we will delete your personal data and projects within 30 days, except where we are required to retain certain information for legal or legitimate business purposes.
+                                We retain your account data and projects for as long as your account exists. You can delete your account at any time from your account page: this immediately deletes your profile, projects, uploaded images and share cards from our systems and cancels any active subscription. Payment records are kept by Stripe as required for accounting and legal purposes, and analytics and error data are retained by the services listed in Section 2.4 according to their own retention settings.
                             </p>
                         </section>
 
@@ -162,7 +176,7 @@ export default function PrivacyPage() {
                                 8. Cookies
                             </h2>
                             <p>
-                                We use essential cookies to maintain your session and preferences. Analytics services may use their own cookies to collect anonymized usage data. You can control cookie settings through your browser preferences.
+                                We use your browser's local storage to maintain your sign-in session and, for anonymous visitors, your draft. The analytics services in Section 2.4 set their own cookies or local storage to recognize returning visitors. You can control cookies and site data through your browser preferences.
                             </p>
                         </section>
 

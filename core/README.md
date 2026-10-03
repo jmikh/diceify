@@ -100,9 +100,10 @@ Counts dice by color over `rows`; `totalCount = blackCount + whiteCount`.
 ```
 
 `expected.rows[y]` is grid row `y` (row 0 = bottom), dice space-separated and encoded as color initial + face
-+ `r` when rotated (`w3`, `b6r`). A port passes when, for every fixture, decoding `rgbaBase64` and running the
-pipeline with `params` reproduces `expected` exactly. `core/dice/generate.test.ts` does this for the TypeScript
-implementation.
++ `r` when rotated (`w3`, `b6r`): `core/dice/encoding.ts` (`encodeGrid` / `decodeGrid`). The same encoding persists the
+grid in the project document (`grid.rows`, schema v2), so a port needs it for documents too. A port passes when, for
+every fixture, decoding `rgbaBase64` and running the pipeline with `params` reproduces `expected` exactly.
+`core/dice/generate.test.ts` does this for the TypeScript implementation, `ios/DiceCore` for Swift.
 
 Inputs: `public/images/monalisa.webp` resized to 120×90 and 64×64 (decoded with `sharp`), a 256×16 horizontal
 gradient (pixel (x, y) has gray x, so one cell per gray level at 16 rows), and a 32×32 checkerboard of 4-px blocks

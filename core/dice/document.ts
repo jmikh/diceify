@@ -3,6 +3,7 @@
 // (client, migration script) produces the same v1 document.
 
 import { countCompleted } from './build'
+import { decodeGrid } from './encoding'
 import {
   ASPECT_RATIOS,
   COLOR_MODES,
@@ -10,7 +11,7 @@ import {
   DICE_PARAM_BOUNDS,
   projectDocumentSchema,
 } from './document.schema'
-import { DEFAULT_DICE_PARAMS, type DiceParams, type GridPos } from './types'
+import { DEFAULT_DICE_PARAMS, type DiceGrid, type DiceParams, type GridPos } from './types'
 
 export type AspectRatio = (typeof ASPECT_RATIOS)[number]
 export type DocumentStep = 'crop' | 'tune' | 'build'
@@ -33,14 +34,19 @@ export interface GridSize {
   height: number
 }
 
+/** The generated grid as persisted: its size, plus every die (`encodeGrid`) once it has been generated. */
+export interface StoredGrid extends GridSize {
+  rows: string[] | null
+}
+
 export interface ProjectDocument {
   schemaVersion: typeof CURRENT_SCHEMA_VERSION
   /** 'upload' is never persisted: a project always has an image. */
   step: DocumentStep
   crop: CropParams | null
   dice: DiceParams
-  /** Dimensions `buildProgress` refers to (null until a grid has been generated). */
-  grid: GridSize | null
+  /** The grid `buildProgress` refers to (null until one has been generated; `rows` null when only its size is known). */
+  grid: StoredGrid | null
   buildProgress: GridPos
 }
 
@@ -103,10 +109,10 @@ function legacyCrop(x: unknown, y: unknown, width: unknown, height: unknown, rot
   return { x, y, width: w, height: h, rotation: num(rotation, 0), aspectRatio: nearestAspectRatio(w, h) }
 }
 
-function legacyGrid(width: unknown, height: unknown): GridSize | null {
+function legacyGrid(width: unknown, height: unknown): StoredGrid | null {
   const w = num(width, 0)
   const h = num(height, 0)
-  return w > 0 && h > 0 ? { width: Math.round(w), height: Math.round(h) } : null
+  return w > 0 && h > 0 ? { width: Math.round(w), height: Math.round(h), rows: null } : null
 }
 
 function legacyProgress(x: unknown, y: unknown): GridPos {
@@ -147,15 +153,26 @@ function fromLegacyDraft(raw: Raw): ProjectDocument {
   })
 }
 
+/** v1 → v2: the grid gains `rows` (unknown for a v1 document: null until the next generation). */
+function fromV1(raw: Raw): Raw {
+  return { ...raw, schemaVersion: 2, grid: isObject(raw.grid) ? { ...raw.grid, rows: null } : raw.grid }
+}
+
 /**
- * Accepts a current document (validated strictly) or a legacy draft snapshot (converted, then validated).
- * Throws `DocumentError` for anything else.
+ * Accepts a current document (validated strictly), an older version (migrated, then validated) or a legacy draft
+ * snapshot (converted, then validated). Throws `DocumentError` for anything else.
  */
 export function migrateDocument(raw: unknown): ProjectDocument {
   if (!isObject(raw)) throw new DocumentError('INVALID', 'Project document must be an object')
   if (raw.schemaVersion === undefined) return fromLegacyDraft(raw)
+  if (raw.schemaVersion === 1) return validate(fromV1(raw))
   if (raw.schemaVersion === CURRENT_SCHEMA_VERSION) return validate(raw)
   throw new DocumentError('UNSUPPORTED_VERSION', `Unsupported project document version ${String(raw.schemaVersion)}`)
+}
+
+/** The persisted grid as a `DiceGrid`, or null when the document holds no (complete) grid. */
+export function decodeStoredGrid(grid: StoredGrid | null): DiceGrid | null {
+  return grid?.rows ? decodeGrid(grid.rows, grid.width, grid.height) : null
 }
 
 /** Columns of the Prisma `Project` model that map onto the document. */
@@ -258,7 +275,7 @@ export function scaleCrop(crop: CropParams, factor: number): CropParams {
 // Derived values and comparisons
 // ---------------------------------------------------------------------------
 
-export function documentStats(doc: Pick<ProjectDocument, 'grid' | 'buildProgress'>): { totalDice: number; completedDice: number } {
+export function documentStats(doc: { grid: GridSize | null; buildProgress: GridPos }): { totalDice: number; completedDice: number } {
   if (!doc.grid) return { totalDice: 0, completedDice: 0 }
   const totalDice = doc.grid.width * doc.grid.height
   const completedDice = Math.min(totalDice, Math.max(0, countCompleted(doc.buildProgress, doc.grid.width)))
@@ -291,12 +308,20 @@ export function cropParamsEqual(a: CropParams | null, b: CropParams | null, tole
   )
 }
 
-export interface BuildBaseline {
+/** The inputs a grid is generated from (also what build progress is anchored to). */
+export interface GridInputs {
   crop: CropParams | null
   dice: DiceParams
 }
 
+export type BuildBaseline = GridInputs
+
+/** Same crop (within the cropper's jitter tolerance) and the same tune params. */
+export function gridInputsEqual(a: GridInputs, b: GridInputs | null): boolean {
+  return !!b && cropParamsEqual(a.crop, b.crop) && documentsEqual(a.dice, b.dice)
+}
+
 /** Does build progress made against `baseline` still apply to the document's current crop/tune params? */
-export function progressApplies(doc: Pick<ProjectDocument, 'crop' | 'dice'>, baseline: BuildBaseline | null): boolean {
-  return !!baseline && cropParamsEqual(baseline.crop, doc.crop) && documentsEqual(baseline.dice, doc.dice)
+export function progressApplies(doc: GridInputs, baseline: BuildBaseline | null): boolean {
+  return gridInputsEqual(doc, baseline)
 }

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { track } from '@/lib/analytics'
-import type { BlogPost } from '@/features/marketing/blog/data'
+import { formatPostDate, type BlogPost } from '@/features/marketing/blog/data'
 
 interface BlogCardProps {
     post: BlogPost
@@ -55,9 +55,11 @@ export default function BlogCard({ post, source = 'blog', compact = false }: Blo
                         {post.description}
                     </p>
                 )}
-                <div className={`flex items-center justify-between text-[var(--text-dim)] ${compact ? 'text-[10px]' : 'text-xs'} mt-auto`}>
-                    <span>{post.author}</span>
-                    {!compact && <span>{post.readTime}</span>}
+                <div className={`flex items-center justify-between gap-2 text-[var(--text-dim)] ${compact ? 'text-[10px]' : 'text-xs'} mt-auto`}>
+                    <span>
+                        {post.author.name} · <time dateTime={post.date}>{formatPostDate(post.date)}</time>
+                    </span>
+                    {!compact && <span className="shrink-0">{post.readTime}</span>}
                 </div>
             </div>
         </Link>

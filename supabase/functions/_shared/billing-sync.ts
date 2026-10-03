@@ -21,6 +21,10 @@ export interface BillingView {
   planExpiresAt: string | null
   hasStripeCustomer: boolean
   syncedAt: string | null
+  /** The Apple grant (RevenueCat), mirrored so the client derives the same entitlements from a view as from the row. */
+  applePlan: 'creator' | 'studio' | null
+  appleExpiresAt: string | null
+  appleWillRenew: boolean
 }
 
 /** The profile columns the sync reads and writes. */
@@ -34,10 +38,13 @@ export interface ProfileBillingRow {
   current_period_end: string | null
   cancel_at: string | null
   synced_at: string | null
+  apple_plan: string | null
+  apple_expires_at: string | null
+  apple_will_renew: boolean
 }
 
 export const PROFILE_BILLING_COLUMNS =
-  'id, plan, plan_expires_at, stripe_customer_id, stripe_subscription_id, subscription_status, current_period_end, cancel_at, synced_at'
+  'id, plan, plan_expires_at, stripe_customer_id, stripe_subscription_id, subscription_status, current_period_end, cancel_at, synced_at, apple_plan, apple_expires_at, apple_will_renew'
 
 export type SyncTarget = { profileId: string } | { stripeCustomerId: string }
 
@@ -64,6 +71,9 @@ export function toBillingView(row: ProfileBillingRow): BillingView {
     planExpiresAt: row.plan_expires_at,
     hasStripeCustomer: row.stripe_customer_id !== null && row.stripe_customer_id !== '',
     syncedAt: row.synced_at,
+    applePlan: row.apple_plan === 'creator' || row.apple_plan === 'studio' ? row.apple_plan : null,
+    appleExpiresAt: row.apple_expires_at,
+    appleWillRenew: row.apple_will_renew === true,
   }
 }
 

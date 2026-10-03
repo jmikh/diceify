@@ -11,6 +11,12 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          apple_environment: string | null
+          apple_expires_at: string | null
+          apple_plan: string | null
+          apple_product_id: string | null
+          apple_synced_at: string | null
+          apple_will_renew: boolean
           avatar_url: string | null
           cancel_at: string | null
           created_at: string
@@ -28,6 +34,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          apple_environment?: string | null
+          apple_expires_at?: string | null
+          apple_plan?: string | null
+          apple_product_id?: string | null
+          apple_synced_at?: string | null
+          apple_will_renew?: boolean
           avatar_url?: string | null
           cancel_at?: string | null
           created_at?: string
@@ -45,6 +57,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          apple_environment?: string | null
+          apple_expires_at?: string | null
+          apple_plan?: string | null
+          apple_product_id?: string | null
+          apple_synced_at?: string | null
+          apple_will_renew?: boolean
           avatar_url?: string | null
           cancel_at?: string | null
           created_at?: string

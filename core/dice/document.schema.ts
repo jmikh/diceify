@@ -2,8 +2,10 @@
 // external dependency.
 
 import { z } from 'zod'
+import { gridRowsProblem } from './encoding'
 
-export const CURRENT_SCHEMA_VERSION = 1
+/** v2 (2026-10-03): `grid.rows` persists the generated grid (plans/ios/ios-app-plan.md, D3). v1 had only its size. */
+export const CURRENT_SCHEMA_VERSION = 2
 
 export const ASPECT_RATIOS = ['1:1', '3:4', '4:3', '2:3', '16:9'] as const
 export const DOCUMENT_STEPS = ['crop', 'tune', 'build'] as const
@@ -44,6 +46,15 @@ export const gridSizeSchema = z.strictObject({
   height: z.number().int().positive(),
 })
 
+/** The generated grid: its size plus, when known, every die (`core/dice/encoding.ts`; null until generated). */
+export const storedGridSchema = gridSizeSchema
+  .extend({ rows: z.array(z.string()).nullable() })
+  .superRefine((grid, ctx) => {
+    if (grid.rows === null) return
+    const problem = gridRowsProblem(grid.rows, grid.width, grid.height)
+    if (problem) ctx.addIssue({ code: 'custom', message: problem, path: ['rows'] })
+  })
+
 export const gridPosSchema = z.strictObject({
   x: z.number().int().nonnegative(),
   y: z.number().int().nonnegative(),
@@ -54,6 +65,6 @@ export const projectDocumentSchema = z.strictObject({
   step: z.enum(DOCUMENT_STEPS),
   crop: cropParamsSchema.nullable(),
   dice: diceParamsSchema,
-  grid: gridSizeSchema.nullable(),
+  grid: storedGridSchema.nullable(),
   buildProgress: gridPosSchema,
 })

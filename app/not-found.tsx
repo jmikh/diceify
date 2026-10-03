@@ -7,10 +7,9 @@ import { AlertTriangle, ArrowLeft } from 'lucide-react'
 export const metadata: Metadata = {
   title: '404 - Page Not Found',
   description: 'The page you are looking for does not exist.',
-  robots: {
-    index: false,
-    follow: false,
-  },
+  // Next itself adds `<meta name="robots" content="noindex">` to every not-found render; `null` drops the root
+  // layout's `index, follow` without adding a second robots meta of our own.
+  robots: null,
 }
 
 export default function NotFound() {

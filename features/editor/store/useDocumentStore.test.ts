@@ -8,12 +8,20 @@ import { useEditorUiStore } from './useEditorUiStore'
 const crop: CropParams = { x: 10, y: 20, width: 400, height: 300, rotation: 0, aspectRatio: '4:3' }
 
 const doc = (): ProjectDocument => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   step: 'build',
   crop,
   dice: { ...DEFAULT_DICE_PARAMS, numRows: 40 },
-  grid: { width: 53, height: 40 },
+  grid: { width: 53, height: 40, rows: null },
   buildProgress: { x: 7, y: 3 },
+})
+
+/** A 2 × 2 document that carries its dice. */
+const gridDoc = (): ProjectDocument => ({
+  ...doc(),
+  dice: { ...DEFAULT_DICE_PARAMS, numRows: 20 },
+  grid: { width: 2, height: 2, rows: ['w1 b6', 'b2r w5'] },
+  buildProgress: { x: 1, y: 0 },
 })
 
 const store = () => useDocumentStore.getState()
@@ -86,6 +94,19 @@ describe('history', () => {
     expect(useDerivedStore.getState().gridSize).toEqual({ width: 53, height: 40 })
     expect(useDerivedStore.getState().stats.totalCount).toBe(53 * 40)
     expect(store().name).toBe('p')
+  })
+
+  it('replaceDocument with stored dice seeds the derived grid, which the document keeps until a param changes', () => {
+    replaceDocument(gridDoc(), 'p')
+    useEditorUiStore.setState({ step: 'build' })
+    const derived = useDerivedStore.getState()
+    expect(derived.grid?.rows[1]).toEqual([{ face: 2, color: 'black', rotate90: true }, { face: 5, color: 'white' }])
+    expect(derived.stats).toEqual({ blackCount: 2, whiteCount: 2, totalCount: 4 })
+    expect(buildDocument()).toEqual(gridDoc())
+    store().updateDice({ contrast: 10 })
+    expect(buildDocument().grid).toEqual({ width: 2, height: 2, rows: null })
+    store().updateDice({ contrast: gridDoc().dice.contrast })
+    expect(buildDocument().grid?.rows).toEqual(gridDoc().grid?.rows)
   })
 
   it('identical updates add no history entry', () => {

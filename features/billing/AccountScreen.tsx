@@ -1,19 +1,22 @@
 'use client'
 
 // The /account page: the signed-in user's plan, when it ends or renews, in-app cancel/resume, the Stripe portal,
-// a manual refresh, and the "Confirming your purchase…" polling after Checkout returns with ?checkout=success.
+// a manual refresh, the "Confirming your purchase…" polling after Checkout returns with ?checkout=success, and
+// account deletion (the `account` edge function; required by the App Store for the iOS app, offered here too).
 // Entitlements always come from the profile row (`useUser().refresh()` after every action); the billing views
 // returned by the function are only used to know when to stop polling.
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
+import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, RefreshCw, Trash2 } from 'lucide-react'
 import { deriveEntitlements, type CheckoutPlan, type Entitlements } from '@/core/billing'
 import BackgroundOrbs from '@/components/BackgroundOrbs'
 import Logo from '@/components/Logo'
 import SignInModal from '@/features/account/SignInModal'
 import { useUser } from '@/features/account/useUser'
+import { deleteAccount } from '@/lib/supabase/account'
+import { reportFunctionError } from '@/lib/supabase/functions'
 import {
   BillingError,
   cancelSubscription,
@@ -76,10 +79,14 @@ function statusLine(ent: Entitlements): string {
     case 'lifetime':
       return 'Lifetime access — thank you for being an early supporter.'
     case 'studio':
+      if (ent.source === 'apple') {
+        const when = ent.accessUntil ? formatBillingDate(ent.accessUntil) : null
+        return `${ent.renews ? `Renews${when ? ` on ${when}` : ''}` : `Ends${when ? ` on ${when}` : ''}`} — subscribed in the Diceify app. Manage it in Settings → Apple Account → Subscriptions on your iPhone.`
+      }
       if (ent.cancelAt) return `Cancels on ${formatBillingDate(ent.cancelAt)} — you keep access until then.`
       return ent.accessUntil ? `Renews on ${formatBillingDate(ent.accessUntil)}.` : 'Active subscription.'
     case 'creator':
-      return ent.accessUntil ? `Access until ${formatBillingDate(ent.accessUntil)}.` : 'Active pass.'
+      return `${ent.accessUntil ? `Access until ${formatBillingDate(ent.accessUntil)}` : 'Active pass'}${ent.source === 'apple' ? ' — bought in the Diceify app' : ''}.`
     default:
       return 'Free plan — the builder works for the first rows; upgrade for unlimited building and SVG blueprints.'
   }
@@ -155,13 +162,13 @@ function PlanCard({ ent, busy, onAction }: { ent: Entitlements; busy: Busy; onAc
         </div>
       ) : (
         <div className="flex flex-wrap gap-3">
-          {ent.plan === 'studio' && ent.renews && (
+          {ent.plan === 'studio' && ent.source === 'stripe' && ent.renews && (
             <button onClick={() => setConfirmCancel(true)} disabled={disabled} className={BUTTON_DANGER}>
               {busy === 'cancel' && <Loader2 size={14} className="animate-spin" />}
               Cancel subscription
             </button>
           )}
-          {ent.plan === 'studio' && ent.cancelAt && (
+          {ent.plan === 'studio' && ent.source === 'stripe' && ent.cancelAt && (
             <button onClick={() => onAction('resume')} disabled={disabled} className={`${BUTTON} bg-accent-pink text-white hover:bg-accent-pink-light`}>
               {busy === 'resume' && <Loader2 size={14} className="animate-spin" />}
               Resume subscription
@@ -174,6 +181,58 @@ function PlanCard({ ent, busy, onAction }: { ent: Entitlements; busy: Busy; onAc
             </button>
           )}
         </div>
+      )}
+    </section>
+  )
+}
+
+/** Two-step delete: the button turns into a confirmation; the account goes, then the local session, then home. */
+function DangerZone({ ent, onDeleted }: { ent: Entitlements; onDeleted: () => Promise<void> }) {
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const run = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await deleteAccount()
+      await onDeleted()
+    } catch (err) {
+      reportFunctionError(err, 'account-delete')
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="glass p-6 space-y-3">
+      <h2 className="text-lg font-semibold text-white">Delete account</h2>
+      <p className="text-sm text-white/60">
+        Deletes your projects, photos and share images for good.
+        {ent.plan === 'studio' && ent.renews && ' Your Studio subscription is cancelled immediately.'}
+      </p>
+      {error && (
+        <p className="text-sm text-red-300" role="alert">
+          {error}
+        </p>
+      )}
+      {confirming ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-white/80">This cannot be undone.</span>
+          <button onClick={run} disabled={busy} className={BUTTON_DANGER}>
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+            Yes, delete my account
+          </button>
+          <button onClick={() => setConfirming(false)} disabled={busy} className={BUTTON_GHOST}>
+            Keep it
+          </button>
+        </div>
+      ) : (
+        <button onClick={() => setConfirming(true)} className={BUTTON_DANGER}>
+          <Trash2 size={14} />
+          Delete account…
+        </button>
       )}
     </section>
   )
@@ -207,7 +266,7 @@ function UpgradeCards() {
 }
 
 export default function AccountScreen() {
-  const { status, user, entitlements: ent, refresh } = useUser()
+  const { status, user, entitlements: ent, refresh, signOut } = useUser()
   const router = useRouter()
   const searchParams = useSearchParams()
   const checkoutReturn = searchParams?.get('checkout') === 'success'
@@ -306,6 +365,13 @@ export default function AccountScreen() {
             </p>
             <PlanCard ent={ent} busy={busy} onAction={runAction} />
             {!ent.isPro && <UpgradeCards />}
+            <DangerZone
+              ent={ent}
+              onDeleted={async () => {
+                await signOut()
+                router.replace('/')
+              }}
+            />
           </>
         )}
       </main>

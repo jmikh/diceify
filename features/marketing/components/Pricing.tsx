@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { useState } from 'react'
-import type { CheckoutPlan, Plan } from '@/core/billing'
+import { PRICING, STUDIO_YEARLY_MONTHLY_EFFECTIVE, type CheckoutPlan, type Plan } from '@/core/billing'
 import { ProfileProvider } from '@/features/account/useUser'
 import SignInModal from '@/features/account/SignInModal'
 import { track } from '@/lib/analytics'
@@ -16,6 +16,10 @@ export default function Pricing() {
         </ProfileProvider>
     )
 }
+
+// Whole dollars unless the amount has cents ($3, $3.33).
+const dollars = (amount: number) => `$${Number.isInteger(amount) ? amount : amount.toFixed(2)}`
+const PRICING_HEADING = `Pricing: free, ${dollars(PRICING.creator.price)} Creator Pass or Studio from ${dollars(STUDIO_YEARLY_MONTHLY_EFFECTIVE)}/month`
 
 function PricingSection() {
     const [isLoading, setIsLoading] = useState<CheckoutPlan | null>(null)
@@ -74,6 +78,7 @@ function PricingSection() {
                                 </button>
                                 <Link
                                     href="/editor"
+                                    prefetch={false}
                                     className="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-accent-pink to-purple-600 hover:from-accent-pink-light hover:to-purple-500 text-white font-medium transition-all text-center"
                                 >
                                     Go to Editor
@@ -86,7 +91,7 @@ function PricingSection() {
 
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-bold font-syne mb-6">Choose Your Creative Journey</h2>
+                    <h2 className="text-4xl md:text-5xl font-bold font-syne mb-6">{PRICING_HEADING}</h2>
                     <p className="text-lg text-white/50 max-w-2xl mx-auto">
                         Start for free, then pick a plan that fits your ambitions.
                     </p>
@@ -120,7 +125,7 @@ function PricingSection() {
                             </li>
                         </ul>
 
-                        <Link href="/editor" className="btn-secondary w-full justify-center text-sm mt-auto" onClick={() => track('go_to_editor', { source: 'pricing_free' })}>
+                        <Link href="/editor" prefetch={false} className="btn-secondary w-full justify-center text-sm mt-auto" onClick={() => track('go_to_editor', { source: 'pricing_free' })}>
                             Start Free
                         </Link>
                     </div>

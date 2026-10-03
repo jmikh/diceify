@@ -2,118 +2,113 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { DICE_PARAM_BOUNDS } from '@/core/dice'
+import { PLAN_LIMITS, PRICING } from '@/core/billing'
+import JsonLd from '@/components/JsonLd'
 
-const faqs = [
+interface Faq {
+    question: string
+    /** Plain text: shown on the page and reused verbatim in the FAQPage structured data. */
+    answer: string
+}
+
+const { min: MIN_ROWS, max: MAX_ROWS } = DICE_PARAM_BOUNDS.numRows
+const FREE_ROWS = PLAN_LIMITS.explorer.builderRowLimit
+
+// Product questions only; what dice art is, dice counts and build times live on /dice-art.
+const FAQS: Faq[] = [
     {
-        question: 'What is dice art?',
-        answer: (
-            <>
-                Dice art is a form of mosaic art where standard six-sided dice are arranged in a grid to recreate an image.
-                Each die face (1 dot through 6 dots) acts as a different shade of gray. When hundreds or thousands of dice
-                are placed together, the individual faces blend into a cohesive image, much like pixels on a screen.
-            </>
-        ),
+        question: 'Is Diceify free?',
+        answer: `Yes. The Explorer plan is free and needs no sign-up to try: upload a photo, tune the pattern and preview it. The free builder covers the first ${FREE_ROWS} rows; the Creator Pass ($${PRICING.creator.price} one-time, ${PRICING.creator.accessDays} days) or Studio ($${PRICING.studio.monthlyPrice}/month or $${PRICING.studio.yearlyPrice}/year) unlock the full builder and SVG blueprints.`,
     },
     {
-        question: 'How many dice do I need?',
-        answer: (
-            <>
-                It depends on the size and detail of your design. A small dice portrait might use 400 to 900 dice
-                (20×20 to 30×30 grid), a medium project around 1,600 to 2,500 dice (40×40 to 50×50), and large-scale
-                pieces can use 5,000 or more. Diceify automatically calculates the exact count based on your chosen dimensions.
-            </>
-        ),
+        question: 'Can I print or export the pattern?',
+        answer: 'On the free plan you can preview your pattern as an image (up to 1080 px), save it, and share a link with a social card. The Creator Pass and Studio add the full-resolution SVG blueprint download, which you can print at any size. There is no PDF export today.',
     },
     {
-        question: 'Should I use black dice, white dice, or both?',
-        answer: (
-            <>
-                For the best results, use <strong>both black and white dice</strong>. This gives you 12 brightness levels
-                instead of 6, producing much clearer images with smoother shading. Black dice alone still work and some
-                people prefer the look, but the detail is noticeably reduced. White dice alone don't produce recognizable
-                images because there isn't enough contrast range.
-            </>
-        ),
+        question: 'Does it work on my phone?',
+        answer: 'Yes. Diceify runs in the browser on phones, tablets and desktops with no app to install, and the editor has a mobile layout. The builder is designed to sit next to your frame while you place dice.',
     },
     {
-        question: 'Do I need a high-quality photo?',
-        answer: (
-            <>
-                No. Dice art generators downscale your image by aggregating groups of pixels into single brightness values,
-                so a low-resolution or even slightly blurry photo works fine. What matters more is the composition. Zoom in
-                on a face and make sure there's good contrast between the subject and the background.
-            </>
-        ),
+        question: 'Is my photo uploaded?',
+        answer: 'The dice pattern is generated in your browser. If you are not signed in, your draft stays on your device. A photo is uploaded to your private project only when you sign in and save it, so you can reopen it on another device.',
     },
     {
-        question: 'How long does it take to build?',
-        answer: (
-            <>
-                A small 20×20 portrait (400 dice) might take 2 to 4 hours. A medium 40×40 piece (1,600 dice) can take a
-                full day or two. Using{' '}
-                <Link href="/editor" className="text-[var(--pink)] hover:underline">Diceify's builder</Link>{' '}
-                speeds things up significantly because it zooms in on your current position, tells you how many continuous
-                dice of the same value to place, and tracks your overall progress.
-            </>
-        ),
+        question: `What do I get with the Creator Pass ($${PRICING.creator.price})?`,
+        answer: `${PRICING.creator.accessDays} days of full access for a one-time $${PRICING.creator.price}: the builder for every row of your grid, full-resolution SVG blueprints and unlimited saved projects. It does not renew; Studio is the subscription for ongoing work.`,
     },
     {
-        question: "What's the difference between dice art and pixel art?",
-        answer: (
-            <>
-                Both are grid-based, but they use different elements. Pixel art uses colored squares, giving you unlimited
-                colors. Dice art uses six-sided dice, giving you up to 12 shades (with black and white dice) and adding a
-                three-dimensional, tactile quality that you can't get with flat media.
-            </>
-        ),
+        question: 'How big a piece can I build?',
+        answer: `Any grid from ${MIN_ROWS} to ${MAX_ROWS} rows tall; the width follows your crop. Diceify shows the exact number of black and white dice for the size you pick.`,
+    },
+    {
+        question: 'Is Diceify the same as Dicify?',
+        answer: 'No. Diceify (with an e) is the dice art generator at diceify.art; Dicify is an unrelated TensorFlow.js book project.',
     },
 ]
+
+const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQS.map(({ question, answer }) => ({
+        '@type': 'Question',
+        name: question,
+        acceptedAnswer: { '@type': 'Answer', text: answer },
+    })),
+}
 
 export default function FAQ() {
     const [openIndex, setOpenIndex] = useState<number | null>(null)
 
     return (
         <section className="faq-section" id="faq">
+            <JsonLd data={faqJsonLd} />
             <div className="section-header">
                 <span className="section-label">FAQ</span>
                 <h2>Frequently asked questions</h2>
             </div>
             <div className="faq-list">
-                {faqs.map((faq, i) => (
-                    <button
-                        key={i}
-                        className={`faq-item ${openIndex === i ? 'open' : ''}`}
-                        onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                        aria-expanded={openIndex === i}
-                    >
-                        <div className="faq-question">
-                            <span>{faq.question}</span>
-                            <svg
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                className={`faq-chevron ${openIndex === i ? 'rotated' : ''}`}
-                            >
-                                <path d="M6 9l6 6 6-6" />
-                            </svg>
+                {FAQS.map((faq, i) => {
+                    const open = openIndex === i
+                    const answerId = `faq-answer-${i}`
+                    return (
+                        // Heading-wraps-button so extractors see the question as an <h3>; answers stay in the DOM.
+                        <div key={faq.question} className={`faq-item ${open ? 'open' : ''}`}>
+                            <h3 className="m-0">
+                                <button
+                                    type="button"
+                                    className="faq-question w-full bg-transparent border-0 p-0 text-left cursor-pointer"
+                                    onClick={() => setOpenIndex(open ? null : i)}
+                                    aria-expanded={open}
+                                    aria-controls={answerId}
+                                >
+                                    <span>{faq.question}</span>
+                                    <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        aria-hidden="true"
+                                        className={`faq-chevron ${open ? 'rotated' : ''}`}
+                                    >
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </button>
+                            </h3>
+                            {/* The stylesheet caps an open answer at 300px; the longer product answers need more on narrow screens. */}
+                            <div className="faq-answer" id={answerId} style={open ? { maxHeight: 600 } : undefined}>
+                                <p>{faq.answer}</p>
+                            </div>
                         </div>
-                        <div className="faq-answer">
-                            <p>{faq.answer}</p>
-                        </div>
-                    </button>
-                ))}
+                    )
+                })}
             </div>
-            <div className="flex justify-center mt-8">
-                <Link href="/dice-art" className="btn-secondary">
-                    Learn more about dice art
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                </Link>
-            </div>
+            <p className="mt-8 text-center text-[var(--text-muted)]">
+                For how dice art works, dice counts and build times, see the{' '}
+                <Link href="/dice-art" className="text-[var(--pink)] hover:underline">dice art guide</Link>.
+            </p>
         </section>
     )
 }

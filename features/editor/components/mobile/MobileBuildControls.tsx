@@ -9,23 +9,23 @@ import { BuildProgressBar, formatBuildPercent } from '../build/BuildProgressBar'
 import BuildPosition from '../build/BuildPosition'
 import { useBuildTools } from '../build/BuildTools'
 import { panel, popover } from '../common/ui'
-import { MobileStepBack } from './MobileStepButtons'
-import { mainRow } from './rows'
+import { MobileStepRow } from './MobileStepButtons'
 
-/** Mobile build toolbar: step back, progress, the tools behind "more"; the navigation buttons around the row/col below. */
+/** Mobile build toolbar: step back, then progress and the tools behind "more" in a card; the navigation buttons around the row/col below. */
 export default function MobileBuildControls() {
     const { percent } = useBuildNavigation()
 
     return (
         <>
-            <div className={`${mainRow} ${panel} rounded-[20px] px-3 flex items-center gap-3`}>
-                <MobileStepBack className="w-9 h-9 rounded-[10px]" />
-                <div className="flex-1 min-w-0 flex items-center gap-3 text-[13px] tabular-nums">
-                    <BuildProgressBar percent={percent} className="h-[5px]" />
-                    <span className="text-white/75">{formatBuildPercent(percent)}</span>
+            <MobileStepRow>
+                <div className={`${panel} flex-1 min-w-0 rounded-[20px] px-4 flex items-center gap-3`}>
+                    <div className="flex-1 min-w-0 flex items-center gap-3 text-[13px] tabular-nums">
+                        <BuildProgressBar percent={percent} className="h-[5px]" />
+                        <span className="text-white/75">{formatBuildPercent(percent)}</span>
+                    </div>
+                    <BuildMoreMenu />
                 </div>
-                <BuildMoreMenu />
-            </div>
+            </MobileStepRow>
             <BuildNavButtons className="flex gap-2" buttonClassName="h-14 flex-1 min-w-0">
                 <BuildPosition className="h-14" />
             </BuildNavButtons>

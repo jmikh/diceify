@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { track } from '@/lib/analytics'
+import { DEFINITION } from '@/lib/schema'
 import type { DiceColor, DiceFace } from '@/core/dice'
 import { DiceColorBar, GridSize } from '@/components/DiceStats'
 import DiceLens from './DiceLens'
@@ -58,16 +59,22 @@ export default function Hero() {
                     Photo-to-dice mosaic generator
                 </span>
                 <h1>Turn loved ones into <span className="highlight">dice art</span></h1>
-                <p>Upload a photo, tune the contrast and detail, then follow our step-by-step guide to build a mosaic from standard dice.</p>
+                <p className="!mb-4">Upload a photo, tune the contrast and detail, then follow our step-by-step guide to build a mosaic from standard dice.</p>
+                {/* The one-sentence definition answer engines can quote (repeated in the footer). */}
+                <p className="!text-base !text-[var(--text-dim)]">{DEFINITION}</p>
                 <div className="hero-buttons">
-                    <Link
-                        href="/editor"
-                        className="btn-primary"
-                        onClick={() => track('go_to_editor', { source: 'hero' })}
-                    >
-                        <DieFace face={5} color="white" className="hero-button-die" />
-                        Start creating
-                    </Link>
+                    <div className="flex flex-col items-start gap-2">
+                        <Link
+                            href="/editor"
+                            prefetch={false}
+                            className="btn-primary"
+                            onClick={() => track('go_to_editor', { source: 'hero' })}
+                        >
+                            <DieFace face={5} color="white" className="hero-button-die" />
+                            Start creating
+                        </Link>
+                        <span className="text-sm text-[var(--text-dim)]">Free to start — no sign-up to preview</span>
+                    </div>
                     <Link
                         href="/dice-art"
                         className="hero-link"
@@ -83,7 +90,7 @@ export default function Hero() {
                         ))}
                     </div>
                     <span>
-                        Join <strong>5,000+</strong> creators building with real dice
+                        Built by a maker, for makers: dice portraits and gifts <strong>since 2020</strong>
                     </span>
                 </div>
             </div>

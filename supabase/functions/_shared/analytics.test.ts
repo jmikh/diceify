@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type Stripe from 'stripe'
-import { purchaseEvent, uuidFrom } from './analytics.ts'
+import { applePurchaseEvent, purchaseEvent, uuidFrom } from './analytics.ts'
 
 function checkoutCompleted(session: Partial<Stripe.Checkout.Session>, type = 'checkout.session.completed'): Stripe.Event {
   return {
@@ -57,5 +57,38 @@ describe('purchaseEvent', () => {
     expect(await purchaseEvent(checkoutCompleted({ payment_status: 'unpaid' }), 'explorer')).toBeNull()
     expect(await purchaseEvent(checkoutCompleted({ client_reference_id: null }), 'creator')).toBeNull()
     expect(await purchaseEvent(checkoutCompleted({}, 'invoice.paid'), 'creator')).toBeNull()
+  })
+})
+
+describe('applePurchaseEvent', () => {
+  const event = (over: Partial<Parameters<typeof applePurchaseEvent>[0]> = {}) => ({
+    id: 'rc_1',
+    type: 'INITIAL_PURCHASE',
+    product_id: 'studio_monthly',
+    environment: 'SANDBOX',
+    price: 9,
+    currency: 'USD',
+    event_timestamp_ms: 1_790_000_000_000,
+    ...over,
+  })
+
+  it('records a payment with the store, environment and the plan after the sync', async () => {
+    const e = await applePurchaseEvent(event(), 'user-1', 'studio')
+    expect(e).toMatchObject({
+      event: 'purchase_completed',
+      distinctId: 'user-1',
+      timestamp: '2026-09-21T14:13:20.000Z',
+      properties: { checkout_plan: 'studio_monthly', mode: 'subscription', revenue: 9, currency: 'usd', store: 'app_store', environment: 'sandbox', revenuecat_event: 'INITIAL_PURCHASE', $set: { plan: 'studio' } },
+    })
+    expect(e?.uuid).toBe(await uuidFrom('revenuecat:rc_1'))
+    expect((await applePurchaseEvent(event({ type: 'NON_RENEWING_PURCHASE', product_id: 'creator_30d', price: 19 }), 'u', 'creator'))?.properties).toMatchObject({ mode: 'payment', revenue: 19 })
+  })
+
+  it('ignores state changes and tolerates missing price fields', async () => {
+    for (const type of ['CANCELLATION', 'EXPIRATION', 'BILLING_ISSUE', 'TRANSFER', 'TEST']) {
+      expect(await applePurchaseEvent(event({ type }), 'u', 'explorer')).toBeNull()
+    }
+    const bare = await applePurchaseEvent({ id: 'rc_2', type: 'RENEWAL' }, 'u', 'studio')
+    expect(bare?.properties).toMatchObject({ checkout_plan: null, revenue: 0, currency: 'usd', environment: 'production' })
   })
 })

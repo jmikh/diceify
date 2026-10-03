@@ -70,7 +70,7 @@ describe.skipIf(!ENABLED)('projects + storage (local stack)', () => {
 
   it('saveProject: correct version ok, stale version → conflict with the current row', async () => {
     const { saveProject, getProject } = await import('./projects')
-    const doc = { ...createDefaultDocument(), step: 'build' as const, grid: { width: 10, height: 10 }, buildProgress: { x: 5, y: 2 } }
+    const doc = { ...createDefaultDocument(), step: 'build' as const, grid: { width: 10, height: 10, rows: null }, buildProgress: { x: 5, y: 2 } }
     const ok = await saveProject(projectId, { name: 'Renamed', document: doc, expectedVersion: 1 })
     expect(ok).toEqual({ ok: true, cloudVersion: 2 })
 

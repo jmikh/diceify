@@ -7,7 +7,7 @@ const ZOOM = { initial: 8, min: 4, max: 20, step: 2 } as const
 
 const clampZoom = (level: number) => Math.min(ZOOM.max, Math.max(ZOOM.min, level))
 
-// Shared by the viewer (reads it, pinch writes it) and the under-canvas strip's +/- buttons.
+// Shared by the viewer (reads it, pinch writes it) and the +/- buttons (BuildZoomButtons: under the canvas on desktop, on it on mobile).
 const useBuildZoomStore = create<{ zoomLevel: number; setZoomLevel: (level: number) => void }>()(set => ({
     zoomLevel: ZOOM.initial,
     setZoomLevel: level => set({ zoomLevel: clampZoom(level) }),

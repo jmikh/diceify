@@ -2,8 +2,8 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import JsonLd from '@/components/JsonLd'
-import { pageMetadata } from '@/lib/seo'
-import { getBlogBySlug, getAllBlogSlugs } from '@/features/marketing/blog/data'
+import { pageMetadata, SITE_URL } from '@/lib/seo'
+import { getBlogBySlug, getAllBlogSlugs, formatPostDate, type BlogAuthor } from '@/features/marketing/blog/data'
 
 // Blog content components
 import JeremyDicePortraits from './jeremy-dice-portraits-nieces'
@@ -36,10 +36,26 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
             title: post.title,
             description: post.description,
             path: `/blog/${slug}`,
-            article: { publishedTime: post.date, authors: [post.author] },
+            article: { publishedTime: post.date, authors: [post.author.name] },
         }),
-        authors: [{ name: post.author, url: post.authorUrl }],
+        authors: [{ name: post.author.name, url: post.author.url }],
     }
+}
+
+const schemaPerson = ({ type, name, url }: BlogAuthor) => ({ "@type": type, "name": name, ...(url && { "url": url }) })
+
+function AuthorLink({ author }: { author: BlogAuthor }) {
+    if (!author.url) return <>{author.name}</>
+    const external = !author.url.startsWith(SITE_URL)
+    return (
+        <a
+            href={author.url}
+            {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
+            className="text-[var(--pink)] hover:underline"
+        >
+            {author.name}
+        </a>
+    )
 }
 
 export default async function BlogPostPage({ params }: BlogPageProps) {
@@ -56,11 +72,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
         notFound()
     }
 
-    const formattedDate = new Date(post.date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    })
+    const postUrl = `${SITE_URL}/blog/${slug}`
 
     // JSON-LD structured data for better AI/search engine crawlability
     const jsonLd = {
@@ -68,34 +80,32 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
         "@type": "Article",
         "headline": post.title,
         "description": post.description,
+        "image": `${SITE_URL}${post.featuredImage}`,
         "datePublished": post.date,
-        "dateModified": post.date,
-        "author": {
-            "@type": "Person",
-            "name": post.author,
-            ...(post.authorUrl && { "url": post.authorUrl })
-        },
+        "dateModified": post.dateModified ?? post.date,
+        "author": schemaPerson(post.author),
+        ...(post.contributor && { "contributor": schemaPerson(post.contributor) }),
         "publisher": {
             "@type": "Organization",
             "name": "Diceify",
-            "url": "https://diceify.art",
+            "url": SITE_URL,
             "logo": {
                 "@type": "ImageObject",
-                "url": "https://diceify.art/logo-full.svg",
+                "url": `${SITE_URL}/logo-full.svg`,
                 "creator": {
                     "@type": "Organization",
                     "name": "Diceify",
-                    "url": "https://diceify.art"
+                    "url": SITE_URL
                 },
-                "copyrightNotice": "© 2024 Diceify. All rights reserved.",
+                "copyrightNotice": `© ${new Date().getUTCFullYear()} Diceify. All rights reserved.`,
                 "creditText": "Created with Diceify (diceify.art)",
-                "license": "https://diceify.art/terms",
-                "acquireLicensePage": "https://diceify.art/terms"
+                "license": `${SITE_URL}/terms`,
+                "acquireLicensePage": `${SITE_URL}/terms`
             }
         },
         "mainEntityOfPage": {
             "@type": "WebPage",
-            "@id": `https://diceify.art/blog/${slug}`
+            "@id": postUrl
         },
         "keywords": post.tags.join(", "),
         "articleSection": "Community Stories",
@@ -111,9 +121,9 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://diceify.art" },
-                        { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://diceify.art/blog" },
-                        { "@type": "ListItem", "position": 3, "name": post.title, "item": `https://diceify.art/blog/${slug}` }
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE_URL },
+                        { "@type": "ListItem", "position": 2, "name": "Blog", "item": `${SITE_URL}/blog` },
+                        { "@type": "ListItem", "position": 3, "name": post.title, "item": postUrl }
                     ]
                 }}
             />
@@ -140,24 +150,15 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
                         <h1 className="font-syne text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-4">
                             {post.title}
                         </h1>
-                        <div className="flex items-center gap-4 text-sm text-[var(--text-muted)]">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--text-muted)]">
                             <span>
-                                By{' '}
-                                {post.authorUrl ? (
-                                    <a
-                                        href={post.authorUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[var(--pink)] hover:underline"
-                                    >
-                                        {post.author}
-                                    </a>
-                                ) : (
-                                    post.author
+                                By <AuthorLink author={post.author} />
+                                {post.contributor && (
+                                    <>, based on <AuthorLink author={post.contributor} />&apos;s original post</>
                                 )}
                             </span>
                             <span>•</span>
-                            <span>{formattedDate}</span>
+                            <time dateTime={post.date}>{formatPostDate(post.date)}</time>
                             <span>•</span>
                             <span>{post.readTime}</span>
                         </div>

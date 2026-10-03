@@ -1,7 +1,7 @@
-// Fixture file format shared by scripts/gen-fixtures.ts and core/dice/generate.test.ts.
+// Fixture file format shared by scripts/gen-fixtures.ts and core/dice/generate.test.ts (rows use core/dice/encoding).
 // Not part of the core API (not re-exported from core/dice/index.ts).
 
-import type { DiceGrid, DiceParams, Die } from '../types'
+import type { DiceParams } from '../types'
 
 export interface Fixture {
   name: string
@@ -13,16 +13,7 @@ export interface Fixture {
   expected: {
     width: number
     height: number
-    /** One line per grid row, row 0 = bottom; dice space-separated, e.g. "w3 b6r w1". */
+    /** One line per grid row, row 0 = bottom; dice space-separated, e.g. "w3 b6r w1" (`encodeGrid`). */
     rows: string[]
   }
-}
-
-/** `w3`, `b6r`: color initial, face, `r` when rotated. */
-export function encodeDie(die: Die): string {
-  return `${die.color[0]}${die.face}${die.rotate90 ? 'r' : ''}`
-}
-
-export function encodeGrid(grid: DiceGrid): string[] {
-  return grid.rows.map((row) => row.map(encodeDie).join(' '))
 }

@@ -4,6 +4,7 @@
 
 import Stripe from 'stripe'
 import type { z } from 'zod'
+import { revenueCatFetcher, syncAppleFromRevenueCat, type SubscriberFetcher } from '../_shared/apple-sync.ts'
 import { hasPaidAccess, PRO_SUBSCRIPTION_STATUSES } from '../_shared/billing-snapshot.ts'
 import { CheckoutBody, PortalBody } from '../_shared/billing-schemas.ts'
 import {
@@ -32,6 +33,10 @@ const PRICE_IDS: Record<CheckoutBody['plan'], string> = {
   studio_monthly: requireEnv('STRIPE_STUDIO_MONTHLY_PRICE_ID'),
   studio_yearly: requireEnv('STRIPE_STUDIO_YEARLY_PRICE_ID'),
 }
+
+// RevenueCat is optional for the web deployment: without the key the route answers 503 and nothing else changes.
+const REVENUECAT_KEY = Deno.env.get('REVENUECAT_SECRET_KEY')
+const fetchSubscriber: SubscriberFetcher | null = REVENUECAT_KEY ? revenueCatFetcher(REVENUECAT_KEY, Deno.env.get('REVENUECAT_API_URL') || undefined) : null
 
 /** The validated body or a 400 response. */
 async function parseBody<T extends z.ZodType>(req: Request, schema: T): Promise<{ body: z.infer<T> } | { response: Response }> {
@@ -159,6 +164,14 @@ async function updateCancelAtPeriodEnd(user: CallerUser, cancelAtPeriodEnd: bool
   const billing = await syncBillingFromStripe(admin, stripe, { profileId: user.id })
   console.log(`billing/${cancelAtPeriodEnd ? 'cancel' : 'resume'}: ${user.id}: ${subscriptionId} → cancel_at=${billing?.cancelAt ?? '-'}`)
   return json({ billing })
+}
+
+/** The app after a StoreKit purchase/restore: refetch the subscriber from RevenueCat and store the Apple columns. */
+export async function handleAppleSync(user: CallerUser): Promise<Response> {
+  if (!fetchSubscriber) return error('NOT_CONFIGURED', 'In-app purchases are not configured', 503)
+  const result = await syncAppleFromRevenueCat(getAdmin(), fetchSubscriber, user.id)
+  if (!result) return error('NOT_FOUND', 'No profile for this user', 404)
+  return json({ billing: toBillingView(result.profile) })
 }
 
 export const handleCancel = (user: CallerUser): Promise<Response> => updateCancelAtPeriodEnd(user, true)

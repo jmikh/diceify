@@ -38,6 +38,7 @@ export default function Navbar() {
             </ul>
             <Link
                 href="/editor"
+                prefetch={false}
                 className="nav-cta"
                 onClick={() => track('go_to_editor', { source: 'header' })}
             >

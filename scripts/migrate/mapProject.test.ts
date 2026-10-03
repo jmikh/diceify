@@ -70,11 +70,11 @@ describe('image geometry', () => {
 describe('mapProjectDocument', () => {
   it('scales the crop by the factor and keeps rotation/aspect, recomputing stats', () => {
     const { document, totalDice, completedDice, cropDropped } = mapProjectDocument(row(), 0.512)
-    expect(document.schemaVersion).toBe(1)
+    expect(document.schemaVersion).toBe(2)
     expect(document.step).toBe('build')
     expect(document.crop).toEqual({ x: 51.2, y: 102.4, width: 1536, height: 1152, rotation: 90, aspectRatio: '4:3' })
     expect(document.dice).toMatchObject({ numRows: 40, colorMode: 'black', contrast: 20, gamma: 1.2, edgeSharpening: 10, rotate6: true })
-    expect(document.grid).toEqual({ width: 30, height: 40 })
+    expect(document.grid).toEqual({ width: 30, height: 40, rows: null })
     expect(document.buildProgress).toEqual({ x: 5, y: 2 })
     expect(totalDice).toBe(1200)
     expect(completedDice).toBe(2 * 30 + 5)

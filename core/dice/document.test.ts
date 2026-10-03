@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createDefaultDocument,
   cropParamsEqual,
+  decodeStoredGrid,
   DocumentError,
   documentsEqual,
   documentStats,
@@ -21,12 +22,20 @@ import { DEFAULT_DICE_PARAMS } from './types'
 const crop: CropParams = { x: 10, y: 20, width: 400, height: 300, rotation: 90, aspectRatio: '4:3' }
 
 const fullDoc = (): ProjectDocument => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   step: 'build',
   crop,
   dice: { ...DEFAULT_DICE_PARAMS, numRows: 40, contrast: 30 },
-  grid: { width: 53, height: 40 },
+  grid: { width: 53, height: 40, rows: null },
   buildProgress: { x: 7, y: 3 },
+})
+
+/** A document whose grid carries its dice: 2 × 3 (rows[0] = bottom). */
+const gridDoc = (): ProjectDocument => ({
+  ...fullDoc(),
+  dice: { ...DEFAULT_DICE_PARAMS, numRows: 20 },
+  grid: { width: 2, height: 3, rows: ['w1 b6r', 'b2 b2', 'w5 w6'] },
+  buildProgress: { x: 1, y: 1 },
 })
 
 const expectError = (raw: unknown, code: DocumentError['code']) => {
@@ -57,9 +66,25 @@ describe('createDefaultDocument', () => {
 })
 
 describe('migrateDocument: current documents', () => {
-  it('passes a valid v1 document through unchanged', () => {
+  it('passes a valid v2 document through unchanged', () => {
     const doc = fullDoc()
     expect(migrateDocument(JSON.parse(JSON.stringify(doc)))).toEqual(doc)
+    expect(migrateDocument(JSON.parse(JSON.stringify(gridDoc())))).toEqual(gridDoc())
+  })
+
+  it('validates the stored dice against the grid size', () => {
+    expectError({ ...gridDoc(), grid: { width: 2, height: 3, rows: ['w1 b6r', 'b2 b2'] } }, 'INVALID')
+    expectError({ ...gridDoc(), grid: { width: 2, height: 3, rows: ['w1 b6r', 'b2 b2 b2', 'w5 w6'] } }, 'INVALID')
+    expectError({ ...gridDoc(), grid: { width: 2, height: 3, rows: ['w1 b6r', 'b2 b7', 'w5 w6'] } }, 'INVALID')
+    expectError({ ...gridDoc(), grid: { width: 2, height: 3 } }, 'INVALID')
+  })
+
+  it('decodes the stored grid (rows[0] = bottom) and yields null without dice', () => {
+    const grid = decodeStoredGrid(gridDoc().grid)
+    expect(grid?.rows[0]).toEqual([{ face: 1, color: 'white' }, { face: 6, color: 'black', rotate90: true }])
+    expect(grid?.rows[2]).toEqual([{ face: 5, color: 'white' }, { face: 6, color: 'white' }])
+    expect(decodeStoredGrid(fullDoc().grid)).toBeNull()
+    expect(decodeStoredGrid(null)).toBeNull()
   })
 
   it('rejects unknown keys, NaN, out-of-range and wrong-type fields', () => {
@@ -76,8 +101,22 @@ describe('migrateDocument: current documents', () => {
     expectError(null, 'INVALID')
     expectError('doc', 'INVALID')
     expectError([], 'INVALID')
-    expectError({ ...fullDoc(), schemaVersion: 2 }, 'UNSUPPORTED_VERSION')
-    expectError({ ...fullDoc(), schemaVersion: '1' }, 'UNSUPPORTED_VERSION')
+    expectError({ ...fullDoc(), schemaVersion: 3 }, 'UNSUPPORTED_VERSION')
+    expectError({ ...fullDoc(), schemaVersion: '2' }, 'UNSUPPORTED_VERSION')
+  })
+})
+
+describe('migrateDocument: v1 (grid without dice)', () => {
+  const v1 = () => ({ ...fullDoc(), schemaVersion: 1, grid: { width: 53, height: 40 } })
+
+  it('becomes v2 with unknown dice', () => {
+    expect(migrateDocument(v1())).toEqual(fullDoc())
+    expect(migrateDocument({ ...v1(), grid: null })).toEqual({ ...fullDoc(), grid: null })
+  })
+
+  it('is validated after the migration', () => {
+    expectError({ ...v1(), grid: { width: 0, height: 40 } }, 'INVALID')
+    expectError({ ...v1(), extra: 1 }, 'INVALID')
   })
 })
 
@@ -95,11 +134,11 @@ describe('migrateDocument: legacy draft snapshot (no schemaVersion)', () => {
 
   it('converts a full snapshot and infers the aspect preset', () => {
     expect(migrateDocument(draft)).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       step: 'build',
       crop: { x: 1.5, y: 2.5, width: 640, height: 360, rotation: 180, aspectRatio: '16:9' },
       dice: { ...DEFAULT_DICE_PARAMS, numRows: 50, edgeSharpening: 20 },
-      grid: { width: 89, height: 50 },
+      grid: { width: 89, height: 50, rows: null },
       buildProgress: { x: 4, y: 2 },
     })
   })
@@ -163,11 +202,11 @@ describe('fromLegacyProjectRow', () => {
 
   it('maps columns, keeps rotation, infers the aspect and the build step', () => {
     expect(fromLegacyProjectRow(row)).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       step: 'build',
       crop: { x: 12.5, y: 0, width: 300, height: 400, rotation: 270, aspectRatio: '3:4' },
       dice: { numRows: 60, colorMode: 'black', contrast: 10, gamma: 1.2, edgeSharpening: 0, rotate6: true, rotate3: false, rotate2: false },
-      grid: { width: 45, height: 60 },
+      grid: { width: 45, height: 60, rows: null },
       buildProgress: { x: 3, y: 9 },
     })
   })
@@ -246,7 +285,7 @@ describe('documentStats', () => {
 describe('equality', () => {
   it('documentsEqual ignores key order and nested order', () => {
     const a = fullDoc()
-    const b = { buildProgress: { y: 3, x: 7 }, grid: { height: 40, width: 53 }, dice: { ...a.dice }, crop: { ...a.crop }, step: 'build', schemaVersion: 1 }
+    const b = { buildProgress: { y: 3, x: 7 }, grid: { rows: null, height: 40, width: 53 }, dice: { ...a.dice }, crop: { ...a.crop }, step: 'build', schemaVersion: 2 }
     expect(documentsEqual(a, b)).toBe(true)
     expect(documentsEqual(a, { ...b, step: 'tune' })).toBe(false)
   })

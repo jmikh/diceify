@@ -47,6 +47,45 @@ export async function purchaseEvent(event: Stripe.Event, plan: string): Promise<
   }
 }
 
+/** RevenueCat event types that are a payment (the rest are state changes: cancellation, expiration, billing issue…). */
+const APPLE_PURCHASE_TYPES: ReadonlySet<string> = new Set(['INITIAL_PURCHASE', 'RENEWAL', 'NON_RENEWING_PURCHASE', 'PRODUCT_CHANGE', 'UNCANCELLATION'])
+
+/** The fields of a RevenueCat webhook event the purchase event reads. */
+export interface ApplePurchaseFacts {
+  id: string
+  type: string
+  product_id?: string
+  environment?: string
+  price?: number | null
+  currency?: string | null
+  event_timestamp_ms?: number
+}
+
+/**
+ * `purchase_completed` for a RevenueCat payment event (App Store); null for state changes. Same event name and
+ * `$set.plan` as the Stripe one, plus `store`/`environment` so sandbox purchases can be filtered out of revenue.
+ */
+export async function applePurchaseEvent(event: ApplePurchaseFacts, userId: string, plan: string): Promise<CapturedEvent | null> {
+  if (!APPLE_PURCHASE_TYPES.has(event.type)) return null
+  const productId = event.product_id ?? null
+  return {
+    event: 'purchase_completed',
+    distinctId: userId,
+    timestamp: new Date(event.event_timestamp_ms ?? Date.now()).toISOString(),
+    uuid: await uuidFrom(`revenuecat:${event.id}`),
+    properties: {
+      checkout_plan: productId,
+      mode: productId !== null && productId.toLowerCase().includes('creator') ? 'payment' : 'subscription',
+      revenue: typeof event.price === 'number' ? event.price : 0,
+      currency: (event.currency ?? 'USD').toLowerCase(),
+      store: 'app_store',
+      environment: (event.environment ?? 'PRODUCTION').toLowerCase(),
+      revenuecat_event: event.type,
+      $set: { plan },
+    },
+  }
+}
+
 const DEFAULT_HOST = 'https://us.i.posthog.com'
 
 export async function capture(e: CapturedEvent): Promise<void> {

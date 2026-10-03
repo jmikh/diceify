@@ -1,0 +1,618 @@
+{
+ "summary": {
+  "health_score": 65,
+  "business_type": "SaaS / free online craft tool (photo-to-dice-art generator), B2C, English, no local footprint",
+  "domain": "diceify.art",
+  "audit_date": "2026-10-03",
+  "top_findings": [
+   "Terms contradict pricing (Creator Pass 'permanent' vs 30 days; Explorer project limit vs 'unlimited'); Privacy Policy names Vercel Analytics, omits PostHog session replay, Cloudflare, Supabase",
+   "Organic sessions down ~80% May→Sep 2026 (1,886→343); clicks halved the week of the May 21 2026 Core Update; two exact-match tool competitors (diceartgenerator.io/.com, registered 22–23 Jan 2026, upload box in hero) now hold the desktop 'generator' SERP; desktop position swings 3 ↔ 20–46",
+   "No visible person/entity: no About page, Article author = Organization, no sameAs/founder/Wikidata; the only third-party description is a competitor rating Diceify 3/5",
+   "/gallery is 57 words with 0.35% CTR at position 9 and 6.1 s mobile LCP (lazy LCP image, 13 × 150 KB single-size images)",
+   "'Built by hand' copy and schema sit on digital renders; no real build photos in main content"
+  ],
+  "quick_wins": [
+   "priority on the first four gallery cards (LCP 6.1 s → ~2.5 s)",
+   "Cache rules in public/_headers (immutable _next/static, 30 d images)",
+   "Fix Terms §4.1/4.4/5.1 and the Privacy processor list",
+   "Organization sameAs + founder + a visible 'Diceify is…' sentence; point 'dice art generator' anchors at / not /editor",
+   "Bing Webmaster verification + Cloudflare Crawler Hints (IndexNow); prefetch={false} on /editor links; drop-trailing-slash (307→301)"
+  ]
+ },
+ "categories": [
+  {
+   "name": "Technical SEO",
+   "weight": 0.22,
+   "score": 72,
+   "what_works": [
+    "Self-canonical flat URLs",
+    "Real 404s incl. case variants",
+    "www→apex 301",
+    "HTTP/2 + brotli, TTFB 60–160 ms",
+    "nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy",
+    "Static server-rendered JSON-LD",
+    "Lighthouse SEO 100 on every page",
+    "Valid robots.txt and sitemap; hreflang en + x-default"
+   ],
+   "findings": [
+    {
+     "title": "No long-lived caching on hashed assets or images",
+     "severity": "High",
+     "description": "cache-control: public, max-age=0, must-revalidate on /_next/static/* and /images/*; ~50 conditional requests per repeat view",
+     "recommendation": "Add cache blocks to public/_headers: _next/static immutable 1 y; images 30 d + stale-while-revalidate"
+    },
+    {
+     "title": "Gallery LCP 6.1 s on mobile",
+     "severity": "High",
+     "description": "LCP element is a lazy-loaded next/image fill card; no srcset",
+     "recommendation": "priority on first row; responsive variants"
+    },
+    {
+     "title": "Homepage canonical slash inconsistency",
+     "severity": "High",
+     "description": "canonical/og:url/hreflang/sitemap use https://diceify.art; Google canonical is https://diceify.art/",
+     "recommendation": "Emit the slash form for the home path in lib/seo.ts and app/sitemap.ts"
+    },
+    {
+     "title": "/account indexable while disallowed",
+     "severity": "Medium",
+     "description": "200, index,follow, same title/description as /editor; robots.txt Disallow hides any noindex",
+     "recommendation": "Remove Disallow, add noindex metadata and a distinct title"
+    },
+    {
+     "title": "No HSTS, no CSP",
+     "severity": "Medium",
+     "description": "Headers absent on all responses",
+     "recommendation": "Strict-Transport-Security max-age=31536000; includeSubDomains; CSP as Report-Only first"
+    },
+    {
+     "title": "307 temporary redirects for slash/.html variants",
+     "severity": "Medium",
+     "description": "/dice-art/, /gallery/, /index.html, /dice-art.html → 307 via html_handling auto-trailing-slash",
+     "recommendation": "wrangler.jsonc html_handling: drop-trailing-slash; re-test /s/*"
+    },
+    {
+     "title": "/blog/why-i-built-diceify never indexed",
+     "severity": "Medium",
+     "description": "GSC: Discovered – currently not indexed; 2 internal links, no images, dated 2024",
+     "recommendation": "Add links, images, real update; then Request Indexing"
+    },
+    {
+     "title": "/editor is a client-rendered shell",
+     "severity": "Medium",
+     "description": "66 words of HTML text ('Loading workspace…'), position 28, same metadata as /account",
+     "recommendation": "Static 100–150-word intro + noscript"
+    },
+    {
+     "title": "Minor hygiene",
+     "severity": "Low",
+     "description": "Two robots metas on the 404; no security.txt; manifest crossorigin=use-credentials; no IndexNow",
+     "recommendation": "Dedupe, add security.txt, enable Cloudflare Crawler Hints"
+    }
+   ]
+  },
+  {
+   "name": "Content Quality",
+   "weight": 0.23,
+   "score": 54,
+   "what_works": [
+    "/dice-art: answer-first guide, Flesch ~81, correct size math (363 dice/ft² at 16 mm), both glue methods with a real failure story, genuine Last updated",
+    "Two first-hand stories with specifics (founder's COVID build with video; Jeremy's plywood/Liquid Nails build)",
+    "No filler or AI-pattern phrasing; non-templated metadata",
+    "Concrete worked example on the homepage (87×77 · 4,564 black · 2,135 white)"
+   ],
+   "findings": [
+    {
+     "title": "Terms contradict pricing",
+     "severity": "High",
+     "description": "§4.4 'permanent access … for the lifetime of the Service' vs 30-day Creator Pass (plans.ts accessDays 30); §4.1 project limit vs 'unlimited projects'",
+     "recommendation": "Rewrite §4.1, §4.4, §5.1; bump Last updated"
+    },
+    {
+     "title": "Privacy Policy out of date",
+     "severity": "High",
+     "description": "Names Vercel Analytics (unused); omits PostHog session replay, Cloudflare, Supabase; dated Jan 2025",
+     "recommendation": "List real processors, replay masking, retention, legal entity"
+    },
+    {
+     "title": "Renders presented as hand-built pieces",
+     "severity": "High",
+     "description": "'built by hand' on /gallery, /dice-art and ImageGallery schema; images are digital renders; only real build photo is a blog thumbnail",
+     "recommendation": "Correct copy; add a Real builds section; label Built / Digital preview"
+    },
+    {
+     "title": "No About page, author bio, founder or sameAs",
+     "severity": "High",
+     "description": "Founder appears only as a byline; /dice-art author is the Organization",
+     "recommendation": "/about page, Person schema, Person as guide author, Organization founder + sameAs"
+    },
+    {
+     "title": "/gallery thin (57 words), CTR 0.35% at position 9.3",
+     "severity": "High",
+     "description": "Name-only captions; description promises 'loved ones' not on the page; grid sizes only in filenames",
+     "recommendation": "Data captions (grid, dice count, size), intro, sections, new title/description"
+    },
+    {
+     "title": "Blog stale and partly unindexed",
+     "severity": "High",
+     "description": "2 posts (2023-11, 2024-01), no dates on cards, no body images, founder post not indexed, video without VideoObject",
+     "recommendation": "1–2 first-hand posts/month, dates, media, VideoObject"
+    },
+    {
+     "title": "Unanswered questions AI engines take elsewhere",
+     "severity": "High",
+     "description": "Weight, bulk cost, framing/hanging, exports (no PDF), templates, comparison are missing",
+     "recommendation": "Measured first-party numbers in /dice-art; templates and comparison pages"
+    },
+    {
+     "title": "Factual and byline errors in the Jeremy post",
+     "severity": "Medium",
+     "description": "'35 × 47 inches' is the dice grid (frame 26×32 in); byline credits Jeremy for a third-person rewrite",
+     "recommendation": "Fix the sentence; correct the byline or get a first-person Q&A"
+    },
+    {
+     "title": "Build-time figures disagree across pages",
+     "severity": "Medium",
+     "description": "'a day or two' vs 'a full day' vs '100+ hours' for ~1,600 dice",
+     "recommendation": "One source of truth; publish a measured dice/hour rate"
+    },
+    {
+     "title": "Unsubstantiated and stale claims",
+     "severity": "Medium",
+     "description": "'Join 5,000+ creators' unsourced; footer © 2025, schema © 2024",
+     "recommendation": "Tie to real data or soften; build-time year"
+    }
+   ]
+  },
+  {
+   "name": "On-Page SEO",
+   "weight": 0.2,
+   "score": 62,
+   "what_works": [
+    "Unique keyword-led titles ≤60 chars on almost every page",
+    "One H1 per page; question-form H2s on /dice-art",
+    "Breadcrumbs; complete alt text",
+    "Further-reading block on /dice-art"
+   ],
+   "findings": [
+    {
+     "title": "No nav or footer on 7 of 8 non-home pages",
+     "severity": "Medium",
+     "description": "Only / has <nav>/<footer>; Privacy, Terms, Contact reachable only from the homepage; posts carry 2 internal links",
+     "recommendation": "Footer + compact nav in app/(marketing)/layout.tsx; contextual links in posts"
+    },
+    {
+     "title": "'dice art generator' anchor points at /editor; homepage FAQ duplicates /dice-art",
+     "severity": "Medium",
+     "description": "The only exact-match anchor sends the head term to a 66-word app shell; 5 of 6 homepage FAQ questions repeat /dice-art",
+     "recommendation": "Generator anchors → /; trim homepage FAQ to product questions"
+    },
+    {
+     "title": "Weak titles/descriptions on the low-CTR pages",
+     "severity": "Medium",
+     "description": "/dice-art description is a table of contents; /gallery description 178 chars and truncated; home description 172 chars",
+     "recommendation": "'Dice Art: How to Make It, Dice Count & Size Chart | Diceify'; 'Dice Art Examples: Portraits With Dice Counts | Diceify'; numeric descriptions ≤145 chars"
+    },
+    {
+     "title": "Duplicate metadata /editor vs /account; og:title 'Blog'; posts reuse generic og-card",
+     "severity": "Low",
+     "description": "",
+     "recommendation": "Distinct titles, per-post og:image"
+    }
+   ]
+  },
+  {
+   "name": "Schema / Structured Data",
+   "weight": 0.1,
+   "score": 72,
+   "what_works": [
+    "0 validation errors; static server-rendered JSON-LD",
+    "BreadcrumbList correct on 4 pages",
+    "ImageObject license fields complete (Image Metadata rich result detected by GSC)",
+    "/dice-art Article complete; FAQ JSON-LD generated from visible text"
+   ],
+   "findings": [
+    {
+     "title": "Organization not a first-class entity; no @id graph",
+     "severity": "High",
+     "description": "Nested only in WebSite publisher, re-declared inconsistently in Article/WebApplication/ImageGallery",
+     "recommendation": "Single @graph with #organization, #website, Person #john; reference by @id"
+    },
+    {
+     "title": "No sameAs",
+     "severity": "High",
+     "description": "Instagram, TikTok, Reddit, YouTube exist in the footer but not in schema",
+     "recommendation": "Add sameAs, founder, foundingDate, alternateName"
+    },
+    {
+     "title": "Inconsistent/unsupported logo",
+     "severity": "High",
+     "description": "favicon-192 on most pages, logo-full.svg in blog Articles (SVG unsupported by Google)",
+     "recommendation": "One 512 px PNG everywhere"
+    },
+    {
+     "title": "WebApplication Offer price 0 only; duplicate WebApplication on /editor",
+     "severity": "Medium",
+     "description": "Plans are Creator $19, Studio $9/mo, $36/yr; no aggregateRating",
+     "recommendation": "Tiered Offer array from PRICING; merge via @id; do not fabricate ratings"
+    },
+    {
+     "title": "Deprecated HowTo; two FAQPages with different answers",
+     "severity": "Medium",
+     "description": "FAQ rich results retired May 2026; HowTo deprecated",
+     "recommendation": "Remove HowTo; keep one aligned FAQPage on /dice-art"
+    },
+    {
+     "title": "Blog Articles lack image; dateModified = datePublished; Person without url",
+     "severity": "Medium",
+     "description": "",
+     "recommendation": "Add images, real dateModified, Person url /about"
+    }
+   ]
+  },
+  {
+   "name": "Performance (CWV)",
+   "weight": 0.1,
+   "score": 78,
+   "what_works": [
+    "TTFB 60–160 ms, HTTP/2, brotli, CF cache HIT",
+    "TBT 60–100 ms, CLS ≈ 0 everywhere",
+    "Small CSS, small DOM, fonts preloaded with display swap",
+    "Home and /dice-art lab LCP within or near target"
+   ],
+   "findings": [
+    {
+     "title": "/gallery LCP 6.1 s mobile (lab)",
+     "severity": "High",
+     "description": "LCP image lazy-loaded; load delay 1.6 s + load time 3.4 s competing with ~2 MB of images",
+     "recommendation": "priority={index < 4} on GalleryCard + responsive variants"
+    },
+    {
+     "title": "No caching for repeat views",
+     "severity": "High",
+     "description": "max-age=0 on hashed assets and images; Lighthouse understates it",
+     "recommendation": "public/_headers cache rules"
+    },
+    {
+     "title": "Image bytes 1.4–2.0 MB per page",
+     "severity": "High",
+     "description": "images.unoptimized: true → no srcset; 600×600 files for 174–280 px slots",
+     "recommendation": "Build-time 320/480/640 webp variants + custom loader"
+    },
+    {
+     "title": "JS weight and third parties",
+     "severity": "Medium",
+     "description": "530–660 KB JS, 250–340 KB unused; /editor chunk prefetched on marketing pages; PostHog 119 KB (97 KB optional)",
+     "recommendation": "prefetch={false} on /editor links; trim/defer PostHog modules"
+    },
+    {
+     "title": "Text-page LCP render delay; both hero images fetchpriority=high",
+     "severity": "Medium",
+     "description": "57% of LCP is render delay; 217 KB of hero images compete with CSS/fonts on mobile",
+     "recommendation": "High priority on the visible hero image only"
+    }
+   ],
+   "lab": {
+    "home": {
+     "perf_mobile": 95,
+     "perf_desktop": 95,
+     "lcp_mobile_s": 2.4,
+     "lcp_desktop_s": 1.2,
+     "cls": 0.0,
+     "tbt_mobile_ms": 100
+    },
+    "dice-art": {
+     "perf_mobile": 92,
+     "perf_desktop": 99,
+     "lcp_mobile_s": 3.0,
+     "lcp_desktop_s": 0.8,
+     "cls": 0.0,
+     "tbt_mobile_ms": 60
+    },
+    "gallery": {
+     "perf_mobile": 75,
+     "perf_desktop": 95,
+     "lcp_mobile_s": 6.1,
+     "lcp_desktop_s": 1.4,
+     "cls": 0.0,
+     "tbt_mobile_ms": 60
+    }
+   },
+   "field_data": "unavailable (PageSpeed/CrUX quota exhausted)"
+  },
+  {
+   "name": "AI Search Readiness",
+   "weight": 0.1,
+   "score": 62,
+   "what_works": [
+    "All 17 AI user agents tested get 200 with identical bytes; robots allows all",
+    "/dice-art opens each section with a quotable number; AI answers already quote it verbatim",
+    "ChatGPT sends referrals (31 sessions / 90 d)",
+    "Brand queries rank #1"
+   ],
+   "findings": [
+    {
+     "title": "Competitor comparison defines the brand (3/5) and Diceify has no answer page",
+     "severity": "High",
+     "description": "diceartgenerator.io claims 'no project information', 'limited customization', 'privacy: upload' (false per codebase); true gap: no PDF export",
+     "recommendation": "Honest, dated, bylined /best-dice-art-generators with method and feature table; request corrections"
+    },
+    {
+     "title": "Weak entity identity",
+     "severity": "High",
+     "description": "No sameAs, no Wikidata, no visible 'Diceify is…' sentence, confusion with 'Dicify'",
+     "recommendation": "Definitional sentence, schema sameAs/founder, Wikidata item, disambiguation line"
+    },
+    {
+     "title": "No Bing verification artifact, no IndexNow",
+     "severity": "High",
+     "description": "ChatGPT and Copilot depend on Bing's index; Bing 58 sessions/quarter",
+     "recommendation": "BWT import from GSC; Cloudflare Crawler Hints"
+    },
+    {
+     "title": "No owned numbers for weight, cost, dice/hour",
+     "severity": "Medium",
+     "description": "Dice Art Studio is quoted for dice counts; competitor publishes $0.01–0.02/die",
+     "recommendation": "Measure and publish first-party, dated figures; gallery captions with dice counts"
+    },
+    {
+     "title": "Freshness, authorship, FAQ extractability",
+     "severity": "Medium",
+     "description": "Organization author; 2 posts; FAQ questions are <button>s so extractors pull zero answers; answers differ from /dice-art",
+     "recommendation": "Person author; h3/details FAQ; one source of truth"
+    },
+    {
+     "title": "Agentic: /editor empty without JS; AI policy undeclared; no aria-live for save/build",
+     "severity": "Medium",
+     "description": "Agentic readiness 60/100 (heuristic; no Lighthouse agentic fraction available)",
+     "recommendation": "Static intro; declare policy deliberately; role=status"
+    },
+    {
+     "title": "llms.txt 404; no Markdown delivery, .well-known files or WebMCP",
+     "severity": "Low",
+     "description": "Optional; Google ignores llms.txt",
+     "recommendation": "Add public/llms.txt; defer the rest"
+    }
+   ],
+   "sub_scores": {
+    "geo": 63,
+    "agentic": 60,
+    "citability": 68,
+    "structure": 75,
+    "multimodal": 50,
+    "authority": 35,
+    "technical": 82
+   }
+  },
+  {
+   "name": "Images",
+   "weight": 0.05,
+   "score": 55,
+   "what_works": [
+    "Alt text complete; decorative images alt=''",
+    "webp everywhere",
+    "Hero images sized with width/height; no image CLS"
+   ],
+   "findings": [
+    {
+     "title": "No responsive delivery",
+     "severity": "High",
+     "description": "One 600 px size per image, 140–175 KB each; 1.0–1.9 MB waste per page",
+     "recommendation": "Variants + custom loader; fix sizes attributes"
+    },
+    {
+     "title": "Above-fold gallery image lazy-loaded",
+     "severity": "High",
+     "description": "",
+     "recommendation": "priority on first row"
+    },
+    {
+     "title": "fill images without width/height on /dice-art and /gallery",
+     "severity": "Medium",
+     "description": "Safe today (fixed-ratio wrappers), fragile",
+     "recommendation": "Keep wrappers or pass width/height"
+    },
+    {
+     "title": "Hidden hero 'reveal' photo fetchpriority=high",
+     "severity": "Medium",
+     "description": "79 KB competing with LCP resources",
+     "recommendation": "lazy / no priority"
+    }
+   ]
+  },
+  {
+   "name": "Search Experience (SXO)",
+   "weight": 0.0,
+   "score": null,
+   "informational": true,
+   "what_works": [
+    "Homepage fits the gift-maker persona (74/100): clear H1, two consistent CTAs, worked example",
+    "/dice-art has the strongest text on the SERP for 'how to make dice art'",
+    "Brand queries convert at 61–78% CTR"
+   ],
+   "findings": [
+    {
+     "title": "/gallery is the wrong page type for its demand",
+     "severity": "High",
+     "description": "'dice art' pos 6, 899 impr, 0 clicks = image-block signature; inspiration intent; 57 words and 13 renders",
+     "recommendation": "Rebuild as 'Dice art ideas & real builds' with photos, video (VideoObject), data captions, make-one-like-this links"
+    },
+    {
+     "title": "Homepage is a landing page; generator SERPs are 90–100% tools with in-hero upload",
+     "severity": "Medium",
+     "description": "0 file inputs on /; EMD competitors registered 2026-01-22/23 have drag-and-drop upload in the hero; desktop pos 3.1 (Apr) → ~21 (Aug/Sep)",
+     "recommendation": "In-hero drop zone → editor crop step; one-line 'what is free'"
+    },
+    {
+     "title": "Three URLs compete for the same intents",
+     "severity": "Medium",
+     "description": "/, /gallery, /dice-art all surface for 'dice art'; homepage FAQ duplicates 5 of 6 /dice-art questions; / shows instead of the guide for 'how to make dice art'",
+     "recommendation": "De-duplicate FAQs; generator anchors → /"
+    },
+    {
+     "title": "/dice-art matches how-to intent but not its format",
+     "severity": "Medium",
+     "description": "SERP has 7 videos + 4 Reddit threads; guide's first viewport has no image, CTA, ToC or video",
+     "recommendation": "Answer-first intro, ToC, CTA, build video, process photos, named author"
+    },
+    {
+     "title": "Deprioritise mismatched queries",
+     "severity": "Info",
+     "description": "dice painting, dice art kit, picture dice, art dice are different intents",
+     "recommendation": "No pages; a 'what to buy' block at most"
+    }
+   ],
+   "gap_scores": {
+    "/": 65,
+    "/dice-art": 68,
+    "/gallery": 37,
+    "/editor": 44
+   },
+   "limitation": "Google SERP not fetched (error page); page types from Brave + Google Autocomplete"
+  }
+ ],
+ "search_data": {
+  "gsc_28d": {
+   "clicks": 219,
+   "impressions": 3705,
+   "ctr": 0.059,
+   "position": 7.2,
+   "prev_clicks": 287,
+   "prev_impressions": 4273,
+   "prev_position": 12.5
+  },
+  "gsc_90d_pages": [
+   {
+    "page": "/",
+    "clicks": 942,
+    "impressions": 12388,
+    "ctr": 0.076,
+    "position": 6.5
+   },
+   {
+    "page": "/dice-art",
+    "clicks": 49,
+    "impressions": 6407,
+    "ctr": 0.0076,
+    "position": 7.2
+   },
+   {
+    "page": "/gallery",
+    "clicks": 20,
+    "impressions": 5727,
+    "ctr": 0.0035,
+    "position": 9.3
+   },
+   {
+    "page": "/editor",
+    "clicks": 8,
+    "impressions": 296,
+    "ctr": 0.027,
+    "position": 28
+   }
+  ],
+  "indexation": {
+   "inspected": 9,
+   "indexed": 8,
+   "not_indexed": [
+    "/blog/why-i-built-diceify"
+   ],
+   "canonical_mismatch_stale": [
+    "/privacy",
+    "/terms"
+   ]
+  },
+  "ga4_organic_sessions_by_month": {
+   "2026-01": 4124,
+   "2026-02": 1986,
+   "2026-03": 1496,
+   "2026-04": 1332,
+   "2026-05": 1886,
+   "2026-06": 838,
+   "2026-07": 712,
+   "2026-08": 492,
+   "2026-09": 343
+  },
+  "google_updates_in_window": [
+   "2026-05-07 FAQ rich results retired",
+   "2026-05-21 May 2026 Core Update",
+   "2026-06-24 June 2026 Spam Update",
+   "2026-08-18 August 2026 Spam Update",
+   "2026-09-24 September 2026 Spam Update"
+  ]
+ },
+ "action_plan": {
+  "phases": [
+   {
+    "name": "Phase 1: Critical Fixes",
+    "timeframe": "Week 1",
+    "items": [
+     "Fix Terms §4.1/4.4/5.1 to match plans.ts",
+     "Rewrite Privacy processors (Supabase, Stripe, GA4, PostHog replay, Cloudflare)",
+     "Replace 'built by hand' with accurate copy; label tiles",
+     "Point 'dice art generator' anchors at /",
+     "priority on first 4 gallery cards",
+     "Cache rules in public/_headers",
+     "GSC: request indexing /privacy /terms; resubmit sitemap"
+    ]
+   },
+   {
+    "name": "Phase 2: High-Impact Improvements",
+    "timeframe": "Weeks 2-3",
+    "items": [
+     "In-hero upload drop zone on / (hand-off to editor crop) + 'what is free' line",
+     "/about page + Person schema + Person author on /dice-art",
+     "Schema @graph: Organization sameAs/founder/logo PNG, tiered Offers, remove HowTo, one FAQPage",
+     "Visible 'Diceify is…' sentence + Dicify disambiguation",
+     "Bing Webmaster + Cloudflare Crawler Hints + llms.txt",
+     "Gallery rebuild with data captions, real builds, CTA; retitle",
+     "/dice-art ToC, CTA, retitle, underlined links, FAQ markup",
+     "Sitewide nav/footer; blog contextual links",
+     "Responsive image variants + custom loader; single high-priority hero image",
+     "prefetch={false} on /editor links; trim/defer PostHog",
+     "/account noindex, /editor static intro, drop-trailing-slash 301s, HSTS, CSP-RO",
+     "Fix Jeremy post facts/byline; VideoObject; expand founder post; Request Indexing"
+    ]
+   },
+   {
+    "name": "Phase 3: Content & Authority",
+    "timeframe": "Month 2",
+    "items": [
+     "Measure: weigh dice, dated bulk prices, timed 50×50 build",
+     "/dice-art weight, cost, framing, exports sections; grow to 2,200–2,800 words",
+     "/best-dice-art-generators honest comparison; correction request to competitor",
+     "Spokes: size calculator, buying dice, how to glue, best photos; 50×50 build log",
+     "Homepage FAQ trim, H2 cleanup, pricing H2, real creator count, 'Free' cue",
+     "Wikidata item",
+     "Sitemap lastmod per page; per-post og:image",
+     "Blog cadence 1–2/month"
+    ]
+   },
+   {
+    "name": "Phase 4: Monitoring & Iteration",
+    "timeframe": "Ongoing",
+    "items": [
+     "Weekly GSC: desktop 'dice art generator' position, CTR of /dice-art and /gallery, indexation of new pages",
+     "Lighthouse /gallery mobile after image fixes (LCP < 2.5 s); curl -I for cache headers and 301s",
+     "Bing Webmaster coverage and Copilot citations; GA4 AI-assistant referrals by landing page",
+     "Compare against the May 21 2026 baseline on the next core update",
+     "Link building: Product Hunt, AlternativeTo, maker subreddits, BoardGameGeek, STEM resources"
+    ]
+   }
+  ]
+ },
+ "artifacts": {
+  "findings_dir": "findings/",
+  "screenshots_dir": "screenshots/",
+  "data_dir": "data/",
+  "report": "FULL-AUDIT-REPORT.md",
+  "action_plan": "ACTION-PLAN.md"
+ },
+ "limitations": [
+  "No CrUX field data (PageSpeed API quota exhausted)",
+  "No Playwright rendering (Chromium download blocked); screenshots are Lighthouse captures",
+  "Backlinks: estimates only (Common Crawl timed out; no Moz/Bing key)",
+  "SERP overlap from a non-Google search tool",
+  "http→https redirect untestable from this network (ISP middlebox)"
+ ]
+}

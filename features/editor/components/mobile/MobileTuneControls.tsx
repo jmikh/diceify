@@ -7,8 +7,8 @@ import { tunerSliders, type TunerSliderConfig } from '@/features/editor/componen
 import { TunerSlider } from '@/features/editor/components/tune/TunerPanel'
 import DieIcon from '../common/DieIcon'
 import { choiceOn, panel } from '../common/ui'
-import { MobileStepBack, MobileStepNext } from './MobileStepButtons'
-import { mainRow, toolRow } from './rows'
+import { MobileStepRow } from './MobileStepButtons'
+import { toolRow } from './rows'
 
 type ToolKey = TunerSliderConfig['key'] | 'color' | 'orientation'
 
@@ -35,15 +35,13 @@ export default function MobileTuneControls() {
 
     return (
         <>
-            <div className={`${mainRow} flex gap-2`}>
-                <MobileStepBack className="w-10 rounded-[14px]" />
+            <MobileStepRow>
                 <div className={`${panel} flex-1 min-w-0 rounded-[20px] px-4 flex flex-col justify-center`}>
                     {slider && <TunerSlider config={slider} large />}
                     {active === 'color' && <ColorModeControl large />}
                     {active === 'orientation' && <OrientationControl large />}
                 </div>
-                <MobileStepNext className="w-10 rounded-[14px]" />
-            </div>
+            </MobileStepRow>
             <div role="group" aria-label="Tune tools" className="grid grid-cols-6 gap-1">
                 {tools.map(tool => {
                     const on = tool.key === active

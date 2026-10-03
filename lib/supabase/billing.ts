@@ -2,10 +2,8 @@
 // caller refreshes the profile row (`useUser().refresh()`) and `deriveEntitlements` stays the single gating source.
 // Navigation (to Checkout / the portal) is the caller's job so these wrappers stay testable.
 
-import { FunctionsHttpError } from '@supabase/supabase-js'
-import type { BillingState, CheckoutPlan, Plan } from '@/core/billing'
-import { reportError } from '@/lib/report-error'
-import { getSupabase } from './client'
+import type { ApplePlan, BillingState, CheckoutPlan, Plan } from '@/core/billing'
+import { FunctionError, invokeFunction, reportFunctionError } from './functions'
 
 /** Mirror of `BillingView` in supabase/functions/_shared/billing-sync.ts (Deno code cannot be imported here). */
 export interface BillingView {
@@ -16,49 +14,19 @@ export interface BillingView {
   planExpiresAt: string | null
   hasStripeCustomer: boolean
   syncedAt: string | null
+  applePlan: ApplePlan | null
+  appleExpiresAt: string | null
+  appleWillRenew: boolean
 }
 
-/** The functions' error envelope `{ error: { code, message, details? } }` surfaced as an Error. */
-export class BillingError extends Error {
-  constructor(
-    readonly code: string,
-    message: string,
-    readonly status: number,
-    readonly details?: unknown,
-  ) {
-    super(message)
-    this.name = 'BillingError'
-  }
-}
+/** The functions' error envelope as an Error (`lib/supabase/functions.ts`); kept under the billing name for its callers. */
+export const BillingError = FunctionError
+export type BillingError = FunctionError
 
-/** A 4xx envelope (401/404/409/429) is an expected answer → warn; anything else is a bug or an outage → report. */
-export function reportBillingError(error: unknown, where: string): void {
-  if (error instanceof BillingError && error.status < 500) {
-    console.warn(`[${where}] ${error.code}: ${error.message}`)
-    return
-  }
-  reportError(error, { where })
-}
+export const reportBillingError = reportFunctionError
 
-async function toBillingError(error: unknown): Promise<Error> {
-  if (error instanceof FunctionsHttpError) {
-    const response = error.context as Response
-    try {
-      const body = (await response.json()) as { error?: { code?: string; message?: string; details?: unknown } }
-      return new BillingError(body.error?.code ?? 'INTERNAL', body.error?.message ?? error.message, response.status, body.error?.details)
-    } catch {
-      return new BillingError('INTERNAL', error.message, response.status)
-    }
-  }
-  return error instanceof Error ? error : new Error(String(error))
-}
-
-async function invoke<T extends object>(route: string, options: { method: 'GET' | 'POST'; body?: object }): Promise<T> {
-  const { data, error } = await getSupabase().functions.invoke<T>(`billing/${route}`, options)
-  if (error) throw await toBillingError(error)
-  if (!data) throw new BillingError('INTERNAL', `Empty response from billing/${route}`, 200)
-  return data
-}
+const invoke = <T extends object>(route: string, options: { method: 'GET' | 'POST'; body?: object }): Promise<T> =>
+  invokeFunction<T>('billing', route, options)
 
 const view = async (route: string): Promise<BillingView> => (await invoke<{ billing: BillingView }>(route, { method: 'POST' })).billing
 
@@ -92,5 +60,8 @@ export function viewToBillingState(v: BillingView): BillingState {
     currentPeriodEnd: v.currentPeriodEnd,
     cancelAt: v.cancelAt,
     hasStripeCustomer: v.hasStripeCustomer,
+    applePlan: v.applePlan,
+    appleExpiresAt: v.appleExpiresAt,
+    appleWillRenew: v.appleWillRenew,
   }
 }

@@ -5,7 +5,8 @@ import { writeFileSync } from 'node:fs'
 import path from 'node:path'
 import sharp from 'sharp'
 import { DEFAULT_DICE_PARAMS, computeGridSize, generateDiceGrid, type DiceParams, type Pixels } from '../core/dice'
-import { encodeGrid, type Fixture } from '../core/dice/__fixtures__/format'
+import type { Fixture } from '../core/dice/__fixtures__/format'
+import { encodeGrid } from '../core/dice/encoding'
 
 const ROOT = path.resolve(__dirname, '..')
 const OUT_DIR = path.join(ROOT, 'core/dice/__fixtures__')

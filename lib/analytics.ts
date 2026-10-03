@@ -73,17 +73,30 @@ const inBrowser = () => typeof window !== 'undefined'
 
 let client: Promise<PostHog | null> | undefined
 
+/** How long the PostHog start may wait for the browser to go idle before it runs anyway. */
+const IDLE_TIMEOUT_MS = 3000
+
+/** Run `fn` when the main thread is idle (or after IDLE_TIMEOUT_MS), so it does not compete with LCP. */
+function whenIdle(fn: () => void): void {
+  if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(() => fn(), { timeout: IDLE_TIMEOUT_MS })
+  else window.setTimeout(fn, IDLE_TIMEOUT_MS)
+}
+
 /** Load and start PostHog once; null without a key, outside the browser, or when the chunk fails to load. */
 function loadPosthog(key: string): Promise<PostHog | null> {
   return import('posthog-js').then(
     ({ default: posthog }) => {
       posthog.init(key, {
         api_host: POSTHOG_HOST,
-        // Pageviews on every client-side route change
+        // Pageviews on every client-side route change (the first one is captured at init, from the current URL)
         defaults: '2026-08-30',
         // Anonymous visitors get no person profile; `identify` on sign-in merges their earlier events into the user
         person_profiles: 'identified_only',
         session_recording: { blockSelector: PRIVATE_IMAGES },
+        // Not used: no surveys, no dead-click autocapture, no web vitals (Sentry/CrUX cover performance)
+        disable_surveys: true,
+        capture_dead_clicks: false,
+        capture_performance: { web_vitals: false },
       })
       return posthog
     },
@@ -94,10 +107,15 @@ function loadPosthog(key: string): Promise<PostHog | null> {
   )
 }
 
-/** Start PostHog (pageviews, autocapture, session replay per the project settings). Idempotent. */
+/**
+ * Start PostHog (pageviews, autocapture, session replay per the project settings). Idempotent. The chunk is loaded
+ * once the browser is idle (at most IDLE_TIMEOUT_MS after the call); events fired before then wait on the promise.
+ */
 export function initAnalytics(): void {
   if (client || !inBrowser()) return
-  client = POSTHOG_KEY ? loadPosthog(POSTHOG_KEY) : Promise.resolve(null)
+  client = POSTHOG_KEY
+    ? new Promise((resolve) => whenIdle(() => resolve(loadPosthog(POSTHOG_KEY))))
+    : Promise.resolve(null)
 }
 
 /** Run `use` once PostHog is up (started on demand, so an event fired before the root layout's effect still lands). */
@@ -107,10 +125,14 @@ function withPosthog(use: (posthog: PostHog) => void): void {
   void client?.then((posthog) => posthog && use(posthog))
 }
 
+/** Set on every event so the iOS app's events (`platform: 'ios'`, same names) can be told apart. */
+const PLATFORM = 'web'
+
 export function track<E extends AnalyticsEvent>(event: E, properties: AnalyticsEvents[E]): void {
   if (!inBrowser()) return
-  sendGAEvent('event', event, properties)
-  withPosthog((posthog) => posthog.capture(event, properties))
+  const props = { platform: PLATFORM, ...properties }
+  sendGAEvent('event', event, props)
+  withPosthog((posthog) => posthog.capture(event, props))
 }
 
 /** The signed-in user: GA4 `user_id` (+ its `login` event) and PostHog `identify`, which links the anonymous history. */

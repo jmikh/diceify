@@ -6,7 +6,7 @@ import BlogCard from '@/features/marketing/components/BlogCard'
 
 export const metadata: Metadata = pageMetadata({
     title: 'Blog',
-    description: 'Stories, tutorials, and inspiration from the Diceify community. Learn how creators around the world are using dice art.',
+    description: 'Real dice art builds from the Diceify community and the people behind it: how the portraits were made, what worked, and what went wrong.',
     path: '/blog',
 })
 
@@ -36,7 +36,8 @@ export default function BlogPage() {
                         The Diceify Blog
                     </h1>
                     <p className="text-[var(--text-muted)] mt-4 max-w-xl mx-auto">
-                        Discover inspiring stories, tutorials, and creative ideas from our community of dice art creators.
+                        Real builds from the Diceify community and the people behind it. New to the craft? Start with our{' '}
+                        <Link href="/dice-art" className="text-[var(--pink)] hover:underline">guide to dice art</Link>: how it works, how many dice you need and how big the result will be.
                     </p>
                 </header>
 

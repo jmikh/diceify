@@ -13,6 +13,9 @@ const state = (overrides: Partial<BillingState> = {}): BillingState => ({
   currentPeriodEnd: null,
   cancelAt: null,
   hasStripeCustomer: false,
+  applePlan: null,
+  appleExpiresAt: null,
+  appleWillRenew: false,
   ...overrides,
 })
 
@@ -68,6 +71,7 @@ describe('deriveEntitlements: every plan × status × expiry × cancelAt', () =>
                 isPro: expected !== 'explorer',
                 ...PLAN_LIMITS[expected],
                 canManageBilling: hasStripeCustomer,
+                source: expected === 'studio' || expected === 'creator' ? 'stripe' : null,
                 ...(expected === 'studio'
                   ? { accessUntil: cancelAt ?? periodEnd, cancelAt, renews: cancelAt === null }
                   : { accessUntil: expected === 'creator' ? expiry.value : null, cancelAt: null, renews: false }),
@@ -78,6 +82,44 @@ describe('deriveEntitlements: every plan × status × expiry × cancelAt', () =>
       })
     }
   }
+})
+
+
+describe('deriveEntitlements: the Apple source', () => {
+  const future = iso(10 * DAY)
+  const later = iso(20 * DAY)
+  const past = iso(-1 * DAY)
+
+  it('an unexpired Apple studio grants studio when Stripe does not', () => {
+    const e = deriveEntitlements(state({ applePlan: 'studio', appleExpiresAt: future, appleWillRenew: true }), NOW)
+    expect(e).toMatchObject({ plan: 'studio', source: 'apple', accessUntil: future, cancelAt: null, renews: true, canManageBilling: false })
+    expect(deriveEntitlements(state({ applePlan: 'studio', appleExpiresAt: future, appleWillRenew: false }), NOW).renews).toBe(false)
+  })
+
+  it('an expired or missing Apple grant changes nothing', () => {
+    expect(deriveEntitlements(state({ applePlan: 'studio', appleExpiresAt: past }), NOW)).toEqual(EXPLORER_ENTITLEMENTS)
+    expect(deriveEntitlements(state({ applePlan: 'studio', appleExpiresAt: NOW.toISOString() }), NOW)).toEqual(EXPLORER_ENTITLEMENTS)
+    expect(deriveEntitlements(state({ applePlan: 'creator', appleExpiresAt: null }), NOW)).toEqual(EXPLORER_ENTITLEMENTS)
+    expect(deriveEntitlements(state({ applePlan: null, appleExpiresAt: future }), NOW)).toEqual(EXPLORER_ENTITLEMENTS)
+  })
+
+  it('Stripe studio wins over Apple studio; Apple studio wins over a Stripe creator pass', () => {
+    const both = state({ plan: 'studio', subscriptionStatus: 'active', currentPeriodEnd: later, applePlan: 'studio', appleExpiresAt: future })
+    expect(deriveEntitlements(both, NOW)).toMatchObject({ plan: 'studio', source: 'stripe', accessUntil: later })
+    const pass = state({ plan: 'creator', planExpiresAt: later, applePlan: 'studio', appleExpiresAt: future })
+    expect(deriveEntitlements(pass, NOW)).toMatchObject({ plan: 'studio', source: 'apple', accessUntil: future })
+  })
+
+  it('two creator passes: the one that ends later grants (Stripe when equal)', () => {
+    expect(deriveEntitlements(state({ plan: 'creator', planExpiresAt: future, applePlan: 'creator', appleExpiresAt: later }), NOW)).toMatchObject({ plan: 'creator', source: 'apple', accessUntil: later })
+    expect(deriveEntitlements(state({ plan: 'creator', planExpiresAt: later, applePlan: 'creator', appleExpiresAt: future }), NOW)).toMatchObject({ plan: 'creator', source: 'stripe', accessUntil: later })
+    expect(deriveEntitlements(state({ plan: 'creator', planExpiresAt: later, applePlan: 'creator', appleExpiresAt: later }), NOW)).toMatchObject({ source: 'stripe' })
+    expect(deriveEntitlements(state({ plan: 'creator', planExpiresAt: past, applePlan: 'creator', appleExpiresAt: future }), NOW)).toMatchObject({ plan: 'creator', source: 'apple', accessUntil: future })
+  })
+
+  it('lifetime has no source and ignores Apple', () => {
+    expect(deriveEntitlements(state({ plan: 'lifetime', applePlan: 'studio', appleExpiresAt: future }), NOW)).toMatchObject({ plan: 'lifetime', source: null })
+  })
 })
 
 describe('deriveEntitlements: pinned cases', () => {

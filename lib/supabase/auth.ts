@@ -17,6 +17,16 @@ export async function signInWithGoogle(redirectTo: string): Promise<void> {
 }
 
 /**
+ * Start the Sign in with Apple round trip (same PKCE flow as Google; the Apple provider on the Supabase project
+ * needs a Services ID + key for this web flow, docs/DEPLOY.md). Apple relays the email of users who hide it, which
+ * yields a separate account from a Google sign-in with the real address.
+ */
+export async function signInWithApple(redirectTo: string): Promise<void> {
+  const { error } = await getSupabase().auth.signInWithOAuth({ provider: 'apple', options: { redirectTo } })
+  if (error) throw error
+}
+
+/**
  * Sign out everywhere. auth-js only emits SIGNED_OUT when it actually removed the local session, and a sign-out
  * whose network call fails returns early without removing anything — so the local keys are wiped regardless and
  * the caller clears its own state instead of waiting for the event.

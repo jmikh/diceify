@@ -19,7 +19,7 @@ beforeEach(() => {
   vi.mocked(track).mockClear()
   useDocumentStore.setState({ crop, dice: DEFAULT_DICE_PARAMS, buildProgress: { x: 0, y: 0 }, buildBaseline: null })
   useDerivedStore.getState().reset(null)
-  useDerivedStore.getState().setGrid(grid, { blackCount: 12, whiteCount: 0, totalCount: 12 })
+  useDerivedStore.getState().setGrid(grid, { blackCount: 12, whiteCount: 0, totalCount: 12 }, { crop, dice: DEFAULT_DICE_PARAMS })
 })
 
 describe('trackStepChange', () => {

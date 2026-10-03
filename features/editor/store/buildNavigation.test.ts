@@ -24,7 +24,7 @@ const progress = () => useDocumentStore.getState().buildProgress
 beforeEach(() => {
   useDocumentStore.setState({ crop: null, dice: DEFAULT_DICE_PARAMS, buildProgress: { x: 0, y: 0 }, buildBaseline: null })
   useDerivedStore.getState().reset(null)
-  useDerivedStore.getState().setGrid(grid, { blackCount: 8, whiteCount: 4, totalCount: 12 })
+  useDerivedStore.getState().setGrid(grid, { blackCount: 8, whiteCount: 4, totalCount: 12 }, { crop: null, dice: DEFAULT_DICE_PARAMS })
   unlimited.onBlocked.mockClear()
 })
 

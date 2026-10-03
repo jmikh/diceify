@@ -3,51 +3,20 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import JsonLd from '@/components/JsonLd'
+import { pageUrl } from '@/lib/seo'
+import { imageGalleryJsonLd, portraitItems } from '../gallery/data'
 
-const galleryItems = [
-    { src: '/images/dali-51x51.webp', alt: 'Salvador Dali dice art mosaic', name: 'Salvador Dali Dice Art Mosaic' },
-    { src: '/images/frida-54x54.webp', alt: 'Frida Kahlo portrait made of dice', name: 'Frida Kahlo Dice Portrait' },
-    { src: '/images/monalisa.webp', alt: 'Mona Lisa dice mosaic art', name: 'Mona Lisa Dice Mosaic' },
-    { src: '/images/salah-61x61.webp', alt: 'Mo Salah football player dice art', name: 'Mo Salah Dice Art' },
-    { src: '/images/kobe-71x71.webp', alt: 'Kobe Bryant tribute in dice', name: 'Kobe Bryant Dice Tribute' },
-    { src: '/images/sharbatgula-52x52.webp', alt: 'Afghan Girl famous portrait in dice', name: 'Afghan Girl Dice Portrait' },
-    { src: '/images/ummkulthum58x58.webp', alt: 'Umm Kulthum singer dice mosaic', name: 'Umm Kulthum Dice Mosaic' },
-]
+// The portrait previews from the gallery data module (grid, dice count and licensing live there).
+const galleryJsonLd = imageGalleryJsonLd({
+    name: 'Diceify Gallery - Dice Art Portraits',
+    description:
+        'Dice art portraits generated with Diceify from photos. Each preview is a buildable pattern with its grid size and dice count; see the full gallery for real builds.',
+    url: `${pageUrl('/')}#gallery`,
+    items: portraitItems,
+})
 
-// JSON-LD structured data for the image gallery
-const galleryJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'ImageGallery',
-    'name': 'Diceify Gallery - Dice Art Mosaics',
-    'description': 'A collection of stunning dice art mosaics and portraits created with Diceify. Transform photos into buildable dice patterns featuring famous figures and artwork.',
-    'url': 'https://diceify.art/#gallery',
-    'copyrightYear': 2024,
-    'copyrightHolder': {
-        '@type': 'Organization',
-        'name': 'Diceify',
-        'url': 'https://diceify.art'
-    },
-    'image': galleryItems.map((item) => ({
-        '@type': 'ImageObject',
-        'name': item.name,
-        'description': item.alt,
-        'contentUrl': `https://diceify.art${item.src}`,
-        'url': `https://diceify.art${item.src}`,
-        'representativeOfPage': false,
-        'copyrightNotice': '© 2024 Diceify. All rights reserved.',
-        'creditText': 'Created with Diceify (diceify.art)',
-        'license': 'https://diceify.art/terms',
-        'acquireLicensePage': 'https://diceify.art/terms',
-        'creator': {
-            '@type': 'Organization',
-            'name': 'Diceify',
-            'url': 'https://diceify.art'
-        }
-    }))
-}
-
-const topRowItems = galleryItems.slice(0, 4)
-const bottomRowItems = galleryItems.slice(4)
+const topRowItems = portraitItems.slice(0, 4)
+const bottomRowItems = portraitItems.slice(4)
 
 // Duplicate images to create a long enough strip for scrolling
 const topGalleryItems = [...topRowItems, ...topRowItems, ...topRowItems, ...topRowItems, ...topRowItems, ...topRowItems]
@@ -102,7 +71,7 @@ export default function Gallery() {
 
             <div className="flex justify-center mt-8">
                 <Link href="/gallery" className="btn-secondary">
-                    View more
+                    See sizes, dice counts and real builds
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>

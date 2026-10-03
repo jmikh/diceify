@@ -1,162 +1,173 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import JsonLd from '@/components/JsonLd'
-import { pageMetadata } from '@/lib/seo'
+import { pageMetadata, pageUrl } from '@/lib/seo'
+import {
+    BUILD_VIDEO,
+    builtItems,
+    galleryItems,
+    gallerySections,
+    imageGalleryJsonLd,
+    videoObjectJsonLd,
+} from '@/features/marketing/gallery/data'
+import GalleryCard from '@/features/marketing/gallery/GalleryCard'
+import LazyYouTube from '@/features/marketing/gallery/LazyYouTube'
 
 export const metadata: Metadata = pageMetadata({
-    title: 'Dice Art Gallery | Portraits & Abstract Mosaics',
-    description: 'Browse dice art portraits and abstract mosaics created with Diceify. See how photos of celebrities, loved ones, and creative designs are transformed into buildable dice patterns.',
+    title: 'Dice Art Examples: Portraits With Dice Counts',
+    description:
+        'Dice art examples with grid size and dice count for each, from a 51×51 Dalí (2,601 dice) to a 71×71 Kobe Bryant (5,041 dice), plus a real build on video. Make yours free.',
     path: '/gallery',
 })
 
-const portraits = [
-    { src: '/images/dali-51x51.webp', alt: 'Salvador Dali dice art portrait', name: 'Salvador Dali' },
-    { src: '/images/frida-54x54.webp', alt: 'Frida Kahlo dice art portrait', name: 'Frida Kahlo' },
-    { src: '/images/monalisa.webp', alt: 'Mona Lisa dice art mosaic', name: 'Mona Lisa' },
-    { src: '/images/salah-61x61.webp', alt: 'Mo Salah football dice art portrait', name: 'Mo Salah' },
-    { src: '/images/kobe-71x71.webp', alt: 'Kobe Bryant tribute dice art', name: 'Kobe Bryant' },
-    { src: '/images/sharbatgula-52x52.webp', alt: 'Afghan Girl famous dice portrait', name: 'Afghan Girl' },
-    { src: '/images/ummkulthum58x58.webp', alt: 'Umm Kulthum singer dice mosaic', name: 'Umm Kulthum' },
-]
+const GALLERY_URL = pageUrl('/gallery')
 
-const abstract = [
-    { src: '/images/abstract/abstract.webp', alt: 'Abstract geometric dice art mosaic', name: 'Abstract' },
-    { src: '/images/abstract/pikachu.webp', alt: 'Pikachu character dice art', name: 'Pikachu' },
-    { src: '/images/abstract/sun.webp', alt: 'Sun dice art mosaic', name: 'Sun' },
-    { src: '/images/abstract/tile1.webp', alt: 'Abstract tile pattern dice art', name: 'Tile Pattern' },
-    { src: '/images/abstract/tile2.webp', alt: 'Abstract tile design dice art', name: 'Tile Design' },
-    { src: '/images/abstract/woman.webp', alt: 'Woman silhouette dice art', name: 'Woman' },
-]
+/** The first cards on the page get eager + fetchpriority=high (the mobile LCP); the rest lazy-load. */
+const PRIORITY_CARDS = 4
+const priorityFor = (item: { slug: string }) => galleryItems.findIndex(i => i.slug === item.slug) < PRIORITY_CARDS
 
-const allItems = [...portraits, ...abstract]
+const galleryJsonLd = imageGalleryJsonLd({
+    name: 'Dice Art Examples: Portraits With Dice Counts',
+    description:
+        'Dice art ideas and real builds: portraits, kids, pets, couples and abstract designs, each with its grid size, dice count and finished size at 16 mm dice. The previews are patterns generated with Diceify; the builds are photos and video of real dice.',
+    url: GALLERY_URL,
+    items: galleryItems,
+})
 
-const galleryJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'ImageGallery',
-    'name': 'Diceify Gallery - Dice Art Portraits & Mosaics',
-    'description': 'A collection of dice art portraits and abstract mosaics created with Diceify. Each piece is built by hand from a generated pattern.',
-    'url': 'https://diceify.art/gallery',
-    'copyrightYear': 2024,
-    'copyrightHolder': {
-        '@type': 'Organization',
-        'name': 'Diceify',
-        'url': 'https://diceify.art'
-    },
-    'image': allItems.map((item) => ({
-        '@type': 'ImageObject',
-        'name': item.name,
-        'description': item.alt,
-        'contentUrl': `https://diceify.art${item.src}`,
-        'url': `https://diceify.art${item.src}`,
-        'representativeOfPage': false,
-        'copyrightNotice': '© 2024 Diceify. All rights reserved.',
-        'creditText': 'Created with Diceify (diceify.art)',
-        'license': 'https://diceify.art/terms',
-        'acquireLicensePage': 'https://diceify.art/terms',
-        'creator': {
-            '@type': 'Organization',
-            'name': 'Diceify',
-            'url': 'https://diceify.art'
-        }
-    }))
-}
-
-function GalleryCard({ item }: { item: { src: string; alt: string; name: string } }) {
-    return (
-        <div className="gallery-page-card">
-            <div className="gallery-page-card-image">
-                <Image
-                    src={item.src}
-                    alt={item.alt}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 45vw, 280px"
-                />
-            </div>
-            <div className="gallery-page-card-info">
-                <span className="gallery-page-card-name">{item.name}</span>
-            </div>
-        </div>
-    )
-}
+const founderBuild = builtItems[0]
 
 export default function GalleryPage() {
     return (
         <>
             <JsonLd data={galleryJsonLd} />
+            <JsonLd data={videoObjectJsonLd(BUILD_VIDEO)} />
             <JsonLd
                 data={{
-                    "@context": "https://schema.org",
-                    "@type": "BreadcrumbList",
-                    "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://diceify.art" },
-                        { "@type": "ListItem", "position": 2, "name": "Gallery", "item": "https://diceify.art/gallery" }
-                    ]
+                    '@context': 'https://schema.org',
+                    '@type': 'BreadcrumbList',
+                    itemListElement: [
+                        { '@type': 'ListItem', position: 1, name: 'Home', item: pageUrl('/') },
+                        { '@type': 'ListItem', position: 2, name: 'Gallery', item: GALLERY_URL },
+                    ],
                 }}
             />
 
-            {/* Content */}
-            <div className="relative z-[2] max-w-[1000px] mx-auto w-full px-6 py-12">
-                <Link
-                    href="/"
-                    className="inline-flex items-center gap-2 text-[var(--text-dim)] hover:text-[var(--pink)] transition-colors mb-8"
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M19 12H5M12 19l-7-7 7-7" />
-                    </svg>
-                    Back to Home
-                </Link>
-
+            {/* pt clears the fixed navbar rendered by the marketing layout */}
+            <main className="relative z-[2] max-w-[1000px] mx-auto w-full px-6 pt-28 md:pt-32 pb-12">
                 <header className="mb-8">
                     <span className="section-label">
                         <span className="w-2 h-2 bg-[var(--pink)] rounded-full"></span>
                         Gallery
                     </span>
                     <h1 className="font-syne text-3xl md:text-5xl font-bold text-[var(--text-primary)] mt-4 leading-tight">
-                        Dice Art Gallery
+                        Dice art ideas &amp; real builds
                     </h1>
-                    <p className="text-[var(--text-muted)] mt-4 text-lg leading-relaxed">
-                        Portraits, mosaics, and abstract designs, all created with Diceify and built by hand.
-                    </p>
+                    <div className="text-[var(--text-muted)] mt-4 text-lg leading-relaxed space-y-4">
+                        <p>
+                            Looking for dice art ideas? Every preview below was generated with Diceify from an ordinary photo,
+                            and every card shows the grid, how many dice it takes and how big the finished piece is with
+                            standard 16 mm dice, so you can tell a weekend project from a wall-sized one at a glance. Start
+                            with the real builds to see what the dice look like once they are glued down.
+                        </p>
+                        <p>
+                            What makes a good subject: a tight crop on one face (or one pet), strong contrast between the
+                            subject and the background, and even light. Dice give you twelve shades at most, so a photo that
+                            already reads well in black and white turns into dice art that reads from across the room, while
+                            busy backgrounds and group shots turn to noise. There is more on this in{' '}
+                            <Link href="/dice-art/best-photos">which photos work best</Link>.
+                        </p>
+                        <p>
+                            Popular sizes: most first builds land between 30×30 (900 dice, about 48 cm / 19 in) and 50×50
+                            (2,500 dice, 80 cm / 31 in); the portraits here run from 51×51 to 71×71. Use the{' '}
+                            <Link href="/dice-art/size-calculator">size calculator</Link> for the count and cost of any
+                            grid, read <Link href="/dice-art">how dice art works</Link> for the maths behind the shades, or
+                            upload a photo to the <Link href="/">dice art generator</Link> and see your own.
+                        </p>
+                    </div>
                 </header>
 
                 <div className="gallery-page">
-                    {/* Portraits Section */}
-                    <div className="gallery-page-subsection">
-                        <h2 className="gallery-page-label">Portraits</h2>
-                        <div className="gallery-page-grid">
-                            {portraits.map((item, i) => (
-                                <GalleryCard key={`portrait-${i}`} item={item} />
-                            ))}
+                    {/* Real builds: photo + video of real dice, before any digital preview */}
+                    <section className="gallery-page-subsection" aria-labelledby="real-builds">
+                        <h2 id="real-builds" className="gallery-page-label">Real builds</h2>
+                        <div className="grid md:grid-cols-2 gap-5 items-start">
+                            <figure className="gallery-page-card m-0">
+                                <div className="relative aspect-[1024/568]">
+                                    <Image
+                                        src={founderBuild.src}
+                                        alt={founderBuild.alt}
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 768px) 90vw, 470px"
+                                        priority={priorityFor(founderBuild)}
+                                    />
+                                </div>
+                                <figcaption className="px-4 py-3 flex flex-col gap-1">
+                                    <span className="gallery-page-card-name">{founderBuild.title}</span>
+                                    <span className="text-xs text-[var(--text-dim)] leading-snug">
+                                        Built with real dice · John Mikhail, Diceify&apos;s founder
+                                    </span>
+                                    <Link
+                                        href="/blog/why-i-built-diceify"
+                                        className="mt-1 text-xs font-semibold text-[var(--pink)] no-underline hover:underline"
+                                    >
+                                        Read the story →
+                                    </Link>
+                                </figcaption>
+                            </figure>
+                            <figure className="m-0 flex flex-col gap-2">
+                                <LazyYouTube
+                                    youtubeId={BUILD_VIDEO.youtubeId}
+                                    title={BUILD_VIDEO.name}
+                                    thumbnailUrl={BUILD_VIDEO.thumbnailUrl}
+                                />
+                                <figcaption className="text-xs text-[var(--text-dim)] leading-snug px-1">
+                                    <span className="text-[var(--text-primary)] font-semibold">{BUILD_VIDEO.name}</span>: the
+                                    whole build, row by row, with the builder on a phone.
+                                </figcaption>
+                            </figure>
                         </div>
-                    </div>
+                        <p className="text-[var(--text-muted)] mt-5 leading-relaxed">
+                            Jeremy Klammer built two 35×47 dice portraits (1,645 dice each) of his nieces as birthday gifts and
+                            painted the dice in their favourite colours:{' '}
+                            <Link href="/blog/jeremy-dice-portraits-nieces">read how he made them</Link>. Built one yourself?{' '}
+                            <a href="mailto:support@diceify.art">Send us a photo</a> and we will add it here with credit.
+                        </p>
+                    </section>
 
-                    {/* Abstract Section */}
-                    <div className="gallery-page-subsection">
-                        <h2 className="gallery-page-label">Abstract</h2>
-                        <div className="gallery-page-grid">
-                            {abstract.map((item, i) => (
-                                <GalleryCard key={`abstract-${i}`} item={item} />
-                            ))}
-                        </div>
-                    </div>
+                    {gallerySections.map(section => (
+                        <section key={section.id} className="gallery-page-subsection" aria-labelledby={section.id}>
+                            <h2 id={section.id} className="gallery-page-label">{section.title}</h2>
+                            <p className="text-[var(--text-muted)] -mt-3 mb-5">{section.blurb}</p>
+                            <div className="gallery-page-grid">
+                                {section.items.map(item => (
+                                    <GalleryCard key={item.slug} item={item} priority={priorityFor(item)} />
+                                ))}
+                            </div>
+                        </section>
+                    ))}
                 </div>
 
-                {/* CTA */}
-                <div className="flex flex-col items-center gap-4 mt-12 text-center">
-                    <p className="text-[var(--text-muted)]">Want to create your own?</p>
-                    <Link href="/editor" className="btn-primary">
-                        Start creating
-                    </Link>
-                    <Link
-                        href="/dice-art"
-                        className="text-sm text-[var(--text-muted)] hover:text-[var(--pink)] transition-colors no-underline"
-                    >
-                        Learn how dice art works →
-                    </Link>
+                {/* Closing CTA band */}
+                <div className="blog-cta">
+                    <h3 className="font-syne text-2xl font-bold text-[var(--text-primary)]">Make one from your own photo</h3>
+                    <p className="text-[var(--text-muted)] mb-6">
+                        Upload a photo, pick a grid, and get the exact black and white dice count before you buy a single die.
+                    </p>
+                    <div className="flex flex-col items-center gap-4">
+                        <Link href="/editor" prefetch={false} className="btn-primary">
+                            Start creating
+                        </Link>
+                        <Link
+                            href="/dice-art"
+                            className="text-sm text-[var(--text-muted)] hover:text-[var(--pink)] transition-colors no-underline"
+                        >
+                            Learn how dice art works →
+                        </Link>
+                    </div>
                 </div>
-            </div>
+            </main>
         </>
     )
 }

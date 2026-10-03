@@ -63,3 +63,10 @@ supabase/.env
 supabase/.env.*
 supabase/functions/.env*
 !supabase/functions/.env.example
+
+# iOS (plans/ios/ios-app-plan.md): Xcode user state, build products, SwiftPM artefacts
+ios/**/xcuserdata/
+ios/**/DerivedData/
+ios/**/.build/
+ios/**/*.xcuserstate
+ios/**/.swiftpm/

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Outfit, Syne } from 'next/font/google'
 import Analytics from '@/components/Analytics'
 import JsonLd from '@/components/JsonLd'
+import { siteGraph } from '@/lib/schema'
 import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, SITE_URL, socialMetadata } from '@/lib/seo'
 import '@/styles/base.css'
 
@@ -117,36 +118,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const websiteJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Diceify",
-    "url": "https://diceify.art",
-    "description": "Free dice art generator for portraits and mosaics. Turn any photo into buildable dice patterns.",
-    "publisher": {
-      "@type": "Organization",
-      "name": "Diceify",
-      "url": "https://diceify.art",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://diceify.art/favicon-192x192.png",
-        "creator": {
-          "@type": "Organization",
-          "name": "Diceify",
-          "url": "https://diceify.art"
-        },
-        "copyrightNotice": "© 2024 Diceify. All rights reserved.",
-        "creditText": "Created with Diceify (diceify.art)",
-        "license": "https://diceify.art/terms",
-        "acquireLicensePage": "https://diceify.art/terms"
-      }
-    }
-  }
-
   return (
     <html lang="en" className={`${outfit.variable} ${syne.variable}`}>
       <body className={outfit.className}>
-        <JsonLd data={websiteJsonLd} />
+        {/* Organization + founder on every page; the homepage adds WebSite and WebApplication (lib/schema.ts). */}
+        <JsonLd data={siteGraph()} />
         {children}
         <Analytics />
       </body>

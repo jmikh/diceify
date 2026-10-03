@@ -1,0 +1,36 @@
+# Diceify
+
+> Diceify (diceify.art) is a free, browser-based dice art generator. It turns a photo into a buildable mosaic pattern of standard six-sided black and white dice, shows the exact number of dice of each color, and guides you through the build row by row. Not related to "Dicify", the TensorFlow.js book project.
+
+Key facts:
+- Dice art is a mosaic of six-sided dice: each die is one pixel, and the face turned up sets its shade. Black and white dice together give 12 shades.
+- Dice needed = columns × rows: 20×20 = 400, 30×30 = 900, 40×40 = 1,600, 50×50 = 2,500, 100×100 = 10,000.
+- Finished size = dice per side × die size: a 50×50 portrait is 80 cm (31.5 in) per side with 16 mm dice, 60 cm (23.6 in) with 12 mm dice. One square foot holds ~363 dice at 16 mm (645 at 12 mm).
+- Build time: a 20×20 portrait (400 dice) takes 2–4 hours; a 40×40 (1,600 dice) about a full day.
+- Diceify grids run from 20 to 120 rows; controls: color mode (black, white, both), contrast, brightness, edge sharpening, crop.
+- The photo is processed in the browser; drafts made without an account stay on the device.
+- Plans: Explorer (free: generate, download images, builder for the first 5 rows), Creator ($19 one-time, 30 days of full access), Studio ($9/month or $36/year). Paid plans unlock the full builder and SVG blueprints.
+
+## Guides
+- [Dice art: how to make it, dice count and size chart](https://diceify.art/dice-art): what dice art is, how many dice you need, finished size, which dice and glue to use, step-by-step build
+- [Dice art size calculator](https://diceify.art/dice-art/size-calculator): dice count, finished size and weight for any grid and die size
+- [Buying dice for dice art](https://diceify.art/dice-art/buying-dice): which dice to buy, sizes, colors, where and what they cost
+- [How to glue dice art](https://diceify.art/dice-art/how-to-glue-dice-art): bases, adhesives and the gluing workflow
+- [Best photos for dice art](https://diceify.art/dice-art/best-photos): what makes a photo work as a dice portrait
+- [Best dice art generators compared](https://diceify.art/best-dice-art-generators): Diceify and the alternatives, same photo and grid, with a stated method
+- [Dice art examples](https://diceify.art/gallery): portraits made with Diceify, with grid size and dice count for each
+
+## Tool
+- [Dice art editor](https://diceify.art/editor): upload, crop, tune and build (requires JavaScript)
+- [Pricing and FAQ](https://diceify.art/#pricing)
+
+## About
+- [About Diceify](https://diceify.art/about): who makes it and why
+- [Why I built Diceify](https://diceify.art/blog/why-i-built-diceify): John Mikhail, founder
+- [Dice portraits for my nieces](https://diceify.art/blog/jeremy-dice-portraits-nieces): a community build
+- [Blog](https://diceify.art/blog): real builds, tips and gift ideas
+
+## Optional
+- [Privacy](https://diceify.art/privacy)
+- [Terms](https://diceify.art/terms)
+- Social: https://www.instagram.com/diceify.art/ · https://www.tiktok.com/@diceify.art · https://www.reddit.com/r/DicePortraits

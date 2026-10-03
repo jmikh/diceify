@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { computeStats, generateDiceGrid, rasterSize, renderGridSvg, type Pixels } from '@/core/dice'
+import { computeStats, generateDiceGrid, gridInputsEqual, rasterSize, renderGridSvg, type Pixels } from '@/core/dice'
 import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
@@ -12,14 +12,16 @@ import { reportError } from '@/lib/report-error'
 // The dice derivation pipeline, independent of which step is on screen:
 //
 //   A  imageSrc + crop  ->  Pixels + thumbnail (cropToPixels + makeThumbnail, cached per crop)
-//   B  Pixels + dice    ->  grid + stats      (core, sync)
+//   B  Pixels + dice    ->  grid + stats      (core, sync; skipped when the store already holds the grid for
+//                                              exactly these crop/tune params: a loaded document's stored grid)
 //   C  grid             ->  previewUrl        (renderGridSvg + rasterizeSvg)
 //
 // Mounted once in the editor page; the only writer of useDerivedStore.
 // Because it always runs, every step can simply render for its own state
 // (spinner until data arrives) instead of falling back to an earlier step's
 // component. Restored drafts/projects need no special casing: stage A is
-// the derivation of the cropped pixels.
+// the derivation of the cropped pixels, and B keeps the grid they were saved
+// with (schema v2), so a build continues on the exact dice it was made on.
 // ---------------------------------------------------------------------------
 
 const RASTER_LONG_SIDE = 1080
@@ -69,8 +71,13 @@ export function useDicePipeline() {
                 derived.setThumbnail(cropped.thumbnail)
 
                 // B
-                const grid = generateDiceGrid(cropped.pixels, dice)
-                derived.setGrid(grid, computeStats(grid))
+                const inputs = { crop, dice }
+                const held = useDerivedStore.getState()
+                let grid = held.grid
+                if (!grid || !gridInputsEqual(inputs, held.gridInputs)) {
+                    grid = generateDiceGrid(cropped.pixels, dice)
+                    derived.setGrid(grid, computeStats(grid), inputs)
+                }
 
                 // C
                 const size = rasterSize(grid.width, grid.height, RASTER_LONG_SIDE)

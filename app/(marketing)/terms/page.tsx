@@ -28,7 +28,7 @@ export default function TermsPage() {
                         Terms of Service
                     </h1>
                     <p className="text-[var(--text-dim)] mb-8">
-                        Last updated: January 24, 2026
+                        Last updated: October 3, 2026
                     </p>
 
                     <div className="space-y-8 text-[var(--text-secondary)]">
@@ -77,7 +77,7 @@ export default function TermsPage() {
                                 4.1 Explorer (Free Tier)
                             </h3>
                             <p className="mb-3">
-                                Explorer users have access to basic features with certain limitations, such as the number of projects they can save and access to advanced customization options.
+                                Explorer users can upload photos, tune and preview dice patterns, and save an unlimited number of projects. Explorer access is limited to the first 5 rows of a pattern in the step-by-step Builder and does not include SVG export.
                             </p>
                             <p>
                                 <strong>Data Retention:</strong> For Explorer accounts, we reserve the right to delete project data stored on our cloud servers for projects that have not been opened or accessed for 90 consecutive days. We recommend regularly backing up your work by exporting your projects.
@@ -100,9 +100,8 @@ export default function TermsPage() {
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
                                 4.4 Creator Pass ($19 one-time)
                             </h3>
-                            {/* TODO(user): Creator Pass is a 30-day pass (core/billing/plans.ts); §4.4 and §5.1 say "permanent access" */}
                             <p>
-                                The Creator Pass is a one-time purchase that grants permanent access to all premium features for the lifetime of the Service.
+                                The Creator Pass is a one-time purchase that grants access to all premium features for 30 days from the time of purchase. It does not renew: when the 30 days end, your account returns to the Explorer tier unless you purchase another pass or a subscription.
                             </p>
 
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
@@ -128,15 +127,14 @@ export default function TermsPage() {
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
                                 5.1 Cancellation
                             </h3>
-                            {/* TODO(user): "Creator Pass … permanent access" — it is a 30-day pass; also cancellation is now in-app on /account as well as the portal */}
                             <p className="mb-3">
-                                You may cancel your subscription at any time through the Stripe Customer Portal. Upon cancellation, you will retain access to premium features until the end of your current billing period. No refunds are provided for partial billing periods. Creator Pass purchases are non-refundable as they provide permanent access.
+                                You may cancel your subscription at any time from your account page or through the Stripe Customer Portal. Upon cancellation, you will retain access to premium features until the end of your current billing period. No refunds are provided for partial billing periods. A Creator Pass is not a subscription: there is nothing to cancel, and access ends automatically 30 days after purchase. Creator Pass purchases are non-refundable except as described in Section 5.2.
                             </p>
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
                                 5.2 Refunds
                             </h3>
                             <p>
-                                Refunds for subscriptions may be provided at our discretion within 7 days of initial purchase if you have not substantially used premium features. To request a refund, contact us at support@diceify.art.
+                                Refunds for subscriptions and Creator Pass purchases may be provided at our discretion within 7 days of purchase if you have not substantially used premium features. To request a refund, contact us at support@diceify.art.
                             </p>
                         </section>
 
@@ -157,7 +155,7 @@ export default function TermsPage() {
                                 <li>We will make reasonable efforts to provide users with their project data before shutdown</li>
                             </ul>
                             <p className="mt-3">
-                                Active subscribers at the time of discontinuation will receive a pro-rated refund for unused subscription time. Creator Pass holders and grandfathered lifetime users are not entitled to refunds as they received access for the lifetime of the Service as originally purchased.
+                                Active subscribers at the time of discontinuation will receive a pro-rated refund for unused subscription time, and Creator Pass holders a pro-rated refund for any unused days of their 30-day access period. Grandfathered lifetime users are not entitled to refunds as they received access for the lifetime of the Service as originally purchased.
                             </p>
                         </section>
 

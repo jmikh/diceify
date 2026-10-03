@@ -73,7 +73,7 @@ describe('draft round trip', () => {
 
 describe('legacy migration', () => {
   it('migrates a B3 `{ doc, name }` editorState into the new key and removes the legacy keys', () => {
-    const doc = { ...createDefaultDocument(), step: 'build' as const, grid: { width: 10, height: 10 }, buildProgress: { x: 2, y: 1 } }
+    const doc = { ...createDefaultDocument(), step: 'build' as const, grid: { width: 10, height: 10, rows: null }, buildProgress: { x: 2, y: 1 } }
     store.set('editorState', JSON.stringify({ doc, name: 'Old' }))
     store.set('editorBuildProgress', JSON.stringify({ x: 9, y: 9 }))
     const draft = readDraft()

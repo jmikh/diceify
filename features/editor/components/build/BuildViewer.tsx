@@ -15,7 +15,7 @@ interface BuildViewerProps {
 
 const HIGHLIGHT_TRANSITION = 'x 0.5s cubic-bezier(0.4, 0, 0.2, 1), y 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
 
-/** The zoomable dice viewer for the build step (+/- buttons live in BuildControlBar). `grid` is never null: BuilderMain gates on it. */
+/** The zoomable dice viewer for the build step (+/- buttons: BuildZoomButtons). `grid` is never null: BuilderMain gates on it. */
 const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
     // Arrow-key navigation lives in useEditorShortcuts (page level)
     const { current, run, navigateTo } = useBuildNavigation()

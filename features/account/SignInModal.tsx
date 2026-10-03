@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 import { track } from '@/lib/analytics'
 import Image from 'next/image'
 import Logo from '@/components/Logo'
-import { signInWithGoogle } from '@/lib/supabase/auth'
+import { signInWithApple, signInWithGoogle } from '@/lib/supabase/auth'
 
 const DEFAULT_REDIRECT = '/editor?restored=true'
 
@@ -19,7 +19,7 @@ interface SignInModalProps {
   redirectTo?: string
 }
 
-/** Google sign-in dialog. Store-free so the landing page can render it; the editor wraps it in EditorSignInModal. */
+/** Google / Apple sign-in dialog. Store-free so the landing page can render it; the editor wraps it in EditorSignInModal. */
 export default function SignInModal({
   open, onClose, message, onBeforeSignIn, redirectTo = DEFAULT_REDIRECT }: SignInModalProps) {
   const [isLoading, setIsLoading] = useState(false)
@@ -29,15 +29,14 @@ export default function SignInModal({
 
   if (!open) return null
 
-  const handleGoogleSignIn = async () => {
+  /** Google or Apple: redirects the browser to the provider; nothing after `start` runs on success. */
+  const handleSignIn = async (start: (redirectTo: string) => Promise<void>) => {
     setIsLoading(true)
     setError(null)
 
     try {
       await onBeforeSignIn?.()
-
-      // Redirects the browser to Google; nothing after this runs on success
-      await signInWithGoogle(`${window.location.origin}${redirectTo}`)
+      await start(`${window.location.origin}${redirectTo}`)
     } catch (err) {
       const detail = err instanceof Error && err.message ? ` (${err.message})` : ''
       setError(`Could not start sign-in${detail}. Please try again.`)
@@ -112,7 +111,7 @@ export default function SignInModal({
         {/* Sign in buttons */}
         <div className="w-full space-y-3 relative z-10">
           <button
-            onClick={handleGoogleSignIn}
+            onClick={() => handleSignIn(signInWithGoogle)}
             disabled={isLoading}
             className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl border border-[var(--border-glass)] bg-white/5 hover:bg-white/10 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed group"
           >
@@ -125,6 +124,17 @@ export default function SignInModal({
             <span className="text-white/90 font-medium">Continue with Google</span>
           </button>
 
+          <button
+            onClick={() => handleSignIn(signInWithApple)}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl border border-[var(--border-glass)] bg-white/5 hover:bg-white/10 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed group"
+          >
+            <svg className="w-5 h-5 text-white group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] transition-all" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.74s2.57-.99 4.31-.66C18.03 7.53 19.5 8.35 20 9.07c-3.17 1.86-2.57 6.32.95 7.72-.51 1.55-1.28 2.69-1.9 3.49zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+            </svg>
+            <span className="text-white/90 font-medium">Sign in with Apple</span>
+          </button>
+
           {!showOtherMethods ? (
             <button
               onClick={() => setShowOtherMethods(true)}
@@ -134,18 +144,6 @@ export default function SignInModal({
             </button>
           ) : (
             <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-              {/* Apple */}
-              <button
-                onClick={() => handleUnsupportedProvider('Apple')}
-                disabled={isLoading || disabledProviders.includes('Apple')}
-                className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl border border-[var(--border-glass)] bg-white/5 hover:bg-white/10 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed group"
-              >
-                <svg className="w-5 h-5 text-white group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] transition-all" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.74s2.57-.99 4.31-.66C18.03 7.53 19.5 8.35 20 9.07c-3.17 1.86-2.57 6.32.95 7.72-.51 1.55-1.28 2.69-1.9 3.49zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-                </svg>
-                <span className="text-white/90 font-medium">Sign in with Apple</span>
-              </button>
-
               {/* Facebook */}
               <button
                 onClick={() => handleUnsupportedProvider('Facebook')}

@@ -7,8 +7,9 @@
 
 Photo → dice-art editor. **No server of our own**: a static Next.js 14 export (`output: 'export'`, `out/`) served as a
 Cloudflare Worker's static assets (`wrangler.jsonc`), the browser talks to Supabase (Auth + Postgres + Storage) directly under
-RLS, and the only server code is two Supabase Edge Functions (`billing`, `stripe-webhook`) plus the Worker's script
-(`worker/`, runs only for `/s/*`: social card tags for share links). Sentry client-side only; analytics = GA4
+RLS, and the only server code is four Supabase Edge Functions (`billing`, `stripe-webhook`, `account` = delete account,
+`revenuecat-webhook` = the iOS app's purchases) plus the Worker's script (`worker/`, runs only for `/s/*`: social card tags
+for share links). A native iOS app is being built in `ios/` (`plans/ios/ios-app-plan.md`; `DiceCore` = Swift port of `core/`). Sentry client-side only; analytics = GA4
 (`@next/third-parties`) + PostHog, both behind `lib/analytics.ts`.
 
 ## Architecture map
@@ -28,7 +29,8 @@ worker/        Cloudflare Worker script (own tsconfig): index.ts routes /s/<id> 
 components/    Logo, Footer, BackgroundOrbs (shared, dumb), Analytics (GA4 tag + PostHog start, root layout),
                JsonLd (structured data as a static <script>; never next/script, which only injects it client-side)
 styles/        base.css, marketing.css, editor.css       supabase/  config.toml, migrations/, functions/{_shared,billing,stripe-webhook}
-scripts/       gen-fixtures.ts, migrate-from-prisma.ts (+ migrate/ helpers)   docs/  DEPLOY.md, STRIPE_TESTING.md   plans/revamp/  plan + step docs
+scripts/       gen-fixtures.ts, migrate-from-prisma.ts (+ migrate/), backfill-grids.ts (+ backfill/)   docs/  DEPLOY.md, STRIPE_TESTING.md
+plans/         revamp/ (web revamp, done), ios/ (iOS app plan + step docs)      ios/  DiceCore Swift package (+ the app, step 3)
 ```
 
 Import rules (ESLint `no-restricted-imports`, all `error`): `core` → only `core` (+ `zod`). `lib`/`components` → `core`,
@@ -46,8 +48,11 @@ events there), `identifyUser`/`resetUser`. Put `NO_CAPTURE_CLASS` on anything sh
 - Pipeline: `toGrayImage` → `downsample` (area average) → `sharpen` → per cell `applyGamma` → `applyContrast` →
   `mapBrightnessToDie` → `shouldRotate`. Deterministic; golden fixtures in `core/dice/__fixtures__/*.json`.
 - **Fixture rule**: changing thresholds/sampling/sharpen = regenerate fixtures (`npm run gen-fixtures`, commit the diff, and
-  say so). **Document rule**: changing `ProjectDocument`'s shape = bump `CURRENT_SCHEMA_VERSION` + a `migrateDocument` step
-  + a test for the old shape. Legacy inputs are normalized (clamped), current versions validated strictly (zod).
+  say so) and port the change to `ios/DiceCore` (its tests read the same fixtures). **Document rule**: changing
+  `ProjectDocument`'s shape = bump `CURRENT_SCHEMA_VERSION` + a `migrateDocument` step + a test for the old shape; the web
+  ships a new version before any iOS build writes it. Legacy inputs are normalized (clamped), current versions validated
+  strictly (zod). Schema v2: `grid.rows` persists every die (`encoding.ts`, the fixture format) so Build renders the stored
+  grid on every device; the pipeline rewrites it whenever it generates (`gridInputs` says which crop/dice it belongs to).
 
 ## Editor state (`features/editor/store`)
 
@@ -55,7 +60,8 @@ events there), `identifyUser`/`resetUser`. Put `NO_CAPTURE_CLASS` on anything sh
   `crop` + `dice`**; slider drags go through `documentHistoryBatcher` (one entry per interaction); widget/store reconcile
   writes use `untracked()`. `replaceDocument`/`uploadImage`/`resetEditor` clear history.
 - `useEditorUiStore`: `step` (crop → tune → build; uploading is the Start screen, not a step), `startOpen`, one `modal`
-  at a time. `useDerivedStore`: grid/stats/preview written by `useDicePipeline`. `useProjectStore`: `boot`, `projectId`,
+  at a time. `useDerivedStore`: grid (+ `gridRows`/`gridInputs`)/stats/preview written by `useDicePipeline`, seeded from a
+  loaded document's stored grid (the pipeline then skips generation while crop/dice match). `useProjectStore`: `boot`, `projectId`,
   `cloudVersion`, image (object URL + Blob), `saveStatus`, `projects`, `previews` (thumbnails).
 - Shell: one fixed viewport (no page scroll). Desktop = header + canvas panel (+ under-canvas strip) + inspector;
   mobile (`< lg`) = `MobileEditor`. Shared class strings in `components/common/ui.ts`; filled buttons use `--pink-strong`.
@@ -72,8 +78,10 @@ only via the `get_share` RPC; no update/delete/unshare. Sign-in required, free o
 ## Gating
 
 `useEntitlements()` / `useGate()` are the **only** gating sources (`deriveEntitlements` in `core/billing/entitlements.ts`;
-`builderRowLimit: null` = unlimited, never `Infinity`). SQL `effective_plan` in the initial migration **must mirror**
-`entitlements.ts` — change both together. Projects are unlimited on every plan (no SQL limit since G1).
+`builderRowLimit: null` = unlimited, never `Infinity`). Two billing sources: Stripe (web) and Apple (`apple_*` columns,
+RevenueCat); priority lifetime → studio from either → creator from either; `source` says which. SQL `effective_plan`
+(`*_apple_billing.sql`) and `_shared/billing-snapshot.ts` `effectivePlan` **must mirror** `entitlements.ts` — change all
+three together. Projects are unlimited on every plan (no SQL limit since G1).
 `gate(allowed, feature, options)` names the blocked `GatedFeature` and reports `paywall_shown` when it blocks.
 
 ## Data
@@ -82,8 +90,11 @@ only via the `get_share` RPC; no update/delete/unshare. Sign-in required, free o
   `project-images`, path `{uid}/{projectId}/original.jpg`, **immutable per project** (DB trigger) — a new photo = a new project;
   `preview.jpg` next to it is the thumbnail (the cropped photo, overwritten when the crop changes, listed via signed URLs). Projects are unlimited.
 - `cloud_version` is bumped by a trigger (client values ignored); saves are CAS `eq('cloud_version', expected)`.
-- Billing columns on `profiles` are written **only** by the edge functions (service role), recomputed from Stripe on
-  every webhook/sync, and once by the legacy migration script (`scripts/migrate-from-prisma.ts`). Never write them from the client or SQL migrations.
+- Billing columns on `profiles` are written **only** by the edge functions (service role): the Stripe ones recomputed from
+  Stripe on every webhook/sync (and once by `scripts/migrate-from-prisma.ts`), the `apple_*` ones from the RevenueCat
+  subscriber on every `revenuecat-webhook` event / `billing/apple-sync`. Never write them from the client or SQL migrations.
+- Account deletion = `account` function `POST /delete` (cancels the Stripe subscription, removes the user's storage objects,
+  deletes the auth user; rows cascade).
 - Schema changes = a new migration (`npm run db:migration -- <name>`), `npm run db:reset`, `npm run db:types` (commit the types).
 
 ## Commands
@@ -101,16 +112,19 @@ only via the `get_share` RPC; no update/delete/unshare. Sign-in required, free o
 | `npm run worker:dev` | `wrangler dev` (after `npm run build`): the static site + the share Worker, vars from `.dev.vars`, else `.env.local` |
 | `npm run gen-fixtures` | regenerate `core/dice/__fixtures__` (sharp) |
 | `npm run migrate:legacy -- [--dry-run] …` | legacy Prisma DB → Supabase (read-only source; local target unless `--target=hosted`; `docs/DEPLOY.md`) |
+| `npm run backfill:grids -- [--dry-run] [--force] [--only=<id>] [--target=hosted]` | fill `document.grid.rows` for existing projects (schema v2; `docs/DEPLOY.md`) |
+| `cd ios/DiceCore && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` | the Swift core against `core/dice/__fixtures__` (`ios/README.md`) |
 
 ## Testing
 
 - Every step ends with `npm run typecheck && npm test && npm run lint && npm run build` (+ `npm run functions:check`
-  when `supabase/functions` changed) all green. **No manual browser tests unless asked.**
+  when `supabase/functions` changed, + `swift test` in `ios/DiceCore` when `core/` or `ios/` changed) all green.
+  **No manual browser tests unless asked.** `supabase migration new` reads stdin when piped: run it with `< /dev/null`.
 - Integration suites are opt-in: `SUPABASE_TEST=1` (local stack running) and `STRIPE_TEST=1` (+ sandbox key); they
   skip otherwise. Pure logic belongs in `core/` with a unit test.
 
 ## Plans
 
-`plans/revamp/revamp-tiered-plan.md` is the source of truth for architecture and decisions; each step gets a
-`plans/revamp/revamp-step-<N>.md` and appends to the plan's Step log; out-of-scope findings go to
-`plans/revamp/revamp-agent-suggestions.md` ("Open for the user"), never into scope creep.
+`plans/revamp/revamp-tiered-plan.md` is the source of truth for the web architecture and decisions (done);
+`plans/ios/ios-app-plan.md` for the iOS app (steps 0–7, `plans/ios/ios-step-<N>.md` each, Step log at the bottom);
+out-of-scope findings go to `plans/revamp/revamp-agent-suggestions.md` ("Open for the user"), never into scope creep.

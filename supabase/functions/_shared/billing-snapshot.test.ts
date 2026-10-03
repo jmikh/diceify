@@ -8,6 +8,7 @@ import {
   computeBillingSnapshot,
   creatorExpiry,
   CREATOR_PASS_DAYS,
+  effectivePlan,
   hasPaidAccess,
   pickSubscription,
   PRO_SUBSCRIPTION_STATUSES,
@@ -96,6 +97,30 @@ describe('hasPaidAccess', () => {
     expect(hasPaidAccess({ plan: 'studio', plan_expires_at: null, subscription_status: 'past_due' }, NOW)).toBe(true)
     expect(hasPaidAccess({ plan: 'creator', plan_expires_at: future, subscription_status: null }, NOW)).toBe(true)
     expect(hasPaidAccess({ plan: 'creator', plan_expires_at: past, subscription_status: 'active' }, NOW)).toBe(false)
+  })
+
+  it('counts an unexpired Apple grant, with the same priority as deriveEntitlements', () => {
+    const future = iso(T0 + 1 * DAY)
+    const past = iso(T0 - 1 * DAY)
+    const explorer = { plan: 'explorer', plan_expires_at: null, subscription_status: null }
+    for (const [apple, expires, expected] of [
+      ['studio', future, 'studio'],
+      ['creator', future, 'creator'],
+      ['studio', past, 'explorer'],
+      ['creator', null, 'explorer'],
+      [null, future, 'explorer'],
+    ] as const) {
+      const row = { ...explorer, apple_plan: apple, apple_expires_at: expires }
+      expect(effectivePlan(row, NOW), JSON.stringify(row)).toBe(expected)
+      expect(hasPaidAccess(row, NOW)).toBe(expected !== 'explorer')
+      const core = deriveEntitlements(
+        { plan: 'explorer', planExpiresAt: null, subscriptionStatus: null, currentPeriodEnd: null, cancelAt: null, hasStripeCustomer: false, applePlan: apple, appleExpiresAt: expires, appleWillRenew: false },
+        NOW,
+      )
+      expect(core.plan).toBe(expected)
+    }
+    // Stripe creator pass + Apple studio → studio (Apple studio outranks a creator pass from either source)
+    expect(effectivePlan({ plan: 'creator', plan_expires_at: future, subscription_status: null, apple_plan: 'studio', apple_expires_at: future }, NOW)).toBe('studio')
   })
 })
 

@@ -54,22 +54,34 @@ export interface BillingSnapshot {
   plan_expires_at: string | null
 }
 
-/** The profile columns `hasPaidAccess` reads. */
+/** The profile columns `effectivePlan` reads (Stripe's, plus the Apple grant; missing Apple fields = none). */
 export interface PaidAccessRow {
   plan: string
   plan_expires_at: string | null
   subscription_status: string | null
+  apple_plan?: string | null
+  apple_expires_at?: string | null
 }
 
+const after = (iso: string | null | undefined, now: Date): boolean => typeof iso === 'string' && Date.parse(iso) > now.getTime()
+
 /**
- * Mirror of core/billing/entitlements.ts `deriveEntitlements().isPro` (and SQL `effective_plan() <> 'explorer'`):
- * lifetime → studio with a PRO status → creator pass not yet expired (strict `>`). Same priority, same statuses.
+ * Mirror of core/billing/entitlements.ts `deriveEntitlements().plan` (and SQL `effective_plan`): lifetime → studio
+ * (Stripe PRO status or unexpired Apple studio) → creator (Stripe pass or Apple pass not yet expired, strict `>`) →
+ * explorer. Same priority, same statuses.
  */
+export function effectivePlan(row: PaidAccessRow, now: Date): SnapshotPlan {
+  if (row.plan === 'lifetime') return 'lifetime'
+  const stripeStudio = row.plan === 'studio' && row.subscription_status !== null && PRO_SUBSCRIPTION_STATUSES.has(row.subscription_status)
+  if (stripeStudio || (row.apple_plan === 'studio' && after(row.apple_expires_at, now))) return 'studio'
+  const stripeCreator = row.plan === 'creator' && after(row.plan_expires_at, now)
+  if (stripeCreator || (row.apple_plan === 'creator' && after(row.apple_expires_at, now))) return 'creator'
+  return 'explorer'
+}
+
+/** `deriveEntitlements().isPro`: any paid plan from either source (a second Stripe checkout is refused while true). */
 export function hasPaidAccess(row: PaidAccessRow, now: Date): boolean {
-  if (row.plan === 'lifetime') return true
-  if (row.plan === 'studio') return row.subscription_status !== null && PRO_SUBSCRIPTION_STATUSES.has(row.subscription_status)
-  if (row.plan === 'creator') return row.plan_expires_at !== null && Date.parse(row.plan_expires_at) > now.getTime()
-  return false
+  return effectivePlan(row, now) !== 'explorer'
 }
 
 const toIso = (unixSeconds: number | null | undefined): string | null =>

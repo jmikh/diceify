@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+const linkClass = 'text-[var(--pink)] hover:underline'
+
 export default function JeremyDicePortraits() {
     return (
         <>
@@ -19,8 +21,10 @@ export default function JeremyDicePortraits() {
                 he decided dice portraits would be memorable and unique.
             </p>
             <p>
-                Each finished piece measures 35 × 47 inches — larger than originally planned,
-                but the bigger size made the portraits really stand out.
+                Each portrait is a 35×47 dice grid (1,645 dice), mounted in a 26×32-inch frame — larger than
+                originally planned, but the bigger size made the portraits really stand out. (Our{' '}
+                <Link href="/dice-art" className={linkClass}>dice art guide</Link> has a size table if you want to
+                see what other grid sizes come to in dice and inches.)
             </p>
 
             <h2>The process</h2>
@@ -29,7 +33,10 @@ export default function JeremyDicePortraits() {
             <p>
                 Jeremy tested 20-30 photos of each girl in Diceify before finding the ones that worked best.
                 Clear, straight-on shots produced the best results. Side angles and busy backgrounds
-                didn't translate as well to the dice pattern.
+                didn&apos;t translate as well to the dice pattern — the same advice as the{' '}
+                <Link href="/dice-art#pick-your-image" className={linkClass}>pick-your-image step</Link> of our guide,
+                and the <Link href="/gallery" className={linkClass}>gallery</Link> shows what close-cropped portraits
+                look like as dice.
             </p>
             <p>
                 Once he found the right photos, he adjusted the cropping and zoom until the dice pattern
@@ -42,9 +49,10 @@ export default function JeremyDicePortraits() {
             </p>
             <ul>
                 <li>Made a plywood base backed with 2×4s to prevent warping</li>
-                <li>Used frames sized 26×32 inches to fit a 35×47 dice grid</li>
+                <li>Used frames sized 26×32 inches to fit the 35×47 dice grid</li>
                 <li>Laid out all the dice on a flat surface first, matching the Diceify template</li>
-                <li>Transferred them row by row to the frame with Liquid Nails</li>
+                <li>Transferred them row by row to the frame with Liquid Nails (the glue-first approach, the safer of the two methods{' '}
+                    <Link href="/blog/why-i-built-diceify" className={linkClass}>described in Why I Built Diceify</Link>)</li>
                 <li>Painted the backgrounds after everything was glued down</li>
             </ul>
 
@@ -74,7 +82,8 @@ export default function JeremyDicePortraits() {
 
             <h2>Time investment</h2>
             <p>
-                Each piece took over 100 hours to complete. Jeremy notes that now that he knows the process,
+                Each piece took over 100 hours to complete — testing photos, building the frame, laying out and
+                gluing 1,645 dice, and painting included. Jeremy notes that now that he knows the process,
                 future pieces would go faster. His tips for anyone trying this:
             </p>
             <ul>
@@ -87,7 +96,7 @@ export default function JeremyDicePortraits() {
             <div className="blog-cta">
                 <h3>Want to try it yourself?</h3>
                 <p>
-                    Use Diceify to generate the dice pattern, then build it however you like.
+                    Use the free <Link href="/" className={linkClass}>dice art generator</Link> to make the pattern, then build it however you like.
                 </p>
                 <Link href="/editor" className="btn-primary">
                     Open the editor
@@ -98,7 +107,7 @@ export default function JeremyDicePortraits() {
 
             <div className="blog-source">
                 <p>
-                    <strong>Source:</strong> This article is based on Jeremy Klammer's original blog post.
+                    <strong>Source:</strong> This article was written by the Diceify team and is based on Jeremy Klammer&apos;s original blog post.
                     See more photos and details on his website:
                 </p>
                 <a

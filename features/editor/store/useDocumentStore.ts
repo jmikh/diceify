@@ -8,16 +8,17 @@ import { temporal } from 'zundo'
 import {
   CURRENT_SCHEMA_VERSION,
   DEFAULT_DICE_PARAMS,
+  gridInputsEqual,
   progressApplies,
   type BuildBaseline,
   type CropParams,
   type DiceParams,
   type GridPos,
-  type GridSize,
   type ProjectDocument,
+  type StoredGrid,
 } from '@/core/dice'
 import type { Step } from '../steps'
-import { useDerivedStore } from './useDerivedStore'
+import { useDerivedStore, type DerivedState } from './useDerivedStore'
 import { useEditorUiStore } from './useEditorUiStore'
 
 export const DEFAULT_PROJECT_NAME = 'Untitled Project'
@@ -115,11 +116,21 @@ export const useDocumentStore = create<DocumentState>()(
   ),
 )
 
-/** Replaces the document (load, hydrate) without leaving a history entry; seeds the derived grid size. */
+/** Replaces the document (load, hydrate) without leaving a history entry; seeds the derived grid from it. */
 export function replaceDocument(doc: ProjectDocument, name: string): void {
   useDocumentStore.getState().loadDocument(doc, name)
   useDocumentStore.temporal.getState().clear()
-  useDerivedStore.getState().reset(doc.grid)
+  useDerivedStore.getState().reset(doc)
+}
+
+/**
+ * The grid to persist: the derived grid's size, with its dice only while they were generated from the current
+ * crop/tune params (after a change, and until the pipeline catches up, the dice are stale: `rows` goes null).
+ */
+function storedGrid(inputs: BuildBaseline, derived: Pick<DerivedState, 'gridSize' | 'gridRows' | 'gridInputs'>): StoredGrid | null {
+  if (!derived.gridSize) return null
+  const current = derived.gridRows !== null && gridInputsEqual(inputs, derived.gridInputs)
+  return { ...derived.gridSize, rows: current ? derived.gridRows : null }
 }
 
 /**
@@ -130,14 +141,14 @@ export function replaceDocument(doc: ProjectDocument, name: string): void {
 export function buildDocument(
   state: Pick<DocumentState, 'crop' | 'dice' | 'buildProgress' | 'buildBaseline'> = useDocumentStore.getState(),
   step: Step = useEditorUiStore.getState().step,
-  gridSize: GridSize | null = useDerivedStore.getState().gridSize,
+  derived: Pick<DerivedState, 'gridSize' | 'gridRows' | 'gridInputs'> = useDerivedStore.getState(),
 ): ProjectDocument {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     step,
     crop: state.crop,
     dice: state.dice,
-    grid: gridSize,
+    grid: storedGrid(state, derived),
     buildProgress: progressApplies(state, state.buildBaseline) ? state.buildProgress : ORIGIN,
   }
 }

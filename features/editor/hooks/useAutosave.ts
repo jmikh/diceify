@@ -15,7 +15,7 @@ export function useAutosave() {
     const unsubscribers = [
       useDocumentStore.subscribe(scheduleSave),
       useEditorUiStore.subscribe((state) => state.step, scheduleSave),
-      useDerivedStore.subscribe((state) => state.gridSize, scheduleSave),
+      useDerivedStore.subscribe((state) => state.gridRows, scheduleSave),
     ]
 
     // INITIAL_SESSION fires on subscribe; SIGNED_IN / TOKEN_REFRESHED keep the token current, SIGNED_OUT clears it.

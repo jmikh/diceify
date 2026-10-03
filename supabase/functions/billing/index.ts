@@ -7,12 +7,14 @@
 //   POST /portal     { returnPath? } → { url }   404 NO_SUBSCRIPTION without a Stripe customer
 //   POST /cancel     → { billing }   schedules cancel_at_period_end; 404 NO_SUBSCRIPTION / 409 ALREADY_SCHEDULED
 //   POST /resume     → { billing }   clears it; 404 NO_SUBSCRIPTION / 409 NOT_SCHEDULED
+//   POST /apple-sync → { billing }   recompute the caller's Apple columns from RevenueCat (the app, after a purchase);
+//                                    503 NOT_CONFIGURED without REVENUECAT_SECRET_KEY
 // The client refreshes its profile row afterwards: entitlements are derived there, never from these views.
 
 import { error, handleOptions, requireUser } from '../_shared/http.ts'
 import { assertStripeEnv } from '../_shared/stripe.ts'
 import { getAdmin } from '../_shared/supabase-admin.ts'
-import { handleCancel, handleCheckout, handlePortal, handleResume, handleSync } from './handlers.ts'
+import { handleAppleSync, handleCancel, handleCheckout, handlePortal, handleResume, handleSync } from './handlers.ts'
 
 assertStripeEnv()
 
@@ -42,6 +44,8 @@ Deno.serve(async (req) => {
         return await handleCancel(user)
       case 'POST /resume':
         return await handleResume(user)
+      case 'POST /apple-sync':
+        return await handleAppleSync(user)
       default:
         return error('NOT_FOUND', `No route ${req.method} ${route}`, 404)
     }

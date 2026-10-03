@@ -13,6 +13,7 @@ export type ErrorCode =
   | 'NOT_SCHEDULED'
   | 'STALE'
   | 'INVALID_SIGNATURE'
+  | 'NOT_CONFIGURED'
   | 'INTERNAL'
 
 export const CORS_HEADERS: Record<string, string> = {
