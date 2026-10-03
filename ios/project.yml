@@ -1,0 +1,99 @@
+# XcodeGen spec (brew install xcodegen; `xcodegen` here regenerates Diceify.xcodeproj, which is not committed).
+# plans/ios/ios-app-plan.md § 4 and step 3.
+name: Diceify
+options:
+  bundleIdPrefix: art.diceify
+  deploymentTarget:
+    iOS: "18.0"
+  xcodeVersion: "26.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: VF6ZCD74B9
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  DiceCore:
+    path: DiceCore
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: 2.55.0
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: 9.0.0
+targets:
+  Diceify:
+    type: application
+    platform: iOS
+    sources:
+      - path: Diceify
+        excludes: ["Config/*.xcconfig"]
+    configFiles:
+      Debug: Diceify/Config/Debug.xcconfig
+      Release: Diceify/Config/Release.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: art.diceify.app
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+    entitlements:
+      path: Diceify/Diceify.entitlements
+      properties:
+        com.apple.developer.applesignin: [Default]
+    info:
+      path: Diceify/Info.plist
+      properties:
+        CFBundleDisplayName: Diceify
+        CFBundleName: Diceify
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIUserInterfaceStyle: Dark
+        ITSAppUsesNonExemptEncryption: false
+        NSCameraUsageDescription: Take a photo to turn into dice art.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        UIAppFonts: [Outfit-Regular.ttf, Outfit-Medium.ttf, Outfit-SemiBold.ttf, Outfit-Bold.ttf, Syne-Bold.ttf]
+        SUPABASE_URL: $(SUPABASE_URL)
+        SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
+        GIDClientID: $(GOOGLE_CLIENT_ID)
+        CFBundleURLTypes:
+          - CFBundleURLSchemes: [$(GOOGLE_REVERSED_CLIENT_ID)]
+    dependencies:
+      - package: DiceCore
+      - package: Supabase
+        product: Supabase
+      - package: GoogleSignIn
+        product: GoogleSignIn
+      - package: GoogleSignIn
+        product: GoogleSignInSwift
+  DiceifyTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [DiceifyTests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: Diceify
+schemes:
+  Diceify:
+    build:
+      targets:
+        Diceify: all
+        DiceifyTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [DiceifyTests]
+      environmentVariables:
+        # The repository integration test runs against the LOCAL Supabase stack (npm run db:start); unset to skip it.
+        DICEIFY_SUPABASE_TEST: "1"
+    archive:
+      config: Release

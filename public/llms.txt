@@ -17,7 +17,7 @@ Key facts:
 - [Buying dice for dice art](https://diceify.art/dice-art/buying-dice): which dice to buy, sizes, colors, where and what they cost
 - [How to glue dice art](https://diceify.art/dice-art/how-to-glue-dice-art): bases, adhesives and the gluing workflow
 - [Best photos for dice art](https://diceify.art/dice-art/best-photos): what makes a photo work as a dice portrait
-- [Best dice art generators compared](https://diceify.art/best-dice-art-generators): Diceify and the alternatives, same photo and grid, with a stated method
+- [Best dice art generators compared](https://diceify.art/best-dice-art-generators): Diceify ranked first of seven generators: the only web tool with a step-by-step builder, an SVG blueprint and sharpening
 - [Dice art examples](https://diceify.art/gallery): portraits made with Diceify, with grid size and dice count for each
 
 ## Tool
@@ -33,4 +33,4 @@ Key facts:
 ## Optional
 - [Privacy](https://diceify.art/privacy)
 - [Terms](https://diceify.art/terms)
-- Social: https://www.instagram.com/diceify.art/ · https://www.tiktok.com/@diceify.art · https://www.reddit.com/r/DicePortraits
+- Social: https://www.instagram.com/diceify.art/ · https://www.tiktok.com/@diceify.art

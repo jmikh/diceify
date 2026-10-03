@@ -31,36 +31,36 @@ export interface Tool {
     bestFor: string
 }
 
-/** Rows of the feature table, in the order the page shows them (Diceify first, then web tools, then apps/CLI). */
+/** Rows of each tool's table, in the order the page shows them (Diceify first, then web tools, then apps/CLI). */
 export const COMPARISON_COLUMNS: { key: keyof Omit<Tool, 'name' | 'url' | 'bestFor'>; label: string }[] = [
-    { key: 'platform', label: 'Runs on' },
-    { key: 'price', label: 'Price' },
-    { key: 'account', label: 'Account needed' },
-    { key: 'gridRange', label: 'Grid range' },
-    { key: 'colourModes', label: 'Colour modes' },
-    { key: 'tuning', label: 'Tuning controls' },
-    { key: 'diceCounts', label: 'Exact dice counts' },
     { key: 'builder', label: 'Step-by-step builder' },
     { key: 'exports', label: 'Export formats' },
-    { key: 'processing', label: 'Where the photo is processed' },
+    { key: 'tuning', label: 'Tuning controls' },
+    { key: 'colourModes', label: 'Colour modes' },
+    { key: 'gridRange', label: 'Grid range' },
+    { key: 'diceCounts', label: 'Exact dice counts' },
+    { key: 'platform', label: 'Runs on' },
     { key: 'mobile', label: 'Mobile' },
+    { key: 'price', label: 'Price' },
+    { key: 'account', label: 'Account needed' },
+    { key: 'processing', label: 'Where the photo is processed' },
 ]
 
 export const DICEIFY: Tool = {
     name: 'Diceify',
     url: '/',
-    platform: 'Web (any modern browser)',
-    price: `Free: preview, exact counts, first ${FREE_ROWS} builder rows. Paid: Creator $${PRICING.creator.price} for ${PRICING.creator.accessDays} days, or Studio $${PRICING.studio.monthlyPrice}/month or $${PRICING.studio.yearlyPrice}/year`,
-    account: 'No, to generate and tune. Yes, to save to the cloud, share a link or buy a plan',
+    platform: 'Web, in any modern browser on a computer, tablet or phone. Native iOS app coming soon',
+    price: `Free: the generator, every tuning control, exact counts, saved projects, share links and the first ${FREE_ROWS} builder rows. Full builder + SVG blueprint: Creator $${PRICING.creator.price} for ${PRICING.creator.accessDays} days, or Studio $${PRICING.studio.monthlyPrice}/month or $${PRICING.studio.yearlyPrice}/year`,
+    account: 'No, to generate and tune. A free sign-in saves unlimited projects to the cloud and creates share links',
     gridRange: `${MIN_ROWS}–${MAX_ROWS} rows; columns follow the crop (1:1, 3:4, 4:3, 2:3 or 16:9)`,
     colourModes: 'Black, white, or both (12 shades)',
-    tuning: 'Crop with rotation, contrast, brightness (gamma), sharpening, rotate the 6, 3 and 2 faces 90°',
+    tuning: 'Crop with rotation, contrast, brightness, sharpening, and 90° rotation of the 6, 3 and 2 faces',
     diceCounts: 'Yes: total, black and white, live while you tune',
-    builder: 'Yes: row by row, highlights the current die, counts runs of identical dice, tracks progress',
-    exports: 'SVG blueprint (paid). Share link with a social card (free, sign-in). No PDF, no free image file',
+    builder: 'Yes, the only web generator with one: row by row, highlights the current die, groups runs of identical dice, and saves your progress (across devices when signed in)',
+    exports: 'SVG blueprint: vector, sharp at any zoom and any print size. Share link with a social card (free)',
     processing: 'In the browser. Anonymous drafts stay on the device; the photo is uploaded only when you sign in and save a project',
-    mobile: 'Yes, a separate mobile layout in the browser',
-    bestFor: 'Black-and-white portraits you plan to build by hand, with a builder that tracks where you are',
+    mobile: 'Yes: a dedicated mobile layout in the browser, and a native iOS app coming soon',
+    bestFor: 'Anyone turning a photo into real dice art, from the first preview to the last die placed',
 }
 
 export const COMPETITORS: Tool[] = [
@@ -161,13 +161,3 @@ export const COMPETITORS: Tool[] = [
         bestFor: 'Scripting, batch runs, or reading how the mapping works in code',
     },
 ]
-
-/** What the competitor's review page said about Diceify on CHECKED_ON. */
-export const COMPETITOR_REVIEW = {
-    url: 'https://diceartgenerator.io/blog/best-dice-art-generators/',
-    site: 'diceartgenerator.io',
-    dated: 'January 15, 2026',
-    rating: '3/5',
-    cons: ['No PDF export', 'Limited customization options', 'No project information'],
-    privacyClaim: 'Server upload',
-}

@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { FaInstagram } from 'react-icons/fa'
-import { ImReddit } from 'react-icons/im'
 import { RiTiktokLine } from 'react-icons/ri'
 import { currentYear, DEFINITION, SOCIAL_URLS, SUPPORT_EMAIL } from '@/lib/schema'
 
@@ -51,7 +50,6 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
 const SOCIALS = [
   { href: SOCIAL_URLS.tiktok, label: 'Diceify on TikTok', Icon: RiTiktokLine },
   { href: SOCIAL_URLS.instagram, label: 'Diceify on Instagram', Icon: FaInstagram },
-  { href: SOCIAL_URLS.reddit, label: 'r/DicePortraits on Reddit', Icon: ImReddit },
 ]
 
 // The definition sentence with "dice art generator" linked to the homepage (the page that should rank for it).

@@ -64,7 +64,6 @@ const linkClass = "text-[var(--pink)] hover:underline";
 const SOCIAL_LINKS = [
   { href: SOCIAL_URLS.instagram, label: "Instagram (@diceify.art)" },
   { href: SOCIAL_URLS.tiktok, label: "TikTok (@diceify.art)" },
-  { href: SOCIAL_URLS.reddit, label: "r/DicePortraits on Reddit" },
   { href: FOUNDER_YOUTUBE_URL, label: "John's YouTube channel" },
 ];
 

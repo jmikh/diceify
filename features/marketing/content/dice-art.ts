@@ -129,6 +129,6 @@ export const GUIDES: { href: string; title: string; blurb: string }[] = [
     { href: '/gallery', title: 'Dice art gallery', blurb: 'portraits and mosaics generated with Diceify.' },
     { href: '/blog/why-i-built-diceify', title: 'Why I built Diceify', blurb: 'the Umm Kulthum build, the resin mistake, and the tool that came out of it.' },
     { href: '/blog/jeremy-dice-portraits-nieces', title: 'How Jeremy made dice portraits for his nieces', blurb: 'two 1,645-dice builds, 100+ hours each.' },
-    { href: '/best-dice-art-generators', title: 'Best dice art generators compared', blurb: 'a feature-by-feature comparison checked on October 3, 2026, including where Diceify falls short.' },
+    { href: '/best-dice-art-generators', title: 'Best dice art generators compared', blurb: 'seven tools compared feature by feature, and why Diceify comes out on top.' },
     { href: '/about', title: 'About Diceify', blurb: 'who makes it and how the algorithm works.' },
 ]

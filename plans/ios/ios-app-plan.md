@@ -462,3 +462,7 @@ Claude: `ios/` skeleton, `.gitignore` additions (`ios/**/xcuserdata`, `DerivedDa
   Sign in with Apple on the web; `platform: 'web'` on events. All gates + integration + served-function checks green.
 - **Step 2 (2026-10-03, done, uncommitted)** — `plans/ios/ios-step-2.md`. `ios/DiceCore`: dice pipeline, build math,
   encoding, SVG, document v2, billing, share ported; 52 Swift tests incl. all 8 fixtures and the SVG snapshot exact.
+- **Step 3 (2026-10-03, done, uncommitted)** — `plans/ios/ios-step-3.md`. XcodeGen project, theme, Apple/Google
+  sign-in wiring, local store + image import + repository + projects store, Start screen with photo import and the
+  project grid, editor placeholder; 7 app tests incl. the repository lifecycle on the local stack; simulator flows
+  verified by screenshot. Real sign-in round trips left to the user.

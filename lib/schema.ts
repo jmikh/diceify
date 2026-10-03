@@ -30,7 +30,6 @@ export const ABOUT_URL = `${SITE_URL}/about`
 export const SOCIAL_URLS = {
   instagram: 'https://www.instagram.com/diceify.art/',
   tiktok: 'https://www.tiktok.com/@diceify.art',
-  reddit: 'https://www.reddit.com/r/DicePortraits/',
 } as const
 
 /** The founder's channel and his Umm Kulthum build video. */

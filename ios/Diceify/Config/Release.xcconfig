@@ -1,0 +1,5 @@
+// Release: the hosted Supabase project (docs/DEPLOY.md). The anon key is public by design (it ships in the web bundle);
+// fill it from Dashboard → Project Settings → API before the first TestFlight build.
+SUPABASE_URL = https:/$()/pmxvjcnxnwzuggnuhkol.supabase.co
+SUPABASE_ANON_KEY = REPLACE_WITH_HOSTED_ANON_KEY
+#include "Google.xcconfig"

@@ -1,0 +1,4 @@
+// The iOS OAuth client (Google Cloud → Credentials → iOS, bundle id art.diceify.app). Public identifiers.
+// Supabase → Auth → Providers → Google → "Authorized Client IDs" must list GOOGLE_CLIENT_ID (docs/DEPLOY.md).
+GOOGLE_CLIENT_ID = 928182729653-tajp27f44egsch5lbrgu99e40vnaiq52.apps.googleusercontent.com
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.928182729653-tajp27f44egsch5lbrgu99e40vnaiq52

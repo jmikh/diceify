@@ -36,7 +36,7 @@ export function socialMetadata(
   const base = { title, description, url, siteName: 'Diceify', locale: 'en_US', images: [card] }
   return {
     openGraph: article ? { ...base, type: 'article', ...article } : { ...base, type: 'website' },
-    // No `creator`: the site has no X/Twitter account (the footer links TikTok, Instagram and Reddit only).
+    // No `creator`: the site has no X/Twitter account (the footer links TikTok and Instagram only).
     twitter: { card: 'summary_large_image', title, description, images: [card] },
   }
 }
