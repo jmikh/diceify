@@ -53,8 +53,7 @@ export default function GalleryPage() {
                 }}
             />
 
-            {/* pt clears the fixed navbar rendered by the marketing layout */}
-            <main className="relative z-[2] max-w-[1000px] mx-auto w-full px-6 pt-28 md:pt-32 pb-12">
+            <main className="marketing-page max-w-[1000px]">
                 <header className="mb-8">
                     <span className="section-label">
                         <span className="w-2 h-2 bg-[var(--pink)] rounded-full"></span>

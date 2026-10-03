@@ -113,7 +113,7 @@ function PricingSection() {
                             </li>
                             <li className="flex items-start gap-2.5 text-white/80">
                                 <Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-                                <span>Social-ready image downloads</span>
+                                <span>Share a link with a social card (sign-in required)</span>
                             </li>
                             <li className="flex items-start gap-2.5 text-white/80">
                                 <Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />

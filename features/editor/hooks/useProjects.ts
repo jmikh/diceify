@@ -95,6 +95,15 @@ export async function saveDraftAsProject(name: string): Promise<boolean> {
   }
 }
 
+/** Detach from the current project and reset the editor (the Start screen); the next photo creates the project. */
+export async function startNewProject(name: string = DEFAULT_PROJECT_NAME): Promise<void> {
+  await flushSave()
+  clearProject()
+  resetEditor(name)
+  markClean()
+  useEditorUiStore.getState().closeModal()
+}
+
 /**
  * Project actions for the UI (signed-in users only; the anonymous editor never calls these).
  * Every failure is a toast.
@@ -120,15 +129,6 @@ export function useProjects() {
     async (name: string): Promise<boolean> => (userId ? saveDraftAsProject(name) : false),
     [userId],
   )
-
-  /** Detach from the current project and reset the editor (the Start screen); the next photo creates the project. */
-  const startNewProject = useCallback(async (name: string = DEFAULT_PROJECT_NAME) => {
-    await flushSave()
-    clearProject()
-    resetEditor(name)
-    markClean()
-    useEditorUiStore.getState().closeModal()
-  }, [])
 
   const remove = useCallback(
     async (id: string) => {

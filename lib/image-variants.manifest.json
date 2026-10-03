@@ -1,0 +1,180 @@
+{
+  "/images/abstract/abstract.webp": {
+    "width": 600,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/abstract/pikachu.webp": {
+    "width": 448,
+    "variants": [
+      320
+    ]
+  },
+  "/images/abstract/sun.webp": {
+    "width": 600,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/abstract/tile1.webp": {
+    "width": 600,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/abstract/tile2.webp": {
+    "width": 600,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/abstract/woman.webp": {
+    "width": 450,
+    "variants": [
+      320
+    ]
+  },
+  "/images/blog/jeremy-dice-portrait.webp": {
+    "width": 1024,
+    "variants": [
+      320,
+      480,
+      640,
+      960
+    ]
+  },
+  "/images/blog/why-i-built-diceify.webp": {
+    "width": 1024,
+    "variants": [
+      320,
+      480,
+      640,
+      960
+    ]
+  },
+  "/images/dali-51x51.webp": {
+    "width": 600,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/dice-art/kids-50x50-black.webp": {
+    "width": 560,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/dice-art/kids-50x50-both.webp": {
+    "width": 560,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/dice-art/kids-50x50-white.webp": {
+    "width": 560,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/frida-54x54.webp": {
+    "width": 600,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/hero/couples-dice.webp": {
+    "width": 1240,
+    "variants": [
+      320,
+      480,
+      640
+    ]
+  },
+  "/images/hero/couples-photo.webp": {
+    "width": 1240,
+    "variants": [
+      320,
+      480,
+      640,
+      960
+    ]
+  },
+  "/images/hero/kids-dice.webp": {
+    "width": 1240,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/hero/kids-photo.webp": {
+    "width": 1240,
+    "variants": [
+      320,
+      480,
+      640,
+      960
+    ]
+  },
+  "/images/hero/pets-dice.webp": {
+    "width": 1240,
+    "variants": [
+      320,
+      480,
+      640
+    ]
+  },
+  "/images/hero/pets-photo.webp": {
+    "width": 1240,
+    "variants": [
+      320,
+      480,
+      640,
+      960
+    ]
+  },
+  "/images/kobe-71x71.webp": {
+    "width": 600,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/monalisa.webp": {
+    "width": 600,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/salah-61x61.webp": {
+    "width": 600,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/sharbatgula-52x52.webp": {
+    "width": 600,
+    "variants": [
+      320,
+      480
+    ]
+  },
+  "/images/ummkulthum58x58.webp": {
+    "width": 600,
+    "variants": [
+      320,
+      480
+    ]
+  }
+}

@@ -3,10 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npm run images:variants",
     "dev": "next dev",
+    "predev:local": "npm run images:variants",
     "dev:local": "next dev",
+    "predev:prod": "npm run images:variants",
     "dev:prod": "node --env-file=.env.prod.local node_modules/next/dist/bin/next dev",
+    "prebuild": "npm run images:variants",
     "build": "next build",
+    "prebuild:prod": "npm run images:variants",
     "build:prod": "node --env-file=.env.prod.local node_modules/next/dist/bin/next build",
     "start": "next start",
     "worker:dev": "wrangler dev",
@@ -27,6 +32,7 @@
     "functions:check": "deno check --config supabase/functions/deno.json supabase/functions/billing/index.ts supabase/functions/stripe-webhook/index.ts supabase/functions/account/index.ts supabase/functions/revenuecat-webhook/index.ts",
     "stripe:listen": "stripe listen --project-name diceify --forward-to http://127.0.0.1:54331/functions/v1/stripe-webhook",
     "gen-fixtures": "tsx scripts/gen-fixtures.ts",
+    "images:variants": "tsx scripts/gen-image-variants.ts",
     "migrate:legacy": "tsx scripts/migrate-from-prisma.ts",
     "backfill:grids": "tsx scripts/backfill-grids.ts"
   },

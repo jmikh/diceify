@@ -3,14 +3,12 @@ import type { Metadata } from 'next'
 import JsonLd from '@/components/JsonLd'
 import { pageGraph, webApplicationNode, websiteNode } from '@/lib/schema'
 import { DEFAULT_DESCRIPTION, pageMetadata } from '@/lib/seo'
-import Navbar from '@/features/marketing/components/Navbar'
 import Hero from '@/features/marketing/components/Hero'
 import DicePalette from '@/features/marketing/components/DicePalette'
 import Gallery from '@/features/marketing/components/Gallery'
 import BlogSection from '@/features/marketing/components/BlogSection'
 import Pricing from '@/features/marketing/components/Pricing'
 import FAQ from '@/features/marketing/components/FAQ'
-import Footer from '@/components/Footer'
 import { HashScrollHandler } from '@/features/marketing/components/HashScrollHandler'
 import DiceGridBackground from '@/features/marketing/components/DiceGridBackground'
 
@@ -34,7 +32,6 @@ export default function Home() {
 
       {/* Content */}
       <div className="relative z-[2] max-w-[1400px] mx-auto w-full">
-        <Navbar />
         <main>
           <Hero />
           <DicePalette />
@@ -45,7 +42,6 @@ export default function Home() {
           </Suspense>
           <FAQ />
         </main>
-        <Footer />
       </div>
     </>
   )

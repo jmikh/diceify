@@ -5,8 +5,8 @@ import { getVisibleBlogPosts } from '@/features/marketing/blog/data'
 import BlogCard from '@/features/marketing/components/BlogCard'
 
 export const metadata: Metadata = pageMetadata({
-    title: 'Blog',
-    description: 'Real dice art builds from the Diceify community and the people behind it: how the portraits were made, what worked, and what went wrong.',
+    title: 'Dice Art Blog: Builds, Tips & Gift Ideas',
+    description: 'Real dice art builds: how they were made, how many dice they took, and what went wrong. Plus tips for planning, gluing and hanging your own piece.',
     path: '/blog',
 })
 
@@ -16,17 +16,7 @@ export default function BlogPage() {
     return (
         <>
             {/* Content */}
-            <div className="relative z-[2] max-w-[1200px] mx-auto w-full px-6 py-12">
-                <Link
-                    href="/"
-                    className="inline-flex items-center gap-2 text-[var(--text-dim)] hover:text-[var(--pink)] transition-colors mb-8"
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M19 12H5M12 19l-7-7 7-7" />
-                    </svg>
-                    Back to Home
-                </Link>
-
+            <div className="marketing-page max-w-[1200px]">
                 <header className="text-center mb-12">
                     <span className="section-label">
                         <span className="w-2 h-2 bg-[var(--pink)] rounded-full"></span>

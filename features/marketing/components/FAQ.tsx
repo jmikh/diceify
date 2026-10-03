@@ -23,7 +23,7 @@ const FAQS: Faq[] = [
     },
     {
         question: 'Can I print or export the pattern?',
-        answer: 'On the free plan you can preview your pattern as an image (up to 1080 px), save it, and share a link with a social card. The Creator Pass and Studio add the full-resolution SVG blueprint download, which you can print at any size. There is no PDF export today.',
+        answer: 'On the free plan you get the full live preview and the exact black and white dice counts in the editor, and after signing in (free) you can share a link that shows your pattern on a social card. The Creator Pass and Studio add the full-resolution SVG blueprint download, which you can print at any size. There is no PDF export and no free image file download today.',
     },
     {
         question: 'Does it work on my phone?',

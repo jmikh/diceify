@@ -9,7 +9,7 @@ Key facts:
 - Build time: a 20×20 portrait (400 dice) takes 2–4 hours; a 40×40 (1,600 dice) about a full day.
 - Diceify grids run from 20 to 120 rows; controls: color mode (black, white, both), contrast, brightness, edge sharpening, crop.
 - The photo is processed in the browser; drafts made without an account stay on the device.
-- Plans: Explorer (free: generate, download images, builder for the first 5 rows), Creator ($19 one-time, 30 days of full access), Studio ($9/month or $36/year). Paid plans unlock the full builder and SVG blueprints.
+- Plans: Explorer (free: generate and tune with a full preview, exact dice counts, builder for the first 5 rows; sign in free to save projects and share a link with a social card), Creator ($19 one-time, 30 days of full access), Studio ($9/month or $36/year). Paid plans unlock the full builder and SVG blueprints.
 
 ## Guides
 - [Dice art: how to make it, dice count and size chart](https://diceify.art/dice-art): what dice art is, how many dice you need, finished size, which dice and glue to use, step-by-step build

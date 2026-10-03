@@ -34,6 +34,8 @@ declare global {
 export type AnalyticsEvents = {
   // Marketing
   go_to_editor: { source: string }
+  /** A photo dropped on / picked in the homepage hero, parked for the editor (`lib/pending-upload.ts`). */
+  hero_upload: { file_type: string; file_size: number; method: 'drop' | 'pick' }
   hub_click: { source: string }
   blog_click: { source: string; slug: string }
   unsupported_login_provider_click: { provider: string }

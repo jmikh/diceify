@@ -26,6 +26,9 @@ export default function BlogCard({ post, source = 'blog', compact = false }: Blo
                         src={post.featuredImage}
                         alt={post.title}
                         fill
+                        // One column below md (full width minus the page gutters), two columns to lg (/blog page and the
+                        // landing's 700 px grid), then at most ~370 px (/blog: 3 columns in a 1200 px container).
+                        sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 380px"
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                 ) : (

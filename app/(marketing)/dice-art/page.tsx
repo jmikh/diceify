@@ -130,17 +130,7 @@ export default function DiceArtPage() {
             <JsonLd data={breadcrumbJsonLd} />
             <JsonLd data={furtherReadingJsonLd} />
 
-            <div className="relative z-[2] max-w-[800px] mx-auto w-full px-6 py-12">
-                <Link
-                    href="/"
-                    className="inline-flex items-center gap-2 text-[var(--text-dim)] hover:text-[var(--pink)] transition-colors mb-8"
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M19 12H5M12 19l-7-7 7-7" />
-                    </svg>
-                    Back to Home
-                </Link>
-
+            <div className="marketing-page max-w-[800px]">
                 <article className="blog-article">
                     <header className="mb-8">
                         <span className="section-label">
@@ -457,7 +447,7 @@ export default function DiceArtPage() {
                         <ul>
                             <li>
                                 <strong>Free (Explorer):</strong> upload any photo, tune the grid with a full live
-                                preview, read off the exact black and white dice counts, download an image to share,
+                                preview, read off the exact black and white dice counts, share a link with a social card once signed in,
                                 and use the builder for the first {FREE_BUILDER_ROWS} rows. Sign in (free) to save
                                 projects to your account and open them on another device. No account is needed to
                                 try it.
@@ -527,12 +517,6 @@ export default function DiceArtPage() {
                         </p>
                     </div>
                 </article>
-
-                <div className="mt-12 text-center">
-                    <Link href="/" className="btn-secondary">
-                        ← Back to Home
-                    </Link>
-                </div>
             </div>
         </>
     )

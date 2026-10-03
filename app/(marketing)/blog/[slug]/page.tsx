@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import JsonLd from '@/components/JsonLd'
 import { pageMetadata, SITE_URL } from '@/lib/seo'
+import { ABOUT_URL, ORGANIZATION_REF, SCHEMA_IDS } from '@/lib/schema'
 import { getBlogBySlug, getAllBlogSlugs, formatPostDate, type BlogAuthor } from '@/features/marketing/blog/data'
 
 // Blog content components
@@ -37,12 +38,19 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
             description: post.description,
             path: `/blog/${slug}`,
             article: { publishedTime: post.date, authors: [post.author.name] },
+            image: { url: post.featuredImage, alt: post.title },
         }),
         authors: [{ name: post.author.name, url: post.author.url }],
     }
 }
 
-const schemaPerson = ({ type, name, url }: BlogAuthor) => ({ "@type": type, "name": name, ...(url && { "url": url }) })
+// The founder is the site-wide Person entity (root layout): reference it by @id instead of a second Person node.
+const schemaPerson = ({ type, name, url }: BlogAuthor) => ({
+    "@type": type,
+    ...(url === ABOUT_URL && { "@id": SCHEMA_IDS.founder }),
+    "name": name,
+    ...(url && { "url": url }),
+})
 
 function AuthorLink({ author }: { author: BlogAuthor }) {
     if (!author.url) return <>{author.name}</>
@@ -85,24 +93,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
         "dateModified": post.dateModified ?? post.date,
         "author": schemaPerson(post.author),
         ...(post.contributor && { "contributor": schemaPerson(post.contributor) }),
-        "publisher": {
-            "@type": "Organization",
-            "name": "Diceify",
-            "url": SITE_URL,
-            "logo": {
-                "@type": "ImageObject",
-                "url": `${SITE_URL}/logo-full.svg`,
-                "creator": {
-                    "@type": "Organization",
-                    "name": "Diceify",
-                    "url": SITE_URL
-                },
-                "copyrightNotice": `© ${new Date().getUTCFullYear()} Diceify. All rights reserved.`,
-                "creditText": "Created with Diceify (diceify.art)",
-                "license": `${SITE_URL}/terms`,
-                "acquireLicensePage": `${SITE_URL}/terms`
-            }
-        },
+        "publisher": ORGANIZATION_REF,
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": postUrl
@@ -129,7 +120,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
             />
 
             {/* Content */}
-            <div className="relative z-[2] max-w-[800px] mx-auto w-full px-6 py-12">
+            <div className="marketing-page max-w-[800px]">
                 <Link
                     href="/blog"
                     className="inline-flex items-center gap-2 text-[var(--text-dim)] hover:text-[var(--pink)] transition-colors mb-8"

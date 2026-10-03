@@ -110,7 +110,6 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png',
     shortcut: '/favicon.ico',
   },
-  manifest: '/manifest.json',
 }
 
 export default function RootLayout({
@@ -120,6 +119,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${outfit.variable} ${syne.variable}`}>
+      <head>
+        {/* Rendered by hand: Next's `metadata.manifest` adds crossorigin="use-credentials", which this public file does not want. */}
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body className={outfit.className}>
         {/* Organization + founder on every page; the homepage adds WebSite and WebApplication (lib/schema.ts). */}
         <JsonLd data={siteGraph()} />

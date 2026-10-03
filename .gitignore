@@ -70,3 +70,6 @@ ios/**/DerivedData/
 ios/**/.build/
 ios/**/*.xcuserstate
 ios/**/.swiftpm/
+
+# Responsive image variants (npm run images:variants, runs as prebuild/predev; lib/image-variants.manifest.json is committed)
+public/images/**/*.w[0-9]*.webp

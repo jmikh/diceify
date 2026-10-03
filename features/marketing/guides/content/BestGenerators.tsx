@@ -126,8 +126,9 @@ export default function BestGenerators() {
             <SectionHeading section={S['where-diceify-falls-short']} />
             <ul>
                 <li>
-                    <strong>No PDF export.</strong> Diceify gives you an image download for free and a vector SVG
-                    blueprint on a paid plan. If you want a printed, paginated pattern with coordinates to tick off at
+                    <strong>No PDF export.</strong> Diceify gives you a live preview and exact dice counts for free, a
+                    shareable social card after a free sign-in, and a vector SVG blueprint on a paid plan; there is no
+                    free image file download. If you want a printed, paginated pattern with coordinates to tick off at
                     the workbench, diceartgenerator.io offers that today and Diceify does not.
                 </li>
                 <li>

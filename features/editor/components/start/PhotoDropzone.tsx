@@ -3,6 +3,7 @@
 import { useDropzone } from 'react-dropzone'
 import { ImagePlus, Loader2, Upload } from 'lucide-react'
 import { NO_CAPTURE_CLASS } from '@/lib/analytics'
+import { ACCEPTED_FORMATS_LABEL, DROPZONE_ACCEPT } from '@/lib/image/accept'
 import { useStartProject } from '@/features/editor/hooks/useStartProject'
 import { primaryButton } from '../common/ui'
 
@@ -14,7 +15,7 @@ export default function PhotoDropzone() {
     onDrop: (files) => {
       if (files[0]) void start(files[0])
     },
-    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] },
+    accept: DROPZONE_ACCEPT,
     maxFiles: 1,
     disabled: isProcessing,
   })
@@ -44,7 +45,7 @@ export default function PhotoDropzone() {
             </>
           )}
         </span>
-        <span className="text-sm text-white/60">PNG, JPG or WEBP</span>
+        <span className="text-sm text-white/60">{ACCEPTED_FORMATS_LABEL}</span>
       </span>
       <span className={`${primaryButton} h-11 px-5 text-[15px] hidden lg:inline-flex`} aria-hidden>
         <Upload size={18} />

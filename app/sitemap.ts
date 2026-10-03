@@ -22,7 +22,7 @@ const STATIC_PAGES: { path: string; lastModified: string }[] = [
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     ...STATIC_PAGES.map(({ path, lastModified }) => ({ url: pageUrl(path), lastModified })),
-    // Blog posts keep their real publication date
-    ...blogPosts.map((post) => ({ url: pageUrl(`/blog/${post.slug}`), lastModified: post.date })),
+    // Blog posts: the last substantive edit, else the publication date
+    ...blogPosts.map((post) => ({ url: pageUrl(`/blog/${post.slug}`), lastModified: new Date(post.dateModified ?? post.date) })),
   ]
 }

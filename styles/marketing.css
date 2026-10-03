@@ -25,6 +25,25 @@
 }
 
 /* =============================================================================
+   PAGE FRAME: the content column of every marketing page except the landing page.
+   The navbar (app/(marketing)/layout.tsx) is fixed, so the top padding clears it.
+   Pages add their own max-width (max-w-[800px] etc.).
+   ============================================================================= */
+.marketing-page {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin: 0 auto;
+  padding: 7rem 1.5rem 3rem;
+}
+
+@media (min-width: 768px) {
+  .marketing-page {
+    padding-top: 8rem;
+  }
+}
+
+/* =============================================================================
    LANDING PAGE - HERO SECTION
    ============================================================================= */
 

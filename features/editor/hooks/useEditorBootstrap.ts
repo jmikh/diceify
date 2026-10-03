@@ -5,11 +5,13 @@ import { useUser } from '@/features/account/useUser'
 import { markClean } from '@/features/editor/store/autosave'
 import { track } from '@/lib/analytics'
 import { reportError } from '@/lib/report-error'
+import { takePendingUpload } from '@/lib/pending-upload'
 import { readDraft, readDraftImage } from '@/features/editor/store/draft'
 import { clearProject, loadDraftIntoEditor, resetEditor } from '@/features/editor/store/editor'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 import { useProjectStore } from '@/features/editor/store/useProjectStore'
 import { loadProject, refreshProjects, saveDraftAsProject } from './useProjects'
+import { startProjectFromFile } from './useStartProject'
 
 /** Restore the local draft into the stores. False when there is none (a document without its image is no draft). */
 async function hydrateDraft(): Promise<boolean> {
@@ -43,6 +45,22 @@ async function bootSignedIn(projectParam: string | null): Promise<void> {
   if (!useProjectStore.getState().projectId && projects.length > 0) await loadProject(projects[0].id)
 }
 
+/**
+ * A photo parked by the homepage hero (`lib/pending-upload.ts`) starts a project, exactly as the Start screen's
+ * dropzone would — unless an anonymous visitor has a draft here (a new photo would silently replace it: the Start
+ * screen shows the draft and warns instead), or the arrival asked for a project (`?project=`, never hijacked).
+ * The slot was already cleared by `takePendingUpload`, so a reload never replays the photo.
+ */
+async function applyPendingUpload(file: File, signedIn: boolean, projectParam: string | null): Promise<void> {
+  if (projectParam) return
+  const anonymousDraft = !signedIn && useProjectStore.getState().imageBlob !== null
+  if (anonymousDraft) {
+    toast.info('You have an unsaved draft here. Continue it, or choose your new photo again to replace it.')
+    return
+  }
+  await startProjectFromFile(file, signedIn)
+}
+
 function editorUrl(projectId: string | null): string {
   return projectId ? `/editor?project=${encodeURIComponent(projectId)}` : '/editor'
 }
@@ -52,6 +70,7 @@ function editorUrl(projectId: string | null): string {
  *   anonymous  → a `?project=` is stripped; the local draft is restored (none → the Start screen)
  *   signed in  → the local draft is restored (back from OAuth with `?restored=true`, or left over from a failed save),
  *                then `bootSignedIn`
+ *   either     → then a photo parked by the homepage hero starts a project (`applyPendingUpload`)
  * Ends with `markClean()` + `boot = 'ready'`. Afterwards `?project=` follows the current project id.
  */
 export function useEditorBootstrap() {
@@ -67,13 +86,18 @@ export function useEditorBootstrap() {
     const projectParam = params.get('project')
 
     const boot = async () => {
+      const signedIn = status === 'authed'
+      // Taken first (and thereby cleared) so it is consumed exactly once, whatever the rest of the boot decides
+      const pending = await takePendingUpload()
       // A draft is offered to a signed-in user too (not only on `?restored=true`): it exists after sign-in and
       // after a failed "save as project" (plan limit, offline), and opening a project would discard it.
       await hydrateDraft()
-      if (status === 'authed') await bootSignedIn(projectParam)
+      if (signedIn) await bootSignedIn(projectParam)
       markClean()
+      // `restored` describes what was already here; the parked photo then reports itself as `photo_uploaded`
+      track('editor_opened', { signed_in: signedIn, restored: useProjectStore.getState().imageBlob !== null })
+      if (pending) await applyPendingUpload(pending, signedIn, projectParam)
       useProjectStore.getState().setBoot('ready')
-      track('editor_opened', { signed_in: status === 'authed', restored: useProjectStore.getState().imageBlob !== null })
       // Whatever the arrival URL said, it now reflects the outcome (strips ?restored and a stale ?project)
       router.replace(editorUrl(useProjectStore.getState().projectId), { scroll: false })
     }

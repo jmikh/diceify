@@ -1,6 +1,12 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { type ImageManifest, imageSrcSet } from '@/lib/image-variants'
+import manifest from '@/lib/image-variants.manifest.json'
+
+/** Both images fill the hero column: ~90vw on phones, 541 px on desktop (see .hero-portrait in marketing.css). */
+const SIZES = '(max-width: 768px) 90vw, 541px'
+const images: ImageManifest = manifest
 
 /** Seconds for the lens to close most of the gap to the pointer (larger = lazier follow). */
 const FOLLOW_SECONDS = 0.35
@@ -87,8 +93,28 @@ export default function DiceLens({ dice, photo, alt, width, height }: DiceLensPr
 
     return (
         <div ref={frameRef} className="dice-lens">
-            <img src={dice} alt={alt} width={width} height={height} className="dice-lens-base" fetchPriority="high" />
-            <img src={photo} alt="" width={width} height={height} className="dice-lens-reveal" fetchPriority="high" />
+            {/* The dice art is the hero visual: fetch it first. The photo shows through the lens from the first paint
+                (the lens starts in the middle), so it stays eager, but at default priority: it must not compete with
+                the dice or the LCP text. */}
+            <img
+                src={dice}
+                srcSet={imageSrcSet(dice, images)}
+                sizes={SIZES}
+                alt={alt}
+                width={width}
+                height={height}
+                className="dice-lens-base"
+                fetchPriority="high"
+            />
+            <img
+                src={photo}
+                srcSet={imageSrcSet(photo, images)}
+                sizes={SIZES}
+                alt=""
+                width={width}
+                height={height}
+                className="dice-lens-reveal"
+            />
             <div ref={ringRef} className="dice-lens-ring" aria-hidden="true" />
         </div>
     )

@@ -71,7 +71,7 @@ export default function GuidePage({ guide, lead, children, cta }: GuidePageProps
             <JsonLd data={articleJsonLd(guide)} />
             <JsonLd data={breadcrumbJsonLd(guide)} />
 
-            <div className="relative z-[2] max-w-[800px] mx-auto w-full px-6 py-12">
+            <div className="marketing-page max-w-[800px]">
                 <nav aria-label="Breadcrumb" className="mb-8 text-sm text-[var(--text-dim)]">
                     <ol className="flex flex-wrap items-center gap-2">
                         <li><Link href="/" className="hover:text-[var(--pink)] transition-colors">Home</Link></li>
