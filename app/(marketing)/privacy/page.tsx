@@ -17,7 +17,7 @@ export default function PrivacyPage() {
                         Privacy Policy
                     </h1>
                     <p className="text-[var(--text-dim)] mb-8">
-                        Last updated: October 3, 2026
+                        Last updated: October 5, 2026
                     </p>
 
                     <div className="space-y-8 text-[var(--text-secondary)]">
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
                                 1. Introduction
                             </h2>
                             <p>
-                                Welcome to Diceify ("we," "our," or "us"). We respect your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our dice mosaic art generator service at diceify.art (the "Service").
+                                Welcome to Diceify ("we," "our," or "us"). We respect your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our dice mosaic art generator at diceify.art and in the Diceify iOS app (together, the "Service").
                             </p>
                         </section>
 
@@ -36,15 +36,14 @@ export default function PrivacyPage() {
                             </h2>
 
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
-                                2.1 Information from Google Sign-In
+                                2.1 Information from Sign-In
                             </h3>
                             <p className="mb-3">
-                                When you sign in with Google, we receive and store the following information from your Google account:
+                                You can sign in with Google or with Apple. We receive and store:
                             </p>
                             <ul className="list-disc list-inside space-y-1 ml-4">
-                                <li>Your email address</li>
-                                <li>Your name</li>
-                                <li>Your profile picture</li>
+                                <li><strong>Google:</strong> your email address, your name and your profile picture</li>
+                                <li><strong>Apple:</strong> your email address (a private relay address if you choose Hide My Email) and the name you choose to share</li>
                             </ul>
                             <p className="mt-3">
                                 We use this information to create and manage your account, personalize your experience, and communicate with you about your account.
@@ -63,10 +62,13 @@ export default function PrivacyPage() {
                                 <li>Build progress data</li>
                             </ul>
                             <p className="mt-3">
-                                Your images are converted into dice patterns in your browser. Project data is stored only when you are signed in: it is saved to your account (database and file storage provided by Supabase) so you can continue your work across devices.
+                                Your images are converted into dice patterns on your device, in your browser or in the iOS app. Project data is stored only when you are signed in: it is saved to your account (database and file storage provided by Supabase) so you can continue your work across devices.
                             </p>
                             <p className="mt-3">
-                                <strong>Without an account:</strong> if you use the editor without signing in, your draft stays in your browser. The project settings are kept in your browser's local storage and the photo in its IndexedDB database. Nothing is uploaded to us until you sign in and save the project to your account.
+                                <strong>Without an account:</strong> if you use the editor without signing in, your draft stays on your device. On the website, the project settings are kept in your browser's local storage and the photo in its IndexedDB database; in the iOS app, both are kept in the app's own storage. Nothing is uploaded to us until you sign in and save the project to your account.
+                            </p>
+                            <p className="mt-3">
+                                <strong>Photos in the iOS app:</strong> you choose a photo with the system photo picker, which gives the app only the photo you pick, or take one with the camera, which asks for your permission first.
                             </p>
                             <p className="mt-3">
                                 <strong>Share links:</strong> when you create a share link, the dice-pattern card for that share is public to anyone who has the link. It contains the dice pattern, not your original photo.
@@ -76,7 +78,10 @@ export default function PrivacyPage() {
                                 2.3 Payment Information
                             </h3>
                             <p>
-                                If you purchase a subscription or a Creator Pass, payment processing is handled securely by Stripe. We do not store your credit card details. We store a Stripe customer ID and the status and dates of your purchase or subscription to manage your access.
+                                If you purchase a subscription or a Creator Pass on the website, payment processing is handled securely by Stripe. We do not store your credit card details. We store a Stripe customer ID and the status and dates of your purchase or subscription to manage your access.
+                            </p>
+                            <p className="mt-3">
+                                Subscriptions bought in the iOS app are processed by Apple and charged to your Apple ID; we never see your payment details. RevenueCat, the service we use to verify App Store purchases, receives your account ID and the purchase receipt, and we store the product, its expiry date and whether it renews.
                             </p>
 
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
@@ -87,7 +92,7 @@ export default function PrivacyPage() {
                             </p>
                             <ul className="list-disc list-inside space-y-1 ml-4">
                                 <li><strong>Google Analytics 4:</strong> pages visited, the steps of the editor you use, and general usage patterns.</li>
-                                <li><strong>PostHog:</strong> product analytics (the same kind of events) and session replay, which records clicks, scrolling and page changes for some visits. Photos you upload and the dice previews generated from them are masked and never appear in a recording.</li>
+                                <li><strong>PostHog:</strong> product analytics (the same kind of events) and session replay, which records clicks, scrolling and page changes for some visits. Photos you upload and the dice previews generated from them are masked and never appear in a recording. The iOS app sends PostHog the same product events, without session replay, and does not use Google Analytics.</li>
                                 <li><strong>Cloudflare:</strong> hosts the site and serves it through its network; its Web Analytics beacon measures page loads.</li>
                                 <li><strong>Sentry:</strong> receives error reports from your browser when something in the Service fails.</li>
                             </ul>
@@ -129,7 +134,7 @@ export default function PrivacyPage() {
                                 We do not sell your personal data. We may share your information with:
                             </p>
                             <ul className="list-disc list-inside space-y-1 ml-4">
-                                <li><strong>Service Providers:</strong> Third-party services that process data on our behalf to operate the Service: Supabase (authentication, database and file storage for saved projects), Stripe (payments), Cloudflare (hosting, content delivery and web analytics), Google Analytics 4 and PostHog (analytics and session replay), and Sentry (error reporting)</li>
+                                <li><strong>Service Providers:</strong> Third-party services that process data on our behalf to operate the Service: Supabase (authentication, database and file storage for saved projects), Stripe (payments on the website), Apple (Sign in with Apple and App Store payments), RevenueCat (App Store purchase verification), Cloudflare (hosting, content delivery and web analytics), Google Analytics 4 and PostHog (analytics and session replay), and Sentry (error reporting)</li>
                                 <li><strong>Legal Requirements:</strong> When required by law or to protect our rights</li>
                             </ul>
                         </section>
@@ -139,7 +144,7 @@ export default function PrivacyPage() {
                                 6. Data Retention
                             </h2>
                             <p>
-                                We retain your account data and projects for as long as your account exists. You can delete your account at any time from your account page: this immediately deletes your profile, projects, uploaded images and share cards from our systems and cancels any active subscription. Payment records are kept by Stripe as required for accounting and legal purposes, and analytics and error data are retained by the services listed in Section 2.4 according to their own retention settings.
+                                We retain your account data and projects for as long as your account exists. You can delete your account at any time from the account page on the website or in the app: this immediately deletes your profile, projects, uploaded images and share cards from our systems and cancels an active subscription bought on the website. A subscription bought in the iOS app is billed by Apple and keeps renewing until you cancel it in your Apple ID's subscription settings. Payment records are kept by Stripe, Apple and RevenueCat as required for accounting and legal purposes, and analytics and error data are retained by the services listed in Section 2.4 according to their own retention settings.
                             </p>
                         </section>
 
@@ -165,7 +170,7 @@ export default function PrivacyPage() {
                                 8. Cookies
                             </h2>
                             <p>
-                                We use your browser's local storage to maintain your sign-in session and, for anonymous visitors, your draft. The analytics services in Section 2.4 set their own cookies or local storage to recognize returning visitors. You can control cookies and site data through your browser preferences.
+                                We use your browser's local storage to maintain your sign-in session and, for anonymous visitors, your draft. The analytics services in Section 2.4 set their own cookies or local storage to recognize returning visitors. You can control cookies and site data through your browser preferences. In the iOS app, your sign-in session is kept in the device's Keychain and your draft in the app's own storage; deleting the app removes the draft.
                             </p>
                         </section>
 

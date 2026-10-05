@@ -17,7 +17,7 @@ export default function TermsPage() {
                         Terms of Service
                     </h1>
                     <p className="text-[var(--text-dim)] mb-8">
-                        Last updated: October 3, 2026
+                        Last updated: October 5, 2026
                     </p>
 
                     <div className="space-y-8 text-[var(--text-secondary)]">
@@ -26,7 +26,7 @@ export default function TermsPage() {
                                 1. Acceptance of Terms
                             </h2>
                             <p>
-                                By accessing or using Diceify at diceify.art (the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the Service. We reserve the right to modify these Terms at any time, and your continued use of the Service constitutes acceptance of any changes.
+                                By accessing or using Diceify at diceify.art or in the Diceify iOS app (the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the Service. We reserve the right to modify these Terms at any time, and your continued use of the Service constitutes acceptance of any changes.
                             </p>
                         </section>
 
@@ -35,7 +35,7 @@ export default function TermsPage() {
                                 2. Description of Service
                             </h2>
                             <p>
-                                Diceify is a web-based tool that transforms digital photos into dice mosaic art patterns. The Service allows users to upload images, customize dice configurations, generate building blueprints, and export their creations. We offer both free and paid (Pro) tiers with different feature sets.
+                                Diceify is a web-based tool and iOS app that transforms digital photos into dice mosaic art patterns. The Service allows users to upload images, customize dice configurations, generate building blueprints, and export their creations. We offer both free and paid (Pro) tiers with different feature sets.
                             </p>
                         </section>
 
@@ -44,7 +44,7 @@ export default function TermsPage() {
                                 3. User Accounts
                             </h2>
                             <p className="mb-3">
-                                To access certain features, you must create an account using Google Sign-In. You agree to:
+                                To access certain features, you must create an account with Google Sign-In or Sign in with Apple. You agree to:
                             </p>
                             <ul className="list-disc list-inside space-y-1 ml-4">
                                 <li>Provide accurate and complete information</li>
@@ -90,7 +90,7 @@ export default function TermsPage() {
                                 4.4 Creator Pass ($19 one-time)
                             </h3>
                             <p>
-                                The Creator Pass is a one-time purchase that grants access to all premium features for 30 days from the time of purchase. It does not renew: when the 30 days end, your account returns to the Explorer tier unless you purchase another pass or a subscription.
+                                The Creator Pass is a one-time purchase that grants access to all premium features for 30 days from the time of purchase. It does not renew: when the 30 days end, your account returns to the Explorer tier unless you purchase another pass or a subscription. The Creator Pass is sold on the website only.
                             </p>
 
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
@@ -106,7 +106,7 @@ export default function TermsPage() {
                                 5. Payments and Refunds
                             </h2>
                             <p className="mb-3">
-                                All payments are processed securely through Stripe. By purchasing a subscription or Creator Pass, you agree to:
+                                Payments on the website are processed securely through Stripe. By purchasing a subscription or Creator Pass on the website, you agree to:
                             </p>
                             <ul className="list-disc list-inside space-y-1 ml-4">
                                 <li>Pay the fee as displayed at the time of purchase (Monthly: $9/month, Yearly: $36/year, or Creator Pass: $19 one-time)</li>
@@ -114,16 +114,22 @@ export default function TermsPage() {
                                 <li>For subscriptions, authorize recurring charges until you cancel</li>
                             </ul>
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
-                                5.1 Cancellation
+                                5.1 Purchases in the iOS App
                             </h3>
                             <p className="mb-3">
-                                You may cancel your subscription at any time from your account page or through the Stripe Customer Portal. Upon cancellation, you will retain access to premium features until the end of your current billing period. No refunds are provided for partial billing periods. A Creator Pass is not a subscription: there is nothing to cancel, and access ends automatically 30 days after purchase. Creator Pass purchases are non-refundable except as described in Section 5.2.
+                                Studio subscriptions bought in the iOS app are sold and billed by Apple through your Apple ID, at the price shown in the app in your local currency, and are also subject to Apple's Media Services Terms and Conditions. Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at the same price for the same period unless auto-renew is turned off at least 24 hours before the end of the current period; your Apple ID is charged for the renewal within the 24 hours before the period ends. You can manage the subscription and turn off auto-renew in your Apple ID's subscription settings (Settings → your name → Subscriptions).
                             </p>
                             <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
-                                5.2 Refunds
+                                5.2 Cancellation
+                            </h3>
+                            <p className="mb-3">
+                                You may cancel a subscription bought on the website at any time from your account page or through the Stripe Customer Portal. A subscription bought in the iOS app is cancelled in your Apple ID's subscription settings, not from your Diceify account page. Upon cancellation, you will retain access to premium features until the end of your current billing period. No refunds are provided for partial billing periods. A Creator Pass is not a subscription: there is nothing to cancel, and access ends automatically 30 days after purchase. Creator Pass purchases are non-refundable except as described in Section 5.3.
+                            </p>
+                            <h3 className="text-lg font-medium text-[var(--text-primary)] mt-4 mb-2">
+                                5.3 Refunds
                             </h3>
                             <p>
-                                Refunds for subscriptions and Creator Pass purchases may be provided at our discretion within 7 days of purchase if you have not substantially used premium features. To request a refund, contact us at support@diceify.art.
+                                Refunds for subscriptions and Creator Pass purchases made on the website may be provided at our discretion within 7 days of purchase if you have not substantially used premium features. To request a refund, contact us at support@diceify.art. Refunds for purchases made in the iOS app are handled by Apple: request one at reportaproblem.apple.com.
                             </p>
                         </section>
 
@@ -222,7 +228,7 @@ export default function TermsPage() {
                                 13. Termination
                             </h2>
                             <p>
-                                You may terminate your account at any time by contacting us. We may suspend or terminate your access to the Service at any time for any reason, including violation of these Terms. Upon termination, your right to use the Service ceases immediately, and we may delete your account data in accordance with our Privacy Policy.
+                                You may delete your account at any time from the account page on the website or in the app, or by contacting us. We may suspend or terminate your access to the Service at any time for any reason, including violation of these Terms. Upon termination, your right to use the Service ceases immediately, and we may delete your account data in accordance with our Privacy Policy.
                             </p>
                         </section>
 
