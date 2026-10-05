@@ -484,3 +484,11 @@ Claude: `ios/` skeleton, `.gitignore` additions (`ios/**/xcuserdata`, `DerivedDa
   recomputes both accounts of a RevenueCat TRANSFER. Test Store instead of a `.storekit` file. 43 app tests; purchase
   round trip and TRANSFER verified on the local stack against a fake RevenueCat API. User: App Store Connect products +
   Paid Apps agreement, RevenueCat project/keys/webhook, Supabase secrets, keys into the xcconfigs, a TestFlight try.
+- **Step 6 store setup (2026-10-04/05, done except the Paid Apps agreement)** — RevenueCat project, offering, webhook,
+  keys and Supabase secrets set; App Store subscriptions Ready to Submit ($9 / $36); app installed on the user's
+  iPhone (Release, hosted): Apple + Google sign-in work after a Google nonce fix and the iOS client id on the hosted
+  provider. Products load once the Paid Apps agreement is active.
+- **Step 7 (2026-10-05, repo side done on branch `ios-launch`)** — `plans/ios/ios-step-7.md`. Privacy manifest,
+  version 1.0 driven by `project.yml`, `/privacy` + `/terms` for the app, 6.9" screenshots, listing text, App Privacy
+  answers and review notes; Tune preview centred on tall screens. Next: merge + deploy the web, upload the build,
+  the user's App Store Connect entries, submit.

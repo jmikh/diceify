@@ -105,7 +105,13 @@ struct StartScreen: View {
             }
             if let at = args.firstIndex(of: "--ui-import"), at + 1 < args.count {
                 let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(args[at + 1])
-                if let data = try? Data(contentsOf: url) { Task { await importPhoto(data) } }
+                // after the stored session is restored, so a signed-in import becomes a cloud project
+                if let data = try? Data(contentsOf: url) {
+                    Task {
+                        while session.status == .loading { try? await Task.sleep(for: .milliseconds(100)) }
+                        await importPhoto(data)
+                    }
+                }
             }
             #endif
         }

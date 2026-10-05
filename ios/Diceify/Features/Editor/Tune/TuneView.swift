@@ -11,19 +11,23 @@ struct TuneView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             Color.bgDeep
-            if let preview = model.preview {
-                Image(decorative: preview, scale: 1)
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFit()
-                    .padding(.bottom, Self.stripHeight)
-                    .opacity(model.isGenerating ? 0.6 : 1)
-                    .animation(.easeOut(duration: 0.2), value: model.isGenerating)
-            } else if let error = model.generationError {
-                Text(error).foregroundStyle(.red)
-            } else {
-                ProgressView()
+            // Centred in the space above the strip (the stack's bottom alignment is for the strip only)
+            Group {
+                if let preview = model.preview {
+                    Image(decorative: preview, scale: 1)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                        .opacity(model.isGenerating ? 0.6 : 1)
+                        .animation(.easeOut(duration: 0.2), value: model.isGenerating)
+                } else if let error = model.generationError {
+                    Text(error).foregroundStyle(.red)
+                } else {
+                    ProgressView()
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.bottom, Self.stripHeight)
             HStack(spacing: 18) {
                 count(model.stats.blackCount, "black", swatch: .black)
                 count(model.stats.whiteCount, "white", swatch: .white)
