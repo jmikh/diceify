@@ -40,6 +40,14 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Take a photo to turn into dice art.</string>
+	<key>POSTHOG_HOST</key>
+	<string>$(POSTHOG_HOST)</string>
+	<key>POSTHOG_KEY</key>
+	<string>$(POSTHOG_KEY)</string>
+	<key>REVENUECAT_API_KEY</key>
+	<string>$(REVENUECAT_API_KEY)</string>
+	<key>SENTRY_DSN</key>
+	<string>$(SENTRY_DSN)</string>
 	<key>SUPABASE_ANON_KEY</key>
 	<string>$(SUPABASE_ANON_KEY)</string>
 	<key>SUPABASE_URL</key>

@@ -14,7 +14,7 @@ import UIKit
 /// `session.user` / `session.entitlements`, never the Supabase session directly.
 @MainActor
 @Observable
-final class AppSession {
+final class AppSession: BillingAccount {
     enum Status: Equatable { case loading, anon, authed }
 
     struct UserInfo: Equatable, Sendable {
@@ -32,11 +32,20 @@ final class AppSession {
     private(set) var entitlements: Entitlements = EXPLORER_ENTITLEMENTS
     /// The last sign-in failure, shown by the sign-in sheet.
     var signInError: String?
+    /// The App Store side (RevenueCat; a fake in tests and with `--ui-fake-store`). Follows the signed-in user.
+    let store: PurchaseBackend
 
     private let auth = SupabaseService.client.auth
     private var listening = false
     /// The raw nonce of the Sign in with Apple request in flight (its SHA-256 went to Apple).
     private var appleNonce: String?
+
+    init(store: PurchaseBackend = RevenueCatStore.shared) {
+        self.store = store
+    }
+
+    /// The signed-in user's id (BillingAccount).
+    var userId: UUID? { status == .authed ? user?.id : nil }
 
     // MARK: Lifecycle
 
@@ -59,6 +68,11 @@ final class AppSession {
 
     private func load(_ session: Session?) async {
         guard let session else {
+            if user != nil {
+                Analytics.reset()
+                ErrorReporting.setUser(nil)
+                Task { [store] in await store.identify(nil) }
+            }
             user = nil
             profile = nil
             entitlements = EXPLORER_ENTITLEMENTS
@@ -72,6 +86,7 @@ final class AppSession {
             log.error("profile fetch failed, using explorer entitlements: \(String(describing: error), privacy: .public)")
         }
         let meta = session.user.userMetadata
+        if user?.id != session.user.id { Task { [store] in await store.identify(session.user.id) } }
         user = UserInfo(
             id: session.user.id,
             email: session.user.email ?? row?.email,
@@ -82,6 +97,8 @@ final class AppSession {
         profile = row
         entitlements = row.map { deriveEntitlements($0.billingState, now: Date()) } ?? EXPLORER_ENTITLEMENTS
         status = .authed
+        Analytics.identify(userId: session.user.id, plan: entitlements.plan.rawValue)
+        ErrorReporting.setUser(session.user.id)
     }
 
     private func fetchProfile() async throws -> ProfileRow? {
@@ -93,6 +110,20 @@ final class AppSession {
     func refreshProfile() async {
         guard let session = try? await auth.session else { return }
         await load(session)
+    }
+
+    /// After an App Store purchase or restore: the server recomputes the `apple_*` columns from RevenueCat
+    /// (`billing/apple-sync`), then the profile is reloaded — also when the call failed, since the webhook may have
+    /// written them already.
+    func syncAppleBilling() async throws {
+        struct Synced: Decodable {}
+        do {
+            let _: Synced = try await EdgeFunctions.invoke("billing", "apple-sync")
+        } catch {
+            await refreshProfile()
+            throw error
+        }
+        await refreshProfile()
     }
 
     // MARK: Sign in

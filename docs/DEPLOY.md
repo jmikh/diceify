@@ -284,12 +284,37 @@ mirrored by SQL `effective_plan`).
   (any long random string; paste the same value as the webhook's "Authorization header value" in RevenueCat →
   Integrations → Webhooks, URL `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook`). Optional
   `REVENUECAT_API_URL` (tests only). Both webhook and route honour sandbox purchases (App Review buys in the sandbox).
-- **Products** (App Store Connect → the app → Subscriptions / In-App Purchases): auto-renewable `studio_monthly`, `studio_yearly`
-  in one subscription group "Studio"; non-renewing `creator_30d`. Product ids starting with `studio`/`creator` (after an
-  optional reverse-DNS prefix) are what `_shared/apple-snapshot.ts` recognises; the pass length is the 30 days of
-  `PRICING.creator.accessDays`.
+- **Products** (App Store Connect → the app → Subscriptions): auto-renewable `studio_monthly`, `studio_yearly` in one
+  subscription group "Studio". The app sells Studio only (the Creator pass is web-only for now; a web pass is honoured in
+  the app). Product ids starting with `studio`/`creator` (after an optional reverse-DNS prefix) are what
+  `_shared/apple-snapshot.ts` recognises, so a non-renewing `creator_30d` (30 days, `PRICING.creator.accessDays`) can be
+  added later without server changes.
 - Local check without RevenueCat: `supabase/functions/_shared/apple-sync.integration.test.ts` (stubbed subscriber) and the
-  served functions with `REVENUECAT_API_URL` pointing at a fake (plans/ios/ios-step-1.md).
+  served functions with `REVENUECAT_API_URL` pointing at a fake (plans/ios/ios-step-1.md, ios-step-6.md).
+- **RevenueCat project** (iOS step 6, click-by-click in `plans/ios/ios-step-6.md`): an App Store app (bundle id
+  `art.diceify.app`, App Store Connect In-App Purchase key) whose public key `appl_…` goes into `Release.xcconfig`
+  `REVENUECAT_API_KEY`; a Test Store whose key `test_…` goes into `Debug.xcconfig` (simulated purchases in the simulator;
+  the SDK crashes a Release build that carries a test key); the two Studio products in both stores with the same ids; one
+  current offering holding them; the secret key created with **API version V1** (`GET /v1/subscribers`). Keep the
+  default restore behaviour "Transfer to new App User ID": a restore on another Diceify account moves the purchases and
+  the webhook's TRANSFER event recomputes both accounts.
+
+## iOS app build configuration (iOS step 5)
+
+Release builds of the app (`ios/Diceify/Config/Release.xcconfig`, values land in Info.plist via `project.yml`):
+
+- `SUPABASE_URL` / `SUPABASE_ANON_KEY`: the hosted project (Dashboard → Project Settings → API; the anon key is public).
+- `POSTHOG_KEY` (+ `POSTHOG_HOST`): the same project key as the web (`NEXT_PUBLIC_POSTHOG_KEY`). The app sends the web's
+  event names with `platform: "ios"` and `app_version`; autocapture and session replay are off (`Services/Analytics.swift`).
+- `SENTRY_DSN`: a Sentry project of platform **Apple iOS** (sentry.io → Projects → Create; the web's DSN belongs to a
+  different project). Empty = errors go to the unified log only (`Services/ErrorReporting.swift`).
+- `REVENUECAT_API_KEY`: RevenueCat's public key of the App Store app (`appl_…`). Debug takes the Test Store key
+  (`test_…`). Empty = the paywall says in-app purchases are not set up (`Services/Purchases.swift`).
+- Debug builds leave PostHog and Sentry empty and talk to the local stack, so nothing from the simulator reaches production.
+
+TestFlight: Xcode → Product → Archive (scheme Diceify, "Any iOS Device") → Distribute App → TestFlight & App Store →
+Upload; then App Store Connect → TestFlight → add yourself as an internal tester. The first upload asks for the export
+compliance answer (`ITSAppUsesNonExemptEncryption` is already `false` in Info.plist).
 
 ## Grid backfill (schema v2, iOS step 1)
 

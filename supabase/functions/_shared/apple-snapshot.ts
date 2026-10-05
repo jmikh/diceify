@@ -50,6 +50,38 @@ export const EMPTY_APPLE_SNAPSHOT: AppleSnapshot = {
   apple_environment: null,
 }
 
+/** The payload's `event` (RevenueCat webhooks v1), the fields the webhook reads. */
+export interface RevenueCatEvent {
+  id: string
+  type: string
+  /** Absent on TRANSFER events, which name both sides in `transferred_from` / `transferred_to`. */
+  app_user_id?: string
+  original_app_user_id?: string
+  aliases?: string[]
+  transferred_from?: string[]
+  transferred_to?: string[]
+  product_id?: string
+  environment?: string
+  store?: string
+  price?: number | null
+  currency?: string | null
+  event_timestamp_ms?: number
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * The Supabase users whose Apple columns an event changes (the app sets `appUserID` = uid; anonymous ids are
+ * `$RCAnonymousID:…`): the event's user, or for a TRANSFER (a restore on another account moves the purchases) both
+ * the accounts losing and gaining them.
+ */
+export function userIdsOf(event: RevenueCatEvent): string[] {
+  const isUser = (id: unknown): id is string => typeof id === 'string' && UUID.test(id)
+  if (event.type === 'TRANSFER') return [...new Set([...(event.transferred_from ?? []), ...(event.transferred_to ?? [])].filter(isUser))]
+  const userId = [event.app_user_id, event.original_app_user_id, ...(event.aliases ?? [])].find(isUser)
+  return userId ? [userId] : []
+}
+
 /** Mirror of core/billing/plans.ts `PRICING.creator.accessDays` (and billing-snapshot.ts `CREATOR_PASS_DAYS`). */
 export const APPLE_CREATOR_PASS_DAYS = 30
 

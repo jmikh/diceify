@@ -51,6 +51,15 @@ final class EditorModel {
     private(set) var isGenerating = false
     private(set) var generationError: String?
 
+    /// The size the next generation will produce from the current crop and rows: known at once, so the tune header
+    /// follows the Rows slider while the grid itself is still being computed.
+    var expectedGridSize: GridSize? {
+        guard let crop else { return nil }
+        let out = ImageKit.cropOutputSize(crop)
+        let size = computeGridSize(imageWidth: out.width, imageHeight: out.height, numRows: dice.numRows)
+        return GridSize(width: size.cols, height: size.rows)
+    }
+
     // MARK: Save state
 
     private(set) var saveStatus: SaveStatus = .idle
@@ -245,8 +254,18 @@ final class EditorModel {
 
     private func apply(step target: DocumentStep) {
         if target == .build { enterBuild() }
+        trackStepChange(from: step, to: target)
         step = target
         scheduleSave()
+    }
+
+    /// features/editor/analytics.ts `trackStepChange`: leaving crop forwards = the crop is done; arriving at build =
+    /// the tune settings the user builds with.
+    private func trackStepChange(from: DocumentStep, to: DocumentStep) {
+        if from == .crop, let crop { Analytics.track(.cropCompleted(aspectRatio: crop.aspectRatio.rawValue)) }
+        if to == .build {
+            Analytics.track(.tuneCompleted(rows: dice.numRows, cols: grid?.width, totalDice: grid.map { $0.width * $0.height }, colorMode: dice.colorMode.rawValue, contrast: dice.contrast, gamma: dice.gamma, edgeSharpening: dice.edgeSharpening, rotate6: dice.rotate6, rotate3: dice.rotate3, rotate2: dice.rotate2))
+        }
     }
 
     /// Keep progress only if it still applies, re-anchor the baseline (`enterBuild` on the web).
@@ -300,7 +319,12 @@ final class EditorModel {
         let forward = buildIndex(target, width: grid.width) > buildIndex(buildProgress, width: grid.width)
         if forward && !rowLimitAllows(target, rowLimit: rowLimit) { return .blocked }
         guard target != buildProgress else { return .none }
-        lastMilestones = forward ? buildMilestonesCrossed(from: buildIndex(buildProgress, width: grid.width), to: buildIndex(target, width: grid.width), total: grid.width * grid.height) : []
+        let total = grid.width * grid.height
+        let before = buildIndex(buildProgress, width: grid.width), after = buildIndex(target, width: grid.width)
+        lastMilestones = forward ? buildMilestonesCrossed(from: before, to: after, total: total) : []
+        // features/editor/analytics.ts `trackBuildMove`: the first die placed, and each milestone passed
+        if before == 0 && after > 0 { Analytics.track(.buildStarted(totalDice: total)) }
+        for percent in lastMilestones { Analytics.track(.buildProgress(percent: percent, totalDice: total)) }
         buildProgress = target
         scheduleSave()
         return .moved
@@ -525,10 +549,14 @@ final class EditorModel {
     }
 
     /// The largest centred box of the default preset: the crop a fresh project starts with.
+    /// A new photo starts slightly zoomed in (the frame covers 1 / `initialZoom` of the fitted box), centred.
+    static let initialZoom = 1.15
+
     func initialCrop(aspect: AspectRatio = DEFAULT_ASPECT_RATIO) -> CropParams {
         let w = Double(original.width), h = Double(original.height)
         let ratio = aspect.ratio
-        let (bw, bh) = w / h > ratio ? (h * ratio, h) : (w, w / ratio)
+        let (fw, fh) = w / h > ratio ? (h * ratio, h) : (w, w / ratio)
+        let bw = fw / Self.initialZoom, bh = fh / Self.initialZoom
         return CropParams(x: (w - bw) / 2, y: (h - bh) / 2, width: bw, height: bh, rotation: 0, aspectRatio: aspect)
     }
 }

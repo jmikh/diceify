@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PRICING } from '@/core/billing/plans'
-import { APPLE_CREATOR_PASS_DAYS, computeAppleSnapshot, EMPTY_APPLE_SNAPSHOT, planOfProduct, type RevenueCatSubscriber } from './apple-snapshot.ts'
+import { APPLE_CREATOR_PASS_DAYS, computeAppleSnapshot, EMPTY_APPLE_SNAPSHOT, planOfProduct, userIdsOf, type RevenueCatSubscriber } from './apple-snapshot.ts'
 
 const NOW = new Date('2026-09-30T12:00:00.000Z')
 const DAY = 86_400_000
@@ -77,5 +77,21 @@ describe('computeAppleSnapshot', () => {
   it('ignores unparsable dates and subscriptions without an end', () => {
     expect(computeAppleSnapshot({ subscriptions: { studio_monthly: studio({ expires_date: null }) } }, NOW)).toEqual(EMPTY_APPLE_SNAPSHOT)
     expect(computeAppleSnapshot({ non_subscriptions: { creator_30d: [{ id: 'x', purchase_date: 'never' }] } }, NOW)).toEqual(EMPTY_APPLE_SNAPSHOT)
+  })
+})
+
+describe('userIdsOf', () => {
+  const A = '0b3c8e7a-1f2d-4c5b-9a8e-7d6c5b4a3f21'
+  const B = '9f8e7d6c-5b4a-4f3e-8d2c-1b0a9f8e7d6c'
+
+  it('the Supabase user among the event ids; anonymous ids are not users', () => {
+    expect(userIdsOf({ id: 'e', type: 'INITIAL_PURCHASE', app_user_id: A })).toEqual([A])
+    expect(userIdsOf({ id: 'e', type: 'RENEWAL', app_user_id: '$RCAnonymousID:abc', aliases: ['$RCAnonymousID:abc', B] })).toEqual([B])
+    expect(userIdsOf({ id: 'e', type: 'EXPIRATION', app_user_id: '$RCAnonymousID:abc' })).toEqual([])
+  })
+
+  it('a TRANSFER (no app_user_id) names both accounts, once each', () => {
+    expect(userIdsOf({ id: 'e', type: 'TRANSFER', transferred_from: [A, '$RCAnonymousID:x'], transferred_to: [B, A] })).toEqual([A, B])
+    expect(userIdsOf({ id: 'e', type: 'TRANSFER', transferred_from: ['$RCAnonymousID:x'], transferred_to: [] })).toEqual([])
   })
 })

@@ -66,13 +66,18 @@ enum ImageKit {
     /// Draw the crop region of `image` (after rotating the image into its bounding box, the space the crop is expressed
     /// in) into a new bitmap, scaled so the longer side is at most `maxSide`. Same transform chain as the browser:
     /// output ← scale ← crop offset ← rotation about the bounding-box centre ← image centred.
+    /// The pixel size `drawRegion` produces for a crop (what the grid size is computed from), without drawing.
+    static func cropOutputSize(_ crop: CropParams, maxSide: Int = cropMaxSide) -> (width: Int, height: Int) {
+        let scale = fitScale(width: crop.width, height: crop.height, maxSide: maxSide)
+        return (max(1, jsRoundInt(crop.width * scale)), max(1, jsRoundInt(crop.height * scale)))
+    }
+
     static func drawRegion(_ image: CGImage, crop: CropParams, maxSide: Int) throws -> CGContext {
         let rotation = ((crop.rotation.truncatingRemainder(dividingBy: 360)) + 360).truncatingRemainder(dividingBy: 360)
         let w = Double(image.width), h = Double(image.height)
         let bounds = rotation == 0 ? (width: image.width, height: image.height) : rotatedBounds(width: image.width, height: image.height, rotation: rotation)
+        let (outW, outH) = cropOutputSize(crop, maxSide: maxSide)
         let scale = fitScale(width: crop.width, height: crop.height, maxSide: maxSide)
-        let outW = max(1, jsRoundInt(crop.width * scale))
-        let outH = max(1, jsRoundInt(crop.height * scale))
         guard let ctx = CGContext(data: nil, width: outW, height: outH, bitsPerComponent: 8, bytesPerRow: outW * 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) else { throw Error.encodeFailed }
         ctx.interpolationQuality = .high
         // Work in the browser's y-down space: flip once, then the canvas transform chain reads the same.
@@ -107,6 +112,17 @@ enum ImageKit {
     }
 
     /// The stored original, decoded whole (it is at most 2048 px already).
+    /// The container's MIME type from its signature (for `photo_uploaded`), `image/unknown` otherwise.
+    static func mimeType(of data: Data) -> String {
+        let head = [UInt8](data.prefix(12))
+        if head.starts(with: [0xFF, 0xD8]) { return "image/jpeg" }
+        if head.starts(with: [0x89, 0x50, 0x4E, 0x47]) { return "image/png" }
+        if head.starts(with: [0x47, 0x49, 0x46]) { return "image/gif" }
+        if head.count >= 12, head[4...7] == [0x66, 0x74, 0x79, 0x70] { return "image/heic" }
+        if head.starts(with: [0x52, 0x49, 0x46, 0x46]) { return "image/webp" }
+        return "image/unknown"
+    }
+
     static func decodeOriginal(_ data: Data) throws -> CGImage {
         try decode(data, maxSide: originalMaxSide)
     }

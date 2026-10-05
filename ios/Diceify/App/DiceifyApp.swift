@@ -2,8 +2,21 @@ import SwiftUI
 
 @main
 struct DiceifyApp: App {
-    @State private var session = AppSession()
+    @State private var session: AppSession
     @State private var projects = ProjectsStore()
+
+    init() {
+        ErrorReporting.start()
+        Analytics.start()
+        RevenueCatStore.start()
+        #if DEBUG
+        // `--ui-fake-store`: the paywall with fixed offers, no RevenueCat (terminal-driven screenshots)
+        let store: PurchaseBackend = ProcessInfo.processInfo.arguments.contains("--ui-fake-store") ? FakeStore() : RevenueCatStore.shared
+        _session = State(initialValue: AppSession(store: store))
+        #else
+        _session = State(initialValue: AppSession())
+        #endif
+    }
 
     var body: some Scene {
         WindowGroup {

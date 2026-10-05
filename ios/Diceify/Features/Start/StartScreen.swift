@@ -12,6 +12,7 @@ struct StartScreen: View {
     @State private var cameraOpen = false
     @State private var openProject: UUID?
     @State private var promotedFor: UUID?
+    @State private var accountOpen = false
 
     private var userId: UUID? { session.status == .authed ? session.user?.id : nil }
 
@@ -66,6 +67,7 @@ struct StartScreen: View {
         .navigationDestination(item: $openProject) { id in
             EditorScreen(projectId: id)
         }
+        .navigationDestination(isPresented: $accountOpen) { AccountScreen() }
         .onChange(of: picked) { _, item in
             guard let item else { return }
             Task {
@@ -86,10 +88,15 @@ struct StartScreen: View {
             }
         }
         .onAppear {
+            Analytics.screen("start")
             #if DEBUG
             // Driving the app from the terminal (xcrun simctl launch … --ui-signin / --ui-import <file in Documents>)
             let args = ProcessInfo.processInfo.arguments
             if args.contains("--ui-signin") { signInOpen = true }
+            if args.contains("--ui-account") {
+                // a push on the first frame is dropped: let the stack settle
+                Task { try? await Task.sleep(for: .milliseconds(400)); accountOpen = true }
+            }
             if let at = args.firstIndex(of: "--ui-login"), at + 2 < args.count {
                 Task { await session.debugSignIn(email: args[at + 1], password: args[at + 2]) }
             }
@@ -139,13 +146,8 @@ struct StartScreen: View {
         case .anon:
             Button("Sign in") { signInOpen = true }
         case .authed:
-            Menu {
-                if let email = session.user?.email { Text(email) }
-                Text("\(session.entitlements.plan.rawValue.capitalized) plan")
-                Button("Sign out", role: .destructive) { Task { await session.signOut() } }
-            } label: {
-                Image(systemName: "person.crop.circle")
-            }
+            Button { accountOpen = true } label: { Image(systemName: "person.crop.circle") }
+                .accessibilityLabel("Account")
         }
     }
 
@@ -154,6 +156,7 @@ struct StartScreen: View {
         defer { importing = false }
         do {
             let id = try await projects.create(fromPhoto: data, userId: userId)
+            Analytics.track(.photoUploaded(fileType: ImageKit.mimeType(of: data), fileSize: data.count))
             openProject = id
         } catch {
             projects.error = "That photo could not be read."

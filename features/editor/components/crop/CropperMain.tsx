@@ -60,7 +60,7 @@ export default function CropperMain() {
     const interactingRef = useRef(false)
     useWheelZoom(containerRef, cropperRef)
 
-    const selectedOption = aspectRatioOptions.find(opt => opt.value === selectedRatio) || aspectRatioOptions[2]
+    const selectedOption = aspectRatioOptions.find(opt => opt.value === selectedRatio) ?? aspectRatioOptions.find(opt => opt.value === DEFAULT_ASPECT_RATIO)!
 
     // The stencil: the selected ratio fitted into the canvas panel, with a margin around it
     const stencilSize = useMemo(() => {

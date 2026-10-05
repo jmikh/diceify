@@ -21,7 +21,32 @@ export interface AspectRatioOption {
     icon: JSX.Element
 }
 
+/** Widest to tallest (the same order as the iOS app's crop tiles). */
 export const aspectRatioOptions: AspectRatioOption[] = [
+    {
+        value: '16:9',
+        label: '16:9',
+        ratio: 16 / 9,
+        width: 16,
+        height: 9,
+        icon: (
+            <svg className="w-6 h-4" viewBox="0 0 36 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="4" width="32" height="16" rx="2" />
+            </svg>
+        ),
+    },
+    {
+        value: '4:3',
+        label: '4:3',
+        ratio: 4 / 3,
+        width: 4,
+        height: 3,
+        icon: (
+            <svg className="w-5 h-4" viewBox="0 0 32 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="2" width="28" height="20" rx="2" />
+            </svg>
+        ),
+    },
     {
         value: '1:1',
         label: '1:1',
@@ -47,18 +72,6 @@ export const aspectRatioOptions: AspectRatioOption[] = [
         ),
     },
     {
-        value: '4:3',
-        label: '4:3',
-        ratio: 4 / 3,
-        width: 4,
-        height: 3,
-        icon: (
-            <svg className="w-5 h-4" viewBox="0 0 32 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="2" width="28" height="20" rx="2" />
-            </svg>
-        ),
-    },
-    {
         value: '2:3',
         label: '2:3',
         ratio: 2 / 3,
@@ -67,18 +80,6 @@ export const aspectRatioOptions: AspectRatioOption[] = [
         icon: (
             <svg className="w-4 h-6" viewBox="0 0 24 36" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="2" y="2" width="20" height="32" rx="2" />
-            </svg>
-        ),
-    },
-    {
-        value: '16:9',
-        label: '16:9',
-        ratio: 16 / 9,
-        width: 16,
-        height: 9,
-        icon: (
-            <svg className="w-6 h-4" viewBox="0 0 36 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="4" width="32" height="16" rx="2" />
             </svg>
         ),
     },

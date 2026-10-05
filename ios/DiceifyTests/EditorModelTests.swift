@@ -40,9 +40,12 @@ private func makeModel(cloud: Bool, saver: FakeSaver = FakeSaver(), document: Pr
 private let crop = CropParams(x: 0, y: 0, width: 120, height: 90, rotation: 0, aspectRatio: .fourThree)
 
 @MainActor
+/// Polls on the suspending clock: a suspended test host (the simulator backgrounded, the Mac asleep) must not
+/// burn the timeout while the model's own timers are paused too.
 private func waitUntil(_ timeout: Duration = .seconds(5), _ condition: () -> Bool) async {
-    let deadline = ContinuousClock.now + timeout
-    while !condition() && ContinuousClock.now < deadline { try? await Task.sleep(for: .milliseconds(25)) }
+    let clock = SuspendingClock()
+    let deadline = clock.now + timeout
+    while !condition() && clock.now < deadline { try? await Task.sleep(for: .milliseconds(25), clock: .suspending) }
 }
 
 @Suite(.serialized) @MainActor struct EditorModelTests {
@@ -80,9 +83,11 @@ private func waitUntil(_ timeout: Duration = .seconds(5), _ condition: () -> Boo
         #expect(grid.height == DiceParams.default.numRows && grid.width == jsRoundInt(Double(DiceParams.default.numRows) * 120 / 90))
         #expect(m.preview != nil && m.thumbnail != nil && m.stats.totalCount == grid.width * grid.height)
         #expect(m.buildDocument().grid?.rows?.count == grid.height)
-        // a param change drops the rows from the document until the pipeline catches up
+        #expect(m.expectedGridSize == GridSize(width: grid.width, height: grid.height))
+        // a param change drops the rows from the document until the pipeline catches up; the expected size is immediate
         m.updateDice { $0.numRows = 30 }
         #expect(m.buildDocument().grid?.rows == nil)
+        #expect(m.expectedGridSize == GridSize(width: 40, height: 30) && m.grid?.height != 30)
         await waitUntil { m.grid?.height == 30 && !m.isGenerating }
         #expect(m.buildDocument().grid?.rows?.count == 30)
 
@@ -196,7 +201,9 @@ private func waitUntil(_ timeout: Duration = .seconds(5), _ condition: () -> Boo
     @Test func cropHelpers() throws {
         let (m, _) = try makeModel(cloud: false)
         let initial = m.initialCrop()
-        #expect(initial == CropParams(x: 15, y: 0, width: 90, height: 90, rotation: 0, aspectRatio: .square))
+        // the fitted 90 × 90 square, zoomed in a little and centred
+        let side = 90 / EditorModel.initialZoom
+        #expect(initial == CropParams(x: (120 - side) / 2, y: (90 - side) / 2, width: side, height: side, rotation: 0, aspectRatio: .square))
         m.setCrop(initial)
         m.setAspectRatio(.fourThree)
         #expect(m.crop?.aspectRatio == .fourThree && m.crop!.width / m.crop!.height == 4.0 / 3)
@@ -204,7 +211,8 @@ private func waitUntil(_ timeout: Duration = .seconds(5), _ condition: () -> Boo
         m.rotate90()
         let rotated = try #require(m.crop)
         #expect(rotated.rotation == 90 && m.cropBounds == (90, 120))
-        #expect(rotated.width == 90 && rotated.height == 90 && rotated.x == 0 && rotated.y == 15)
+        // the same square, carried into the rotated 90 × 120 space
+        #expect(abs(rotated.width - side) < 1e-9 && abs(rotated.height - side) < 1e-9 && abs(rotated.x - (90 - side) / 2) < 1e-9 && abs(rotated.y - (120 - side) / 2) < 1e-9)
         m.rotate90(); m.rotate90(); m.rotate90()
         #expect(m.crop?.rotation == 0 && m.cropBounds == (120, 90))
     }

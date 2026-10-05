@@ -8,7 +8,9 @@ ios/
   DiceCore/        Swift package: port of ../core — Sources/DiceCore/{JSMath, Dice/*, Billing/*, Share/*}
                    tests read ../../core/dice/__fixtures__ by path — `cd ios/DiceCore && swift test` (see Requirements)
                    module map: plans/ios/ios-step-2.md
-  Diceify/         the app (SwiftUI, iOS 18+): App/, Theme/, Services/, Persistence/, Models/, Features/, Resources/, Config/
+  Diceify/         the app (SwiftUI, iOS 18+): App/, Theme/, Services/ (Supabase, session, images, dice renderer,
+                   share, edge functions, Analytics = the only PostHog importer, ErrorReporting = the only Sentry importer),
+                   Persistence/, Models/, Features/{Start,Account,Share,Editor/{Crop,Tune,Build}}, Resources/, Config/
   DiceifyTests/    app unit + local-stack integration tests
   project.yml      XcodeGen spec → `xcodegen` writes Diceify.xcodeproj (ignored)
 ```
@@ -21,11 +23,17 @@ xcodebuild -scheme Diceify -destination 'platform=iOS Simulator,name=iPhone 17' 
 xcodebuild -scheme Diceify -destination 'platform=iOS Simulator,name=iPhone 17' test   # needs npm run db:start
 xcrun simctl launch booted art.diceify.app --ui-signin          # DEBUG launch args: --ui-signin,
                                                                 # --ui-import <file in Documents>, --ui-open <uuid>,
-                                                                # --ui-login <email> <password> (local password user)
+                                                                # --ui-step <crop|tune|build> (with --ui-open),
+                                                                # --ui-share (with --ui-open, signed in), --ui-account,
+                                                                # --ui-login <email> <password> (local password user),
+                                                                # --ui-paywall (with --ui-account), --ui-fake-store
+                                                                # (paywall without RevenueCat), --ui-buy <studio_monthly|
+                                                                # studio_yearly> (with --ui-paywall)
 ```
 
-Debug builds talk to the LOCAL Supabase stack (`Diceify/Config/Debug.xcconfig`); Release to the hosted project
-(`Release.xcconfig`, anon key to fill). In Xcode: open `Diceify.xcodeproj`, pick the Diceify scheme, run.
+Debug builds talk to the LOCAL Supabase stack (`Diceify/Config/Debug.xcconfig`) and send no analytics or error
+reports; Release to the hosted project (`Release.xcconfig`: anon key to fill, PostHog key, optional Sentry DSN —
+`docs/DEPLOY.md`). In Xcode: open `Diceify.xcodeproj`, pick the Diceify scheme, run.
 
 ## Requirements
 

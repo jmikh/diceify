@@ -119,3 +119,17 @@ private func crop(_ x: Double = 0, _ y: Double = 0, _ w: Double, _ h: Double, ro
         #expect(!Steps.needsResetConfirm(from: .build, to: .build, progress: GridPos(x: 3, y: 0)))
     }
 }
+
+/// The viewer's animatable frame: SwiftUI interpolates it with vector arithmetic, so a half-way frame must sit
+/// half-way for every component (dice and boxes glide together).
+@Suite struct ViewerFrameTests {
+    @Test func interpolatesEveryComponent() {
+        let a = ViewerFrame(viewBoxX: 0, viewBoxY: 10, viewBoxW: 8, selX: 1, selY: 20, runStart: 1, runEnd: 3)
+        let b = ViewerFrame(viewBoxX: 4, viewBoxY: 12, viewBoxW: 16, selX: 5, selY: 22, runStart: 3, runEnd: 9)
+        var half = b - a
+        half.scale(by: 0.5)
+        let mid = a + half
+        #expect(mid == ViewerFrame(viewBoxX: 2, viewBoxY: 11, viewBoxW: 12, selX: 3, selY: 21, runStart: 2, runEnd: 6))
+        #expect(ViewerFrame.zero.magnitudeSquared == 0 && (b - a).magnitudeSquared == 16 + 4 + 64 + 16 + 4 + 4 + 36)
+    }
+}

@@ -275,6 +275,7 @@ apple_synced_at timestamptz
   `accessUntil` = the later date; `canManageBilling` becomes `manageVia: 'stripe' | 'apple' | null`.
 - SQL `effective_plan` mirrored (same priority) — change both together, as today. `_shared/billing-snapshot.ts`
   `hasPaidAccess` (used to refuse a second Stripe checkout) also considers Apple, so a user cannot pay twice.
+- **2026-10-04, user decision: the app sells Studio only; the Creator pass stays web-only for now** (step 6).
 - Products in App Store Connect: non-renewing subscription `creator_30d` ($19), subscription group "Studio" with
   `studio_monthly` ($9) and `studio_yearly` ($36) (prices per D7). RevenueCat entitlements `creator`, `studio`.
 - App: RevenueCat `appUserID` = Supabase user id, login after auth, logout on sign out; after a purchase the app
@@ -466,3 +467,20 @@ Claude: `ios/` skeleton, `.gitignore` additions (`ios/**/xcuserdata`, `DerivedDa
   sign-in wiring, local store + image import + repository + projects store, Start screen with photo import and the
   project grid, editor placeholder; 7 app tests incl. the repository lifecycle on the local stack; simulator flows
   verified by screenshot. Real sign-in round trips left to the user.
+- **Step 4 (2026-10-03, done, uncommitted)** — `plans/ios/ios-step-4.md`. `EditorModel` (document + derived state,
+  undo batching, debounced cancellable pipeline that keeps a stored grid, autosave folder → CAS cloud with conflict /
+  offline handling, thumbnail sync, build navigation with the row limit), `ImageKit` crop + `DiceRenderer`, the
+  crop / tune / build views with their control rows; 23 app tests (16 new); the three steps verified by screenshot
+  on the Mona Lisa sample. Gestures and haptics left to the user on device.
+- **Step 5 (2026-10-03, done, uncommitted; TestFlight upload = user)** — `plans/ios/ios-step-5.md`. Share card
+  renderer + share rows/images + share sheet, account screen with delete account, PostHog (`platform: ios`) and Sentry
+  wrappers with the web's event names, edge-function helper; build viewer glides and matches the web's die borders;
+  30 app tests; share verified end-to-end on the local stack. Release config needs the hosted anon key and (optional)
+  an iOS Sentry DSN; archive + upload from Xcode.
+- **Step 6 (2026-10-04, code done, uncommitted; store setup = user)** — `plans/ios/ios-step-6.md`. RevenueCat SDK
+  (`Services/Purchases.swift`, the one importer; lower-cased Supabase id as app user id), `PaywallSheet`/`PaywallModel`
+  (Studio only — user decision: no Creator pass in the app for now; web-parity card with StoreKit prices; billed amount prominent per 3.1.2(c); purchase/restore →
+  `billing/apple-sync` → profile), Account: Manage subscription + Restore purchases; `checkout_started`; webhook now
+  recomputes both accounts of a RevenueCat TRANSFER. Test Store instead of a `.storekit` file. 43 app tests; purchase
+  round trip and TRANSFER verified on the local stack against a fake RevenueCat API. User: App Store Connect products +
+  Paid Apps agreement, RevenueCat project/keys/webhook, Supabase secrets, keys into the xcconfigs, a TestFlight try.

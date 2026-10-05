@@ -18,6 +18,13 @@ public let PLAN_LIMITS: [Plan: PlanLimits] = [
     .lifetime: PlanLimits(builderRowLimit: nil, hasSvgExport: true),
 ]
 
+/// What a user can buy (`CheckoutPlan`): the web's checkout route plans, the app's App Store products.
+public enum CheckoutPlan: String, Sendable, CaseIterable {
+    case creator
+    case studioMonthly = "studio_monthly"
+    case studioYearly = "studio_yearly"
+}
+
 public enum Pricing {
     public enum Creator {
         public static let name = "Creator"

@@ -8,7 +8,6 @@ import { NO_CAPTURE_CLASS, track } from '@/lib/analytics'
 import { ACCEPT_ATTRIBUTE, ACCEPTED_FORMATS_LABEL, isAcceptedImage } from '@/lib/image/accept'
 import { stashPendingUpload } from '@/lib/pending-upload'
 import { DEFINITION } from '@/lib/schema'
-import { PLAN_LIMITS } from '@/core/billing'
 import type { DiceColor, DiceFace } from '@/core/dice'
 import { DiceColorBar, GridSize } from '@/components/DiceStats'
 import DiceLens from './DiceLens'
@@ -233,7 +232,6 @@ function HeroPortraits() {
                     <DiceColorBar blackCount={portrait.blackCount} whiteCount={portrait.whiteCount} barClassName="flex-1" />
                 </div>
             </div>
-            <figcaption>Move across the dice: the lens shows the original photo.</figcaption>
         </figure>
     )
 }

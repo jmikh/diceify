@@ -26,10 +26,14 @@ enum DiceRenderer {
         if die.rotate90 { ctx.rotate(by: .pi / 2) }
         let box = CGRect(x: -size / 2, y: -size / 2, width: size, height: size)
         let stroke = size * DiceRendering.borderWidthFactor
-        let path = CGPath(roundedRect: box.insetBy(dx: stroke / 2, dy: stroke / 2), cornerWidth: size * DiceRendering.cornerRadiusFactor, cornerHeight: size * DiceRendering.cornerRadiusFactor, transform: nil)
+        let corner = size * DiceRendering.cornerRadiusFactor
+        // Like the web's SVG die: the rounded rect IS the whole die, its stroke centred on the edge, and the die's
+        // box clips the outer half, so the visible border is half the stroke width.
+        let path = CGPath(roundedRect: box, cornerWidth: corner, cornerHeight: corner, transform: nil)
         ctx.addPath(path)
         ctx.setFillColor(color(colors.background))
         ctx.fillPath()
+        ctx.clip(to: box)
         ctx.addPath(path)
         ctx.setStrokeColor(color(DiceRendering.stroke))
         ctx.setLineWidth(stroke)
