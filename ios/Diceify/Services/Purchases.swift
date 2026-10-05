@@ -33,6 +33,9 @@ enum PurchaseOutcome: Equatable, Sendable {
 struct StoreFailure: Error, Equatable, LocalizedError {
     let message: String
     var errorDescription: String? { message }
+
+    /// The store returned no plans (empty offering, or no product fetched from App Store Connect).
+    static let notOnSale = "No plans are on sale right now. Please try again later."
 }
 
 /// The App Store side of billing. Entitlements never come from here: a purchase or restore is followed by
@@ -131,9 +134,11 @@ final class RevenueCatStore: PurchaseBackend {
     }
 
     /// RevenueCat's error codes in the buyer's words; the original goes to the error log.
-    private static func failure(_ error: Error) -> StoreFailure {
+    static func failure(_ error: Error) -> StoreFailure {
         reportError(error, where: "purchases")
         let message: String = switch error as? ErrorCode {
+        // No product fetched from App Store Connect (e.g. the Paid Apps agreement is not active yet)
+        case .configurationError, .productNotAvailableForPurchaseError: StoreFailure.notOnSale
         case .networkError, .offlineConnectionError: "The App Store could not be reached. Check your connection and try again."
         case .purchaseNotAllowedError: "Purchases are not allowed on this device (Screen Time or a managed device)."
         case .receiptAlreadyInUseError: "These App Store purchases belong to another Diceify account."

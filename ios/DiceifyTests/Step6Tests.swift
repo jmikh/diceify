@@ -1,5 +1,6 @@
 import DiceCore
 import Foundation
+import RevenueCat
 import Testing
 @testable import Diceify
 
@@ -43,6 +44,13 @@ private func makeModel(store: FakeStore = FakeStore(), account: StubAccount = St
     @Test func revenueCatUserIdIsTheServerSpelling() {
         let id = UUID(uuidString: "0B3C8E7A-1F2D-4C5B-9A8E-7D6C5B4A3F21")!
         #expect(RevenueCatStore.appUserID(id) == "0b3c8e7a-1f2d-4c5b-9a8e-7d6c5b4a3f21")
+    }
+
+    /// No product from App Store Connect (Paid Apps agreement not active) reads as "not on sale", not a failed purchase.
+    @Test @MainActor func missingProductsReadAsNotOnSale() {
+        #expect(RevenueCatStore.failure(ErrorCode.configurationError).message == StoreFailure.notOnSale)
+        #expect(RevenueCatStore.failure(ErrorCode.productNotAvailableForPurchaseError).message == StoreFailure.notOnSale)
+        #expect(RevenueCatStore.failure(ErrorCode.unknownError).message == "The purchase could not be completed. Please try again.")
     }
 
     @Test func checkoutStartedEvent() {

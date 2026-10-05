@@ -48,6 +48,9 @@ scopes (the old People API birthday scope is gone).
   `env(...)`; `skip_nonce_check = true` is required for the supabase-js PKCE flow). A missing `supabase/.env` is silent — the
   provider stays enabled with empty credentials and the sign-in lands on a GoTrue error page. Hosted → Dashboard → Authentication
   → Providers → Google (same id/secret, "Skip nonce check" on).
+- **iOS app** (native sign-in, `signInWithIdToken`): its ID token's audience is the **iOS** OAuth client
+  (`GOOGLE_CLIENT_ID` in `ios/Diceify/Config/Google.xcconfig`), so the provider's **Client IDs** field must list it after
+  the web client id, comma-separated (`<web id>,<ios id>`); otherwise sign-in fails with "Unacceptable audience in id_token".
 - **Redirect allow-list** (Supabase Auth → URL Configuration; local: `additional_redirect_urls` in `config.toml`): the app's
   `redirectTo` is `${origin}/editor?restored=true`, so allow `http://localhost:3000/**` (local), `https://diceify.art/**` and
   the Worker's `workers.dev` URLs (Cloudflare Worker section). Site URL: `http://localhost:3000` local, `https://diceify.art` hosted.

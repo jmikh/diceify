@@ -133,7 +133,7 @@ final class AppSession: BillingAccount {
         let nonce = Self.randomNonce()
         appleNonce = nonce
         request.requestedScopes = [.fullName, .email]
-        request.nonce = SHA256.hash(data: Data(nonce.utf8)).map { String(format: "%02x", $0) }.joined()
+        request.nonce = Self.sha256Hex(nonce)
     }
 
     /// Finish Sign in with Apple: the identity token becomes a Supabase session (native, no browser).
@@ -165,19 +165,21 @@ final class AppSession: BillingAccount {
     }
 
     /// Google Sign-In (native SDK) → Supabase session. The iOS client id comes from Info.plist (`GIDClientID`).
+    /// The SDK always puts a nonce in the ID token, so pass our own (hash to Google, raw to Supabase) as for Apple.
     func signInWithGoogle() async {
         signInError = nil
         guard let presenter = Self.topViewController() else {
             signInError = "No window to present Google sign-in."
             return
         }
+        let nonce = Self.randomNonce()
         do {
-            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presenter)
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presenter, hint: nil, additionalScopes: nil, nonce: Self.sha256Hex(nonce))
             guard let idToken = result.user.idToken?.tokenString else {
                 signInError = "Google returned no identity token."
                 return
             }
-            _ = try await auth.signInWithIdToken(credentials: OpenIDConnectCredentials(provider: .google, idToken: idToken, accessToken: result.user.accessToken.tokenString))
+            _ = try await auth.signInWithIdToken(credentials: OpenIDConnectCredentials(provider: .google, idToken: idToken, accessToken: result.user.accessToken.tokenString, nonce: nonce))
         } catch let error as GIDSignInError where error.code == .canceled {
             // the user dismissed the sheet
         } catch {
@@ -211,6 +213,11 @@ final class AppSession: BillingAccount {
         var bytes = [UInt8](repeating: 0, count: length)
         _ = SecRandomCopyBytes(kSecRandomDefault, length, &bytes)
         return String(bytes.map { charset[Int($0) % charset.count] })
+    }
+
+    /// What the identity provider gets for a nonce (Supabase hashes the raw one and compares).
+    private static func sha256Hex(_ nonce: String) -> String {
+        SHA256.hash(data: Data(nonce.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
     private static func topViewController() -> UIViewController? {

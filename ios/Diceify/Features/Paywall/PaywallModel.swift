@@ -74,7 +74,7 @@ final class PaywallModel {
             if offers[studioInterval] == nil, let other = [CheckoutPlan.studioYearly, .studioMonthly].first(where: { offers[$0] != nil }) {
                 studioInterval = other
             }
-            phase = offers.isEmpty ? .unavailable("No plans are on sale right now. Please try again later.") : .ready
+            phase = offers.isEmpty ? .unavailable(StoreFailure.notOnSale) : .ready
         } catch {
             phase = .unavailable(Self.message(error, fallback: "The App Store could not be reached. Check your connection and try again."))
         }
