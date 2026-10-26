@@ -24,6 +24,16 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
     {
+        slug: 'evan-dice-art-double-sided-tape',
+        title: 'How I Built Dice Art With Double-Sided Tape Instead of Glue',
+        description: 'How Evan Morgan built touchable dice art in about 2 weeks: 8 mm dice from Temu, a Masonite board and commercial double-sided tape instead of glue or epoxy.',
+        date: '2026-10-26',
+        author: { type: 'Person', name: 'Evan Morgan' },
+        featuredImage: '/images/blog/evan-dice-art.webp',
+        readTime: '3 min read',
+        tags: ['Community', 'Build Tips']
+    },
+    {
         slug: 'why-i-built-diceify',
         title: 'Why I Built Diceify',
         description: 'The story behind Diceify — a COVID project born out of frustration with existing dice art tools, and a tribute to Umm Kulthum.',

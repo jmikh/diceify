@@ -28,6 +28,7 @@ Key facts:
 - [About Diceify](https://diceify.art/about): who makes it and why
 - [Why I built Diceify](https://diceify.art/blog/why-i-built-diceify): John Mikhail, founder
 - [Dice portraits for my nieces](https://diceify.art/blog/jeremy-dice-portraits-nieces): a community build
+- [Dice art with double-sided tape](https://diceify.art/blog/evan-dice-art-double-sided-tape): a community build, no glue or epoxy
 - [Blog](https://diceify.art/blog): real builds, tips and gift ideas
 
 ## Optional

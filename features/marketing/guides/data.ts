@@ -28,7 +28,8 @@ export interface Guide {
 
 const DATE = '2026-10-03'
 
-const guide = (g: Omit<Guide, 'datePublished' | 'dateModified'>): Guide => ({ ...g, datePublished: DATE, dateModified: DATE })
+const guide = (g: Omit<Guide, 'datePublished' | 'dateModified'> & { dateModified?: string }): Guide =>
+    ({ datePublished: DATE, dateModified: DATE, ...g })
 
 export const SIZE_CALCULATOR = guide({
     path: '/dice-art/size-calculator',
@@ -73,11 +74,13 @@ export const HOW_TO_GLUE = guide({
     path: '/dice-art/how-to-glue-dice-art',
     title: 'How to Glue Dice Art: Adhesives, Boards, Two Methods',
     h1: 'How to Glue Dice Art: Adhesives, Boards and Two Build Methods',
-    description: 'Which glue holds dice to a board (PVA, E6000-type, epoxy, construction adhesive, resin), which board to use, and whether to dry-lay first or glue as you go. With the mistakes we made.',
+    description: 'What holds dice to a board (double-sided tape, PVA, E6000-type, epoxy, construction adhesive, resin), which board to use, and whether to dry-lay first or stick as you go. With the mistakes we made.',
     label: 'Build guide',
     image: '/images/blog/jeremy-dice-portrait.webp',
+    dateModified: '2026-10-26',
     sections: [
         { id: 'short-version', heading: 'The short version' },
+        { id: 'double-sided-tape', heading: 'The no-glue method: double-sided tape' },
         { id: 'adhesives', heading: 'Adhesives compared' },
         { id: 'board', heading: 'Choosing the board' },
         { id: 'two-methods', heading: 'Dry-lay vs glue-as-you-go' },

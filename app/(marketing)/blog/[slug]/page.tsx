@@ -7,6 +7,7 @@ import { ABOUT_URL, ORGANIZATION_REF, SCHEMA_IDS } from '@/lib/schema'
 import { getBlogBySlug, getAllBlogSlugs, formatPostDate, type BlogAuthor } from '@/features/marketing/blog/data'
 
 // Blog content components
+import EvanDiceArtDoubleSidedTape from './evan-dice-art-double-sided-tape'
 import JeremyDicePortraits from './jeremy-dice-portraits-nieces'
 import WhyIBuiltDiceify from './why-i-built-diceify'
 
@@ -16,6 +17,7 @@ interface BlogPageProps {
 
 // Map slugs to their content components
 const blogContentMap: Record<string, React.ComponentType> = {
+    'evan-dice-art-double-sided-tape': EvanDiceArtDoubleSidedTape,
     'jeremy-dice-portraits-nieces': JeremyDicePortraits,
     'why-i-built-diceify': WhyIBuiltDiceify,
 }

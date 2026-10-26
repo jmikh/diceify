@@ -10,11 +10,11 @@ const STATIC_PAGES: { path: string; lastModified: string }[] = [
   { path: '/dice-art', lastModified: '2026-10-03' },
   { path: '/dice-art/size-calculator', lastModified: '2026-10-03' },
   { path: '/dice-art/buying-dice', lastModified: '2026-10-03' },
-  { path: '/dice-art/how-to-glue-dice-art', lastModified: '2026-10-03' },
+  { path: '/dice-art/how-to-glue-dice-art', lastModified: '2026-10-26' },
   { path: '/dice-art/best-photos', lastModified: '2026-10-03' },
   { path: '/best-dice-art-generators', lastModified: '2026-10-03' },
   { path: '/gallery', lastModified: '2026-10-03' },
-  { path: '/blog', lastModified: '2026-10-03' },
+  { path: '/blog', lastModified: '2026-10-26' },
   { path: '/about', lastModified: '2026-10-03' },
   { path: '/editor', lastModified: '2026-10-03' },
 ]

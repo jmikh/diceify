@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 
 const linkClass = 'text-[var(--pink)] hover:underline'
@@ -42,6 +43,20 @@ export default function JeremyDicePortraits() {
                 Once he found the right photos, he adjusted the cropping and zoom until the dice pattern
                 looked right, then saved it as a template for the physical build.
             </p>
+
+            <figure className="my-8">
+                <Image
+                    src="/images/blog/jeremy-dice-portrait.webp"
+                    alt="A black and white dice pattern of one of Jeremy's nieces, made with Diceify, next to the original photo"
+                    width={1024}
+                    height={638}
+                    sizes="(max-width: 767px) 100vw, 750px"
+                    className="w-full h-auto rounded-xl"
+                />
+                <figcaption>
+                    The dice pattern (left) next to the photo it came from (right): a straight-on, close-cropped shot.
+                </figcaption>
+            </figure>
 
             <h3>Building the frame</h3>
             <p>

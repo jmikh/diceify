@@ -39,6 +39,31 @@
       320
     ]
   },
+  "/images/blog/evan-dice-art-finished.webp": {
+    "width": 960,
+    "variants": [
+      320,
+      480,
+      640
+    ]
+  },
+  "/images/blog/evan-dice-art-in-progress.webp": {
+    "width": 720,
+    "variants": [
+      320,
+      480,
+      640
+    ]
+  },
+  "/images/blog/evan-dice-art.webp": {
+    "width": 1024,
+    "variants": [
+      320,
+      480,
+      640,
+      960
+    ]
+  },
   "/images/blog/jeremy-dice-portrait.webp": {
     "width": 1024,
     "variants": [
