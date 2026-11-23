@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { ChevronLeft, ChevronRight, Lock } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
 import { nextStep, prevStep, STEP_LABELS } from '@/features/editor/steps'
 import { panel, primaryFill } from '../common/ui'
@@ -39,19 +39,19 @@ function MobileStepBack() {
     )
 }
 
-/** On to the next step (a lock while the paywall blocks it); nothing on the last step. */
+/** On to the next step; nothing on the last step. */
 function MobileStepNext() {
-    const { step, canGoNext, nextLocked, goNext } = useStepNavigation()
+    const { step, canGoNext, goNext } = useStepNavigation()
     const next = nextStep(step)
     if (!next) return null
     return (
         <button
             onClick={goNext}
             disabled={!canGoNext}
-            aria-label={`Next: ${STEP_LABELS[next]}${nextLocked ? ' (upgrade required)' : ''}`}
+            aria-label={`Next: ${STEP_LABELS[next]}`}
             className={`${primaryFill} ${stepButton}`}
         >
-            {nextLocked ? <Lock size={18} /> : <ChevronRight size={20} />}
+            <ChevronRight size={20} />
         </button>
     )
 }

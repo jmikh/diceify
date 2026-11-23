@@ -9,7 +9,7 @@ import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 export type GateModal = 'limit' | 'proFeature'
 
 /** What a gate protects (the `feature` of the `paywall_shown` event). */
-export type GatedFeature = 'build_limit' | 'build' | 'blueprint' | 'share' | 'upgrade'
+export type GatedFeature = 'build_limit' | 'blueprint' | 'share' | 'upgrade'
 
 export interface GateOptions {
   /**

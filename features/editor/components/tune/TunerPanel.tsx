@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Download, Lock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { useEntitlements } from '@/features/account/useUser'
 import { useBlueprintDownload } from '@/features/editor/hooks/useBlueprintDownload'
 import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
@@ -38,7 +38,7 @@ export function TunerSlider({ config, large = false }: { config: TunerSliderConf
  * orientation and the blueprint download. The controls are shared with the mobile toolbar (MobileTuneControls).
  */
 export default function TunerPanel() {
-  const { goNext, goBack, nextLocked } = useStepNavigation()
+  const { goNext, goBack } = useStepNavigation()
   const blueprint = useBlueprintDownload()
   const [rows, ...tone] = tunerSliders
 
@@ -54,7 +54,7 @@ export default function TunerPanel() {
           </button>
           <button onClick={goNext} className={`${primaryButton} h-12 flex-1 text-[15px]`}>
             Continue to Build
-            {nextLocked ? <Lock size={16} /> : <ChevronRight size={18} />}
+            <ChevronRight size={18} />
           </button>
         </>
       }
@@ -70,7 +70,7 @@ export default function TunerPanel() {
         <OrientationControl />
       </InspectorSection>
       <InspectorSection label="Export">
-        <InspectorToolButton icon={Download} label="Download HD blueprint" onClick={blueprint.download} pro={blueprint.pro} />
+        <InspectorToolButton icon={Download} label="Download HD Blueprint" onClick={blueprint.download} pro={blueprint.pro} />
       </InspectorSection>
     </Inspector>
   )

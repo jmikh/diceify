@@ -1,5 +1,6 @@
-// The design paywall: dice settings a plan does not include. Any design can be tuned and previewed; one that uses
-// a locked setting cannot be built until the user upgrades. (The blueprint is Pro on its own: `hasSvgExport`.)
+// The design paywall: dice settings a plan does not include. Any design can be tuned, previewed and built; one that
+// uses a locked setting is watermarked in the previews until the user upgrades. (The blueprint is Pro on its own:
+// `hasSvgExport`.)
 
 import type { DiceParams } from '../dice'
 import type { Entitlements } from './entitlements'
@@ -7,7 +8,7 @@ import type { Entitlements } from './entitlements'
 /** A setting of the design that the plan does not include. */
 export type DesignLock = 'mixed_dice' | 'rows'
 
-/** The design's locked settings, in display order; empty = the plan covers the whole design. */
+/** The design's locked settings, in display order; empty = the plan covers the whole design (no watermark). */
 export function designLocks(
   ent: Pick<Entitlements, 'hasMixedDice' | 'designRowLimit'>,
   dice: Pick<DiceParams, 'colorMode' | 'numRows'>,

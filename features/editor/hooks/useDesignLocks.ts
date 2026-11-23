@@ -3,7 +3,7 @@ import { designLocks, type DesignLock } from '@/core/billing'
 import { useEntitlements } from '@/features/account/useUser'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
 
-/** The open design's settings the user's plan does not include (the design paywall); empty = free to build and export. */
+/** The open design's settings the user's plan does not include (the design paywall); empty = no watermark. */
 export function useDesignLocks(): DesignLock[] {
   const ent = useEntitlements()
   const colorMode = useDocumentStore((s) => s.dice.colorMode)

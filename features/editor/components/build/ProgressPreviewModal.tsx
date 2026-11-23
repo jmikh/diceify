@@ -8,8 +8,10 @@ import { rasterSize, renderProgressSvg } from '@/core/dice'
 import { useEntitlements } from '@/features/account/useUser'
 import { rasterizeSvg } from '@/lib/image/rasterize'
 import { reportError } from '@/lib/report-error'
+import { useDesignLocks } from '@/features/editor/hooks/useDesignLocks'
 import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
+import Watermark from '../common/Watermark'
 
 interface ProgressPreviewModalProps {
     isOpen: boolean
@@ -31,6 +33,9 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
 
     // Vector output is the SVG-export entitlement; everyone else gets a capped raster
     const isPro = useEntitlements().hasSvgExport
+
+    // A design that uses settings the plan lacks (mixed dice on the free plan) is watermarked, as in the tune preview
+    const watermarked = useDesignLocks().length > 0
 
     // Free users get a raster capped at MAX_RASTER_SIZE (10 px per die below that)
     const raster = useMemo(() => {
@@ -122,7 +127,7 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
 
                 {/* Canvas Preview - container sized to fit properly */}
                 <div
-                    className="overflow-hidden"
+                    className="relative overflow-hidden"
                     style={{
                         // Use CSS to calculate proper dimensions based on available space
                         width: aspectRatio >= 1
@@ -160,6 +165,7 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
                             </div>
                         )
                     )}
+                    {watermarked && <Watermark width={cols} height={rows} />}
                 </div>
             </div>
         </div>

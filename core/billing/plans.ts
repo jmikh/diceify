@@ -10,7 +10,7 @@ export interface PlanLimits {
   hasSvgExport: boolean
   /** Black and white dice in one design (colour mode `both`). */
   hasMixedDice: boolean
-  /** Rows a design may have and still be built; `null` = unlimited. Larger designs can only be previewed. */
+  /** Rows a design may have without the watermark; `null` = unlimited. */
   designRowLimit: number | null
 }
 
