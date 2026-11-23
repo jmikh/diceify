@@ -415,21 +415,16 @@
 .builder-showcase-points {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.9rem;
   margin-bottom: 2.5rem;
 }
 
 .builder-showcase-points li {
   display: flex;
+  align-items: center;
   gap: 1rem;
-  line-height: 1.6;
-  color: var(--text-muted);
-}
-
-.builder-showcase-points strong {
-  display: block;
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .builder-showcase-icon {
