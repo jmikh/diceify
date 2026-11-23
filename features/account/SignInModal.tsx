@@ -7,7 +7,8 @@ import Image from "next/image";
 import Logo from "@/components/Logo";
 import { signInWithApple, signInWithGoogle } from "@/lib/supabase/auth";
 
-const DEFAULT_REDIRECT = "/editor?restored=true";
+/** Where sign-in returns by default: the editor, which restores the draft saved before leaving. */
+export const SIGN_IN_REDIRECT = "/editor?restored=true";
 
 interface SignInModalProps {
   open: boolean;
@@ -25,7 +26,7 @@ export default function SignInModal({
   onClose,
   message,
   onBeforeSignIn,
-  redirectTo = DEFAULT_REDIRECT,
+  redirectTo = SIGN_IN_REDIRECT,
 }: SignInModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<React.ReactNode | null>(null);

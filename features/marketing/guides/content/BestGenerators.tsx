@@ -80,8 +80,7 @@ export default function BestGenerators() {
             <p>
                 <strong>What is free:</strong> the generator, every tuning control, the dice counts, saved projects,
                 share links and the first {FREE_ROWS} rows of the builder. <strong>The add-on:</strong> the full
-                builder and the SVG blueprint, with a Creator pass (${PRICING.creator.price} for{' '}
-                {PRICING.creator.accessDays} days) or Studio (${PRICING.studio.monthlyPrice}/month
+                builder and the SVG blueprint, with Studio (${PRICING.studio.monthlyPrice}/month
                 or ${PRICING.studio.yearlyPrice}/year).
             </p>
             <p>

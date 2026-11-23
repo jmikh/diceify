@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import type { CheckoutPlan } from '@/core/billing'
 import { useUser } from '@/features/account/useUser'
+import { pendingCheckoutPlan, resumeCheckout } from '@/features/billing/checkout'
 import { markClean } from '@/features/editor/store/autosave'
 import { track } from '@/lib/analytics'
 import { reportError } from '@/lib/report-error'
@@ -71,12 +73,14 @@ function editorUrl(projectId: string | null): string {
  *   signed in  → the local draft is restored (back from OAuth with `?restored=true`, or left over from a failed save),
  *                then `bootSignedIn`
  *   either     → then a photo parked by the homepage hero starts a project (`applyPendingUpload`)
- * Ends with `markClean()` + `boot = 'ready'`. Afterwards `?project=` follows the current project id.
+ * Ends with `markClean()` + `boot = 'ready'`. Afterwards `?project=` follows the current project id, and a plan
+ * carried by the sign-in a price click asked for (`?upgrade=`) goes on to checkout.
  */
 export function useEditorBootstrap() {
-  const { status } = useUser()
+  const { status, entitlements } = useUser()
   const router = useRouter()
   const startedRef = useRef(false)
+  const checkoutPlanRef = useRef<CheckoutPlan | null>(null)
 
   useEffect(() => {
     if (status === 'loading' || startedRef.current) return
@@ -84,6 +88,8 @@ export function useEditorBootstrap() {
 
     const params = new URLSearchParams(window.location.search)
     const projectParam = params.get('project')
+    // Read before the boot's URL replace drops it
+    checkoutPlanRef.current = pendingCheckoutPlan(params)
 
     const boot = async () => {
       const signedIn = status === 'authed'
@@ -112,6 +118,15 @@ export function useEditorBootstrap() {
     const expected = editorUrl(projectId)
     if (window.location.pathname + window.location.search !== expected) router.replace(expected, { scroll: false })
   }, [boot, projectId, router])
+
+  // Back from the sign-in a signed-out price click asked for: on to checkout once ready (the draft is a project by
+  // then, and the toaster is mounted)
+  useEffect(() => {
+    const plan = checkoutPlanRef.current
+    if (boot !== 'ready' || !plan) return
+    checkoutPlanRef.current = null
+    if (status === 'authed') void resumeCheckout(plan, entitlements)
+  }, [boot, status, entitlements])
 
   // Signing out while a project is open: the row is no longer ours to save; back to an empty editor
   useEffect(() => {

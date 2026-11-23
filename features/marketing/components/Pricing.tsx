@@ -2,11 +2,12 @@
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { useState } from 'react'
-import { PRICING, STUDIO_YEARLY_MONTHLY_EFFECTIVE, type CheckoutPlan, type Plan } from '@/core/billing'
+import { PLAN_LIMITS, STUDIO_YEARLY_MONTHLY_EFFECTIVE, type CheckoutPlan, type Plan } from '@/core/billing'
 import { ProfileProvider } from '@/features/account/useUser'
 import SignInModal from '@/features/account/SignInModal'
 import { track } from '@/lib/analytics'
-import { CreatorCard, StudioCard } from '@/features/billing/PricingCards'
+import { signInThenCheckoutPath } from '@/features/billing/checkout'
+import { StudioCard } from '@/features/billing/PricingCards'
 
 /** The landing pricing section. Provides the profile context its cards read (the only marketing consumer). */
 export default function Pricing() {
@@ -19,16 +20,26 @@ export default function Pricing() {
 
 // Whole dollars unless the amount has cents ($3, $3.33).
 const dollars = (amount: number) => `$${Number.isInteger(amount) ? amount : amount.toFixed(2)}`
-const PRICING_HEADING = `Pricing: free, ${dollars(PRICING.creator.price)} Creator Pass or Studio from ${dollars(STUDIO_YEARLY_MONTHLY_EFFECTIVE)}/month`
+const PRICING_HEADING = `Pricing: free or Studio from ${dollars(STUDIO_YEARLY_MONTHLY_EFFECTIVE)}/month`
+
+/** What the free plan includes. */
+const FREE_FEATURES = [
+    'Generate dice art from any photo',
+    'Black-only or white-only dice',
+    'No watermark on single-colored dice art',
+    `First ${PLAN_LIMITS.explorer.builderRowLimit} rows of dice in Builder Studio`,
+    'Unlimited projects in the cloud',
+]
 
 function PricingSection() {
     const [isLoading, setIsLoading] = useState<CheckoutPlan | null>(null)
-    const [showAuthModal, setShowAuthModal] = useState(false)
+    // A signed-out price click: the plan to check out once signed in (the sign-in modal is open while set)
+    const [signInPlan, setSignInPlan] = useState<CheckoutPlan | null>(null)
     const [showAlreadyProModal, setShowAlreadyProModal] = useState(false)
     const [currentPlan, setCurrentPlan] = useState<Plan | null>(null)
 
-    const handleAuthRequired = () => {
-        setShowAuthModal(true)
+    const handleAuthRequired = (plan: CheckoutPlan) => {
+        setSignInPlan(plan)
     }
 
     const handleAlreadyPro = (plan: Plan) => {
@@ -52,9 +63,10 @@ function PricingSection() {
     return (
         <section className="py-24 px-6 relative" id="pricing">
             <SignInModal
-                open={showAuthModal}
-                onClose={() => setShowAuthModal(false)}
-                message="Sign in to upgrade and unlock premium features."
+                open={signInPlan !== null}
+                onClose={() => setSignInPlan(null)}
+                message="Sign in to continue to checkout."
+                redirectTo={signInPlan ? signInThenCheckoutPath(signInPlan) : undefined}
             />
 
             {/* Already Pro Modal */}
@@ -97,7 +109,7 @@ function PricingSection() {
                     </p>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
+                <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto items-stretch">
                     {/* Free Plan */}
                     <div className="glass p-6 md:p-8 rounded-[2rem] relative flex flex-col">
                         <div className="mb-6">
@@ -107,40 +119,17 @@ function PricingSection() {
                         </div>
 
                         <ul className="space-y-3 mb-6 text-sm flex-1">
-                            <li className="flex items-start gap-2.5 text-white/80">
-                                <Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-                                <span>Generate dice art from any photo</span>
-                            </li>
-                            <li className="flex items-start gap-2.5 text-white/80">
-                                <Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-                                <span>Share a link with a social card (sign-in required)</span>
-                            </li>
-                            <li className="flex items-start gap-2.5 text-white/80">
-                                <Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-                                <span>Builder Studio works for the first 5 rows</span>
-                            </li>
-                            <li className="flex items-start gap-2.5 text-white/80">
-                                <Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-                                <span>Unlimited projects in the cloud</span>
-                            </li>
+                            {FREE_FEATURES.map(text => (
+                                <li key={text} className="flex items-start gap-2.5 text-white/80">
+                                    <Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+                                    <span>{text}</span>
+                                </li>
+                            ))}
                         </ul>
 
                         <Link href="/editor" prefetch={false} className="btn-secondary w-full justify-center text-sm mt-auto" onClick={() => track('go_to_editor', { source: 'pricing_free' })}>
                             Start Free
                         </Link>
-                    </div>
-
-                    {/* Creator Plan - Uses shared component with full variant */}
-                    <div className="glass p-6 md:p-8 rounded-[2rem] relative border-blue-500/30 overflow-hidden group flex flex-col">
-                        <CreatorCard
-                            source="landing_page"
-                            onAuthRequired={handleAuthRequired}
-                            onAlreadyPro={handleAlreadyPro}
-                            isLoading={isLoading}
-                            setIsLoading={setIsLoading}
-                            variant="full"
-                            contentOnly={true}
-                        />
                     </div>
 
                     {/* Studio Plan - Uses shared component with full variant */}

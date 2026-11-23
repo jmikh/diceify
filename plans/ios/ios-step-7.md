@@ -76,14 +76,47 @@ Privacy Policy: https://diceify.art/privacy
 
 ### App Review Information
 - Sign-in required: **No** (no demo account needed).
-- Notes:
+- Notes (rewritten for the 2.1 "Information Needed" request on the first submission, 2026-10-22: the same text is the
+  reply in App Store Connect, with the screen recording attached, and the Notes field; keep it under 4000 characters):
 
 ```
-Diceify works without an account: tap "Choose a photo" to start a project (Crop → Tune → Build).
-Sign-in is optional (Sign in with Apple or Google) and only needed to save projects to the cloud, share, and subscribe; any Apple ID works.
-In-app purchase: after signing in, tap the account icon (top right) → See plans, or continue past row 5 in the Build step. The Studio subscriptions are bought in the sandbox.
-Plans bought on our website (diceify.art) are honoured when the user signs in with the same account; the app has no links to purchases outside the App Store.
-Account deletion: account icon → Delete account.
+1. SCREEN RECORDING
+Attached to our reply to the review of version 1.0. Recorded on an iPhone on the latest iOS with the submitted build. It starts at launch and shows sign-in, a project from photo to build, the subscription screen and a sandbox purchase, a share link, and account deletion.
+
+2. PURPOSE AND AUDIENCE
+Diceify turns a photo into dice art: a mosaic of real six-sided dice where each die's face and color stands for a shade of gray. It is for hobbyists and makers who build dice portraits by hand, often as a gift or wall art. The hard part is planning: a portrait needs hundreds or thousands of dice, each with the right face and rotation. Diceify works out the whole grid, counts how many black and white dice to buy, and guides the build one die at a time, row by row.
+
+3. HOW TO USE IT
+No login or sample files are needed: any photo from the library or the camera works.
+- Start screen: "Choose a photo" or "Take a photo", then crop it.
+- Tune: number of rows (20 to 120), dice color (black, white or mixed), contrast, brightness, sharpness. The dice count shows how many dice to buy.
+- Build: the builder highlights one die at a time with its face and rotation; the arrows move through the grid.
+Sign-in is optional: "Sign in" (top right of the start screen) offers Sign in with Apple and Continue with Google. Any Apple ID or Google account works; the first sign-in creates the account. Signed in, projects are saved to the cloud and sharing and the subscription become available.
+Sharing: the Share button in the editor creates a public web link to an image of the dice art (the photo itself stays private). The app never shows content from other users.
+Account deletion: account icon (top right of the start screen) > Delete account... > Delete my account. This deletes the account, its projects, photos and share images.
+
+4. EXTERNAL SERVICES
+- Supabase: accounts, the project database, photo and share-image storage.
+- Sign in with Apple and Google Sign-In: login.
+- Apple In-App Purchase through RevenueCat: subscriptions.
+- PostHog: product analytics (no advertising, no tracking).
+- diceify.art, our website: share link pages, Terms of Use, Privacy Policy.
+The dice art is computed on the device. No AI services are used.
+
+5. REGIONAL DIFFERENCES
+None. The app works the same in every region; only subscription prices follow the App Store's local pricing. The app is in English.
+
+6. REGULATED INDUSTRY OR PROTECTED MATERIAL
+Not applicable. Users work with their own photos; the app contains no third-party protected material. The photo in our screenshots is the Mona Lisa (public domain).
+
+7. IN-APP PURCHASE
+Diceify Studio, one auto-renewable subscription group with two options: Studio Monthly (US$9 per month) and Studio Yearly (US$36 per year). Studio unlocks building past the first 5 rows of a project (the free limit) and the full-resolution SVG blueprint download.
+How to reach it after signing in:
+- Account icon (top right of the start screen) > See plans, or
+- Build step: move past row 5 > "Build Limit Reached", or
+- Build step: "..." menu > Download blueprint.
+The subscription screen shows the plan name, Monthly and Yearly, the price and length of each, the renewal terms, Restore purchases, and links to the Terms of Use and Privacy Policy. Signed out, these actions ask the user to sign in first.
+A plan bought on diceify.art also works in the app when the user signs in with the same account; the app has no links to purchases outside the App Store. The "Purchase dice" item in the Build step's "..." menu opens an Amazon search for physical dice; nothing is sold in the app that way.
 ```
 
 ### App Privacy (must match the manifest)

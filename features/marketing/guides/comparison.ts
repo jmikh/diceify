@@ -50,7 +50,7 @@ export const DICEIFY: Tool = {
     name: 'Diceify',
     url: '/',
     platform: 'Web, in any modern browser on a computer, tablet or phone. Native iOS app coming soon',
-    price: `Free: the generator, every tuning control, exact counts, saved projects, share links and the first ${FREE_ROWS} builder rows. Full builder + SVG blueprint: Creator $${PRICING.creator.price} for ${PRICING.creator.accessDays} days, or Studio $${PRICING.studio.monthlyPrice}/month or $${PRICING.studio.yearlyPrice}/year`,
+    price: `Free: the generator, every tuning control, exact counts, saved projects, share links and the first ${FREE_ROWS} builder rows. Full builder + SVG blueprint: Studio $${PRICING.studio.monthlyPrice}/month or $${PRICING.studio.yearlyPrice}/year`,
     account: 'No, to generate and tune. A free sign-in saves unlimited projects to the cloud and creates share links',
     gridRange: `${MIN_ROWS}–${MAX_ROWS} rows; columns follow the crop (1:1, 3:4, 4:3, 2:3 or 16:9)`,
     colourModes: 'Black, white, or both (12 shades)',

@@ -5,18 +5,29 @@ import { Check, Loader2, Clock } from 'lucide-react'
 import { track } from '@/lib/analytics'
 import type { CheckoutPlan, Plan } from '@/core/billing'
 import { useUser } from '@/features/account/useUser'
-import { BillingError, reportBillingError, startCheckout } from '@/lib/supabase/billing'
+import { goToCheckout } from './checkout'
 
 // =============================================================================
 // PRICING CONFIGURATION - Single source of truth
 // =============================================================================
+
+/**
+ * What Studio adds to the free Explorer plan: ticked on the Studio card ("Everything in Explorer, plus") and listed in
+ * the build-limit modal. One list, so free vs Pro reads the same everywhere.
+ */
+export const PRO_FEATURES = [
+    'Mixed black & white dice, no watermark',
+    'Unlimited rows in Builder Studio',
+    'Printable HD blueprint download',
+] as const
+
 export const PRICING_CONFIG = {
     creator: {
         price: 19,
         description: "For creators with a vision and a deadline. 30 days of full access to complete your masterpiece.",
         features: [
             { text: <><strong>Unlimited</strong> dice in Builder</>, icon: 'check' as const },
-            { text: "Full resolution SVG blueprints", icon: 'check' as const },
+            { text: "Printable HD blueprints", icon: 'check' as const },
             { text: <><strong>Unlimited</strong> projects in the cloud</>, icon: 'check' as const },
             { text: "Access expires after 30 days", icon: 'clock' as const },
         ],
@@ -24,7 +35,7 @@ export const PRICING_CONFIG = {
         landingFeatures: [
             { text: "Generate dice art from any photo", icon: 'check' as const },
             { text: <><strong>Unlimited</strong> dice in Builder Studio</>, icon: 'check' as const },
-            { text: "Full resolution SVG blueprints", icon: 'check' as const },
+            { text: "Printable HD blueprints", icon: 'check' as const },
             { text: <><strong>Unlimited</strong> projects in the cloud</>, icon: 'check' as const },
             { text: "Access expires after 30 days", icon: 'clock' as const },
         ],
@@ -32,20 +43,8 @@ export const PRICING_CONFIG = {
     studio: {
         monthlyPrice: 9,
         yearlyPrice: 36,
-        description: "For artists who want to take their time or create multiple pieces.",
-        features: [
-            { text: <><strong>Unlimited</strong> dice in Builder</>, icon: 'check' as const },
-            { text: "Full resolution SVG blueprints", icon: 'check' as const },
-            { text: <><strong>Unlimited</strong> projects in the cloud</>, icon: 'check' as const },
-            { text: "Cancel anytime", icon: 'check' as const },
-        ],
-        landingFeatures: [
-            { text: "Generate dice art from any photo", icon: 'check' as const },
-            { text: <><strong>Unlimited</strong> dice in Builder Studio</>, icon: 'check' as const },
-            { text: "Full resolution SVG blueprints", icon: 'check' as const },
-            { text: <><strong>Unlimited</strong> projects in the cloud</>, icon: 'check' as const },
-            { text: "Cancel anytime", icon: 'check' as const },
-        ],
+        /** Below "Everything in Explorer, plus": only what the free plan lacks. */
+        features: [...PRO_FEATURES, "Cancel anytime"],
     },
 } as const
 
@@ -61,7 +60,10 @@ export type CardVariant = 'compact' | 'full'
 // =============================================================================
 interface PricingCardProps {
     source: string
-    onAuthRequired: () => void
+    /** A signed-out click on this price: sign in first, then on to checkout for `plan`. */
+    onAuthRequired: (plan: CheckoutPlan) => void
+    /** Where Stripe's cancel returns (default: the homepage pricing section). */
+    cancelPath?: string
     /** The user already holds a plan this card cannot upgrade. */
     onAlreadyPro: (plan: Plan) => void
     isLoading: CheckoutPlan | null
@@ -111,33 +113,14 @@ const variantStyles = {
     },
 }
 
-/**
- * Sends the browser to Stripe Checkout. Resolves only on failure (the page leaves on success); a 409 from the
- * function means the profile is already on a paid plan — reported through `onAlreadyPro`.
- */
-async function goToCheckout(plan: CheckoutPlan, onAlreadyPro: () => void): Promise<boolean> {
-    try {
-        const { url } = await startCheckout(plan)
-        track('checkout_started', { plan })
-        window.location.assign(url)
-        return true
-    } catch (error) {
-        if (error instanceof BillingError && error.code === 'ALREADY_SUBSCRIBED') {
-            onAlreadyPro()
-        } else {
-            reportBillingError(error, 'billing-checkout')
-        }
-        return false
-    }
-}
-
 // =============================================================================
-// CREATOR CARD
+// CREATOR CARD (not on sale: rendered nowhere; kept to bring the pass back)
 // =============================================================================
 export function CreatorCard({
     source,
     onAuthRequired,
     onAlreadyPro,
+    cancelPath,
     isLoading,
     setIsLoading,
     variant = 'compact',
@@ -154,7 +137,7 @@ export function CreatorCard({
         })
 
         if (!user) {
-            onAuthRequired()
+            onAuthRequired('creator')
             return
         }
 
@@ -165,7 +148,7 @@ export function CreatorCard({
         }
 
         setIsLoading('creator')
-        if (!(await goToCheckout('creator', () => onAlreadyPro(entitlements.plan)))) setIsLoading(null)
+        if (!(await goToCheckout('creator', () => onAlreadyPro(entitlements.plan), cancelPath))) setIsLoading(null)
     }
 
     const content = (
@@ -234,6 +217,7 @@ export function StudioCard({
     source,
     onAuthRequired,
     onAlreadyPro,
+    cancelPath,
     isLoading,
     setIsLoading,
     variant = 'compact',
@@ -241,7 +225,6 @@ export function StudioCard({
 }: PricingCardProps) {
     const [studioInterval, setStudioInterval] = useState<'monthly' | 'yearly'>('yearly')
     const styles = variantStyles[variant]
-    const features = variant === 'full' ? PRICING_CONFIG.studio.landingFeatures : PRICING_CONFIG.studio.features
     const { user, entitlements } = useUser()
 
     const onUpgrade = async () => {
@@ -253,7 +236,7 @@ export function StudioCard({
         })
 
         if (!user) {
-            onAuthRequired()
+            onAuthRequired(plan)
             return
         }
 
@@ -264,7 +247,7 @@ export function StudioCard({
         }
 
         setIsLoading(plan)
-        if (!(await goToCheckout(plan, () => onAlreadyPro(entitlements.plan)))) setIsLoading(null)
+        if (!(await goToCheckout(plan, () => onAlreadyPro(entitlements.plan), cancelPath))) setIsLoading(null)
     }
 
     const content = (
@@ -323,14 +306,14 @@ export function StudioCard({
                         <p className={`${styles.descriptionSize} text-white/50`}>Billed annually at ${PRICING_CONFIG.studio.yearlyPrice}</p>
                     </div>
                 )}
-                <p className={`text-white/50 ${styles.descriptionSize}`}>{PRICING_CONFIG.studio.description}</p>
             </div>
 
+            <p className={`relative z-10 mb-2.5 ${styles.featureSize} font-semibold text-white/60`}>Everything in Explorer, plus:</p>
             <ul className={`${styles.featureSpacing} ${styles.listMargin} relative z-10 ${styles.featureSize} flex-1`}>
-                {features.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2 text-white/90">
+                {PRICING_CONFIG.studio.features.map(feature => (
+                    <li key={feature} className="flex items-start gap-2 text-white/90">
                         <Check className={`${styles.iconSize} text-accent-pink-light shrink-0 mt-0.5`} />
-                        <span>{feature.text}</span>
+                        <span>{feature}</span>
                     </li>
                 ))}
             </ul>

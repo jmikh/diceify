@@ -8,17 +8,25 @@ export interface PlanLimits {
   /** Rows a user may build; `null` = unlimited (never `Infinity`: it does not survive JSON). */
   builderRowLimit: number | null
   hasSvgExport: boolean
+  /** Black and white dice in one design (colour mode `both`). */
+  hasMixedDice: boolean
+  /** Rows a design may have and still be built; `null` = unlimited. Larger designs can only be previewed. */
+  designRowLimit: number | null
 }
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
-  explorer: { builderRowLimit: 5, hasSvgExport: false },
-  creator: { builderRowLimit: null, hasSvgExport: true },
-  studio: { builderRowLimit: null, hasSvgExport: true },
-  lifetime: { builderRowLimit: null, hasSvgExport: true },
+  explorer: { builderRowLimit: 5, hasSvgExport: false, hasMixedDice: false, designRowLimit: null },
+  creator: { builderRowLimit: null, hasSvgExport: true, hasMixedDice: true, designRowLimit: null },
+  studio: { builderRowLimit: null, hasSvgExport: true, hasMixedDice: true, designRowLimit: null },
+  lifetime: { builderRowLimit: null, hasSvgExport: true, hasMixedDice: true, designRowLimit: null },
 }
 
 /** What a user can buy (the `plan` sent to the billing checkout route). */
-export type CheckoutPlan = 'creator' | 'studio_monthly' | 'studio_yearly'
+export const CHECKOUT_PLANS = ['creator', 'studio_monthly', 'studio_yearly'] as const
+export type CheckoutPlan = (typeof CHECKOUT_PLANS)[number]
+
+export const isCheckoutPlan = (value: unknown): value is CheckoutPlan =>
+  (CHECKOUT_PLANS as readonly unknown[]).includes(value)
 
 export const PRICING = {
   creator: {
@@ -31,7 +39,6 @@ export const PRICING = {
     name: 'Studio',
     monthlyPrice: 9,
     yearlyPrice: 36,
-    description: 'For artists who want to take their time or create multiple pieces.',
   },
 } as const
 

@@ -10,7 +10,7 @@ import type { DiceColor, DiceFace, DiceGrid, GridPos } from './types'
 const DIE_SIZE = 100
 
 /** Progress preview: cream background, unbuilt dice drawn as faint ghosts of the final art. */
-export const PROGRESS_STYLE = { background: '#eae3d2', unbuiltOpacity: 0.15 } as const
+export const PROGRESS_STYLE = { background: '#eae3d2', unbuiltOpacity: 0.3 } as const
 
 const SVG_XMLNS = 'http://www.w3.org/2000/svg'
 

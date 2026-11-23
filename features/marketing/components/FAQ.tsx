@@ -19,11 +19,11 @@ const FREE_ROWS = PLAN_LIMITS.explorer.builderRowLimit
 const FAQS: Faq[] = [
     {
         question: 'Is Diceify free?',
-        answer: `Yes. The Explorer plan is free and needs no sign-up to try: upload a photo, tune the pattern and preview it. The free builder covers the first ${FREE_ROWS} rows; the Creator Pass ($${PRICING.creator.price} one-time, ${PRICING.creator.accessDays} days) or Studio ($${PRICING.studio.monthlyPrice}/month or $${PRICING.studio.yearlyPrice}/year) unlock the full builder and SVG blueprints.`,
+        answer: `Yes. The Explorer plan is free and needs no sign-up to try: upload a photo, tune the pattern and preview it. The free builder covers the first ${FREE_ROWS} rows; Studio ($${PRICING.studio.monthlyPrice}/month or $${PRICING.studio.yearlyPrice}/year) unlocks the full builder and SVG blueprints.`,
     },
     {
         question: 'Can I print or export the pattern?',
-        answer: 'On the free plan you get the full live preview and the exact black and white dice counts in the editor, and after signing in (free) you can share a link that shows your pattern on a social card. The Creator Pass and Studio add the full-resolution SVG blueprint download, which you can print at any size. There is no PDF export and no free image file download today.',
+        answer: 'On the free plan you get the full live preview and the exact black and white dice counts in the editor, and after signing in (free) you can share a link that shows your pattern on a social card. Studio adds the full-resolution SVG blueprint download, which you can print at any size. There is no PDF export and no free image file download today.',
     },
     {
         question: 'Does it work on my phone?',
@@ -34,16 +34,8 @@ const FAQS: Faq[] = [
         answer: 'The dice pattern is generated in your browser. If you are not signed in, your draft stays on your device. A photo is uploaded to your private project only when you sign in and save it, so you can reopen it on another device.',
     },
     {
-        question: `What do I get with the Creator Pass ($${PRICING.creator.price})?`,
-        answer: `${PRICING.creator.accessDays} days of full access for a one-time $${PRICING.creator.price}: the builder for every row of your grid, full-resolution SVG blueprints and unlimited saved projects. It does not renew; Studio is the subscription for ongoing work.`,
-    },
-    {
         question: 'How big a piece can I build?',
         answer: `Any grid from ${MIN_ROWS} to ${MAX_ROWS} rows tall; the width follows your crop. Diceify shows the exact number of black and white dice for the size you pick.`,
-    },
-    {
-        question: 'Is Diceify the same as Dicify?',
-        answer: 'No. Diceify (with an e) is the dice art generator at diceify.art; Dicify is an unrelated TensorFlow.js book project.',
     },
 ]
 

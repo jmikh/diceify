@@ -6,14 +6,16 @@ import { useGate } from '@/features/editor/hooks/useGate'
 import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
 
 /**
- * Download the full dice grid as an SVG blueprint (the `hasSvgExport` entitlement).
- * Shared by the desktop panel and the mobile build controls.
+ * Download the full dice grid as an SVG blueprint: a Pro feature (the `hasSvgExport` entitlement); `pro` = the plan
+ * lacks it, so the button carries a PRO tag and opens the upgrade modal. Shared by the desktop panels and the mobile
+ * build controls.
  */
 export function useBlueprintDownload() {
     const { ent, gate } = useGate()
+    const allowed = ent.hasSvgExport
 
-    return useCallback(() => {
-        if (!gate(ent.hasSvgExport, 'blueprint', { signInMessage: 'You must be logged in to download blueprint.' })) return
+    const download = useCallback(() => {
+        if (!gate(allowed, 'blueprint')) return
 
         const grid = useDerivedStore.getState().grid
         if (!grid) return
@@ -34,5 +36,7 @@ export function useBlueprintDownload() {
         } catch (error) {
             reportError(error, { where: 'blueprint-svg' })
         }
-    }, [ent.hasSvgExport, gate])
+    }, [allowed, gate])
+
+    return { download, pro: !allowed }
 }

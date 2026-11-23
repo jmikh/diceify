@@ -13,7 +13,7 @@ export default function BuilderLimitToast() {
         track('click_upgrade', {
             source: 'builder_limit_toast',
         })
-        gate(false, 'upgrade', { signInMessage: 'Sign in to upgrade your account', modal: 'proFeature' })
+        gate(false, 'upgrade')
     }
 
     return (

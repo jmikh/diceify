@@ -17,6 +17,7 @@
   --bg-primary: #0a0014;
   --bg-secondary: #1a0826;
   --bg-deep: #050505;
+  --bg-editor: #1d0712;                 /* very dark brand pink: the editor's flat background (no orbs) */
 
   /* Glass/Frosted Effects */
   --bg-glass: rgba(255, 255, 255, 0.03);
@@ -227,7 +228,7 @@ body {
 
 /* =============================================================================
    BACKGROUND EFFECTS
-   Decorative gradient orbs and grid overlay for landing page
+   Decorative gradient orbs (or the editor's solid color) and grid overlay
    ============================================================================= */
 
 .bg-gradient {
@@ -239,6 +240,10 @@ body {
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
+}
+
+.bg-gradient.solid {
+  background: var(--bg-editor);
 }
 
 .orb {

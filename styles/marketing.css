@@ -117,8 +117,7 @@
 }
 
 .hero-badge-icon,
-.hero-button-die,
-.hero-proof-dice svg {
+.hero-button-die {
   width: 1.1rem;
   height: 1.1rem;
 }
@@ -132,26 +131,6 @@
 
 .hero-link:hover {
   color: var(--pink);
-}
-
-.hero-proof {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 3rem;
-  padding-top: 1.75rem;
-  border-top: 1px solid var(--border-glass);
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-
-.hero-proof strong {
-  color: var(--text-primary);
-}
-
-.hero-proof-dice {
-  display: flex;
-  gap: 0.3rem;
 }
 
 .hero-visual {
@@ -399,6 +378,156 @@
 .section-header {
   text-align: center;
   margin-bottom: 4rem;
+}
+
+/* =============================================================================
+   LANDING PAGE - BUILDER STUDIO (pitch + looping builder demo)
+   ============================================================================= */
+
+.builder-showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4rem;
+  align-items: center;
+  padding: 4rem 6rem;
+}
+
+.builder-showcase h2 {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.25rem;
+}
+
+.builder-showcase h2 .highlight {
+  color: var(--pink);
+}
+
+.builder-showcase-lead {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+}
+
+.builder-showcase-points {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.builder-showcase-points li {
+  display: flex;
+  gap: 1rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.builder-showcase-points strong {
+  display: block;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.builder-showcase-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.9rem;
+  color: var(--pink);
+  background: var(--pink-glow-soft);
+}
+
+/* A mock of the editor's build step: progress, dice canvas, navigation bar */
+.builder-demo {
+  justify-self: center;
+  width: 100%;
+  max-width: 34rem;
+  overflow: hidden;
+  border: 1px solid var(--border-glass);
+  border-radius: 1.5rem;
+  background: rgb(15 15 18 / 0.9);
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.45), 0 0 60px var(--pink-glow-soft);
+}
+
+.builder-demo-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.builder-demo-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 0.75rem;
+}
+
+.builder-demo-die {
+  transition: opacity 0.35s ease;
+}
+
+.builder-demo-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-top: 1px solid var(--border-glass);
+}
+
+/* One "tap" on the next-different-die button (remounted on every step) */
+.builder-demo-tap {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: builder-demo-tap 0.5s ease-out;
+}
+
+@keyframes builder-demo-tap {
+  from {
+    background: rgb(255 255 255 / 0.3);
+    box-shadow: 0 0 0 0 rgb(var(--pink-rgb) / 0.7);
+  }
+
+  to {
+    background: transparent;
+    box-shadow: 0 0 0 12px rgb(var(--pink-rgb) / 0);
+  }
+}
+
+@media (max-width: 1024px) {
+  .builder-showcase {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    padding: 3rem 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .builder-showcase {
+    padding: 3rem 1rem;
+  }
+
+  .builder-showcase h2 {
+    font-size: 2.25rem;
+  }
+
+  .builder-demo-controls {
+    gap: 0.35rem;
+    padding: 0.75rem;
+  }
 }
 
 /* =============================================================================

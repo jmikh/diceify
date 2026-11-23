@@ -12,7 +12,7 @@ import { panel } from '../common/ui'
 import MobileControls from './MobileControls'
 import MobileTopBar from './MobileTopBar'
 
-/** Rotate 90° on the crop canvas (where the build step keeps its zoom buttons). */
+/** Rotate 90° on the crop canvas, bottom right (where the build step keeps its zoom buttons). */
 function CropRotateButton() {
     const { rotate } = useCropControls()
     return (
@@ -31,7 +31,7 @@ export default function MobileEditor({ step }: { step: Step }) {
     return (
         <>
             <MobileTopBar />
-            <section aria-label="Canvas" className={`relative z-10 flex-1 min-h-0 mx-4 mt-2 rounded-[22px] overflow-hidden ${panel}`}>
+            <section aria-label="Canvas" className={`relative z-10 flex-1 min-h-0 mt-2 overflow-hidden ${panel} border-x-0`}>
                 {step === 'crop' && (
                     <>
                         <CropperMain />
@@ -40,7 +40,7 @@ export default function MobileEditor({ step }: { step: Step }) {
                 )}
                 {step === 'tune' && (
                     <>
-                        <div className="w-full h-full px-4 pt-4 pb-11">
+                        <div className="w-full h-full pt-4 pb-11">
                             <TunerMain />
                         </div>
                         <div className="absolute inset-x-0 bottom-3 flex justify-center">
@@ -52,7 +52,7 @@ export default function MobileEditor({ step }: { step: Step }) {
                     <>
                         <BuilderMain />
                         <BuildZoomButtons
-                            className={`absolute top-3 right-3 z-10 flex rounded-xl overflow-hidden divide-x divide-white/[0.08] ${panel}`}
+                            className={`absolute bottom-3 right-3 z-10 flex rounded-xl overflow-hidden divide-x divide-white/[0.08] ${panel}`}
                             buttonClassName="w-11 h-10 flex items-center justify-center text-white/85 active:bg-white/10 disabled:opacity-35"
                         />
                     </>

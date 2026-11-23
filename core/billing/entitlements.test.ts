@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { deriveEntitlements, EXPLORER_ENTITLEMENTS, PRO_SUBSCRIPTION_STATUSES, type BillingState } from './entitlements'
-import { PLAN_LIMITS, PLANS, PRICING, STUDIO_YEARLY_MONTHLY_EFFECTIVE, STUDIO_YEARLY_SAVINGS_PERCENT, type Plan } from './plans'
+import { isCheckoutPlan, PLAN_LIMITS, PLANS, PRICING, STUDIO_YEARLY_MONTHLY_EFFECTIVE, STUDIO_YEARLY_SAVINGS_PERCENT, type Plan } from './plans'
 
 const NOW = new Date('2026-09-30T12:00:00.000Z')
 const iso = (offsetMs: number) => new Date(NOW.getTime() + offsetMs).toISOString()
@@ -22,12 +22,15 @@ const state = (overrides: Partial<BillingState> = {}): BillingState => ({
 describe('PLAN_LIMITS / PRICING', () => {
   it('pins the limits table (null, never Infinity)', () => {
     expect(PLAN_LIMITS).toEqual({
-      explorer: { builderRowLimit: 5, hasSvgExport: false },
-      creator: { builderRowLimit: null, hasSvgExport: true },
-      studio: { builderRowLimit: null, hasSvgExport: true },
-      lifetime: { builderRowLimit: null, hasSvgExport: true },
+      explorer: { builderRowLimit: 5, hasSvgExport: false, hasMixedDice: false, designRowLimit: null },
+      creator: { builderRowLimit: null, hasSvgExport: true, hasMixedDice: true, designRowLimit: null },
+      studio: { builderRowLimit: null, hasSvgExport: true, hasMixedDice: true, designRowLimit: null },
+      lifetime: { builderRowLimit: null, hasSvgExport: true, hasMixedDice: true, designRowLimit: null },
     })
-    for (const plan of PLANS) expect(PLAN_LIMITS[plan].builderRowLimit).not.toBe(Infinity)
+    for (const plan of PLANS) {
+      expect(PLAN_LIMITS[plan].builderRowLimit).not.toBe(Infinity)
+      expect(PLAN_LIMITS[plan].designRowLimit).not.toBe(Infinity)
+    }
   })
 
   it('pins the prices', () => {
@@ -37,6 +40,11 @@ describe('PLAN_LIMITS / PRICING', () => {
     expect(PRICING.studio.yearlyPrice).toBe(36)
     expect(STUDIO_YEARLY_MONTHLY_EFFECTIVE).toBe(3)
     expect(STUDIO_YEARLY_SAVINGS_PERCENT).toBe(67)
+  })
+
+  it('recognises the checkout plans only', () => {
+    for (const plan of ['creator', 'studio_monthly', 'studio_yearly']) expect(isCheckoutPlan(plan)).toBe(true)
+    for (const value of ['studio', 'lifetime', 'explorer', '', null, undefined]) expect(isCheckoutPlan(value)).toBe(false)
   })
 })
 

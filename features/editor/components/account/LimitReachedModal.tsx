@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import Image from "next/image";
+import { PRO_FEATURES } from "@/features/billing/PricingCards";
 import { UpgradeButton } from "@/features/editor/components/account/UpgradeButton";
 import { useEditorUiStore } from "@/features/editor/store/useEditorUiStore";
 
@@ -62,14 +63,11 @@ export default function LimitReachedModal() {
               Upgrade Benefits
             </h3>
             <ul className="text-left text-sm text-gray-300 space-y-2">
-              <li className="flex items-center gap-2">
-                <span className="text-accent-pink">✓</span> Unlimited dice in
-                Builder
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-accent-pink">✓</span> Full resolution SVG
-                blueprints
-              </li>
+              {PRO_FEATURES.map((feature) => (
+                <li key={feature} className="flex items-center gap-2">
+                  <span className="text-accent-pink">✓</span> {feature}
+                </li>
+              ))}
             </ul>
           </div>
 

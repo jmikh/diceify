@@ -7,7 +7,7 @@ import { ABOUT_URL, FOUNDER_NAME, FOUNDER_REF, ORGANIZATION_REF } from '@/lib/sc
 import { DICE_PARAM_BOUNDS, THRESHOLDS, type ColorMode } from '@/core/dice'
 import DiceScale from '@/features/marketing/components/DiceScale'
 import {
-    ALL_QUESTIONS, ANSWERS, BUILD_VIDEO, CREATOR_DAYS, CREATOR_PRICE, EXAMPLE_SIDE, FAQ_QUESTIONS, FREE_BUILDER_ROWS,
+    ALL_QUESTIONS, ANSWERS, BUILD_VIDEO, EXAMPLE_SIDE, FAQ_QUESTIONS, FREE_BUILDER_ROWS,
     GRID_SIDES, GUIDES, SECTION_LIST, SECTIONS, SHADE_ORDER, STEPS, STUDIO_MONTHLY, STUDIO_YEARLY, dicePerSquareFoot,
     formatCount, gridLabel, rowLength, type Section,
 } from '@/features/marketing/content/dice-art'
@@ -453,7 +453,6 @@ export default function DiceArtPage() {
                                 try it.
                             </li>
                             <li>
-                                <strong>Creator pass (${CREATOR_PRICE}, {CREATOR_DAYS} days)</strong> and{' '}
                                 <strong>Studio (${STUDIO_MONTHLY}/month or ${STUDIO_YEARLY}/year):</strong> unlimited
                                 builder rows and a full-resolution SVG blueprint of the whole grid. The SVG opens in
                                 any browser or vector app and prints at any size.

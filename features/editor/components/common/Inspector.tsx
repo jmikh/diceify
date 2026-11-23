@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
+import ProBadge from './ProBadge'
 import { sectionLabel } from './ui'
 
 interface InspectorProps {
@@ -39,8 +40,16 @@ export function InspectorSection({ label, hint, children }: { label: string; hin
   )
 }
 
+interface InspectorToolButtonProps {
+  icon: LucideIcon
+  label: string
+  onClick: () => void
+  /** The plan lacks this action: a PRO tag at the end of the row. */
+  pro?: boolean
+}
+
 /** A full-width action row inside an inspector section (build tools, blueprint download). */
-export function InspectorToolButton({ icon: Icon, label, onClick }: { icon: LucideIcon; label: string; onClick: () => void }) {
+export function InspectorToolButton({ icon: Icon, label, onClick, pro = false }: InspectorToolButtonProps) {
   return (
     <button
       onClick={onClick}
@@ -48,6 +57,7 @@ export function InspectorToolButton({ icon: Icon, label, onClick }: { icon: Luci
     >
       <Icon size={17} className="text-white/65" />
       <span className="flex-1">{label}</span>
+      {pro && <ProBadge />}
     </button>
   )
 }

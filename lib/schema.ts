@@ -37,7 +37,7 @@ export const FOUNDER_YOUTUBE_URL = 'https://www.youtube.com/@johnfwilliam'
 export const BUILD_VIDEO_ID = 'z4UUXeYqJZw'
 export const BUILD_VIDEO_URL = `https://www.youtube.com/watch?v=${BUILD_VIDEO_ID}`
 
-/** The one-sentence definition shown in the hero and the footer (and quoted by answer engines). */
+/** The one-sentence definition shown in the footer (and quoted by answer engines). */
 export const DEFINITION =
   'Diceify is a free, browser-based dice art generator that turns a photo into a buildable black-and-white dice pattern with exact dice counts and a step-by-step builder.'
 
@@ -103,7 +103,7 @@ const PRICING_URL = `${SITE_URL}/#pricing`
 
 /** The plans as Offers, built from `PRICING` so the prices never drift from checkout. */
 export function planOffers() {
-  const { creator, studio } = PRICING
+  const { studio } = PRICING
   const subscription = (name: string, price: number, billingDuration: 'P1M' | 'P1Y', unitCode: 'MON' | 'ANN') => ({
     '@type': 'Offer',
     name,
@@ -113,7 +113,6 @@ export function planOffers() {
   })
   return [
     { '@type': 'Offer', name: 'Explorer (free)', ...usd(0), url: PRICING_URL },
-    { '@type': 'Offer', name: `${creator.name} Pass (${creator.accessDays} days, one-time)`, ...usd(creator.price), url: PRICING_URL },
     subscription(`${studio.name} (monthly)`, studio.monthlyPrice, 'P1M', 'MON'),
     subscription(`${studio.name} (yearly)`, studio.yearlyPrice, 'P1Y', 'ANN'),
   ]

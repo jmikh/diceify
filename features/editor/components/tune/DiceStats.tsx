@@ -10,13 +10,18 @@ export function DiceColorBar({ barClassName }: { barClassName?: string }) {
     return <DiceColorBarView blackCount={blackCount} whiteCount={whiteCount} barClassName={barClassName} />
 }
 
+/** The current grid's "W × H grid"; nothing until there is a grid. */
+export function CurrentGridSize() {
+    const gridSize = useDerivedStore(state => state.gridSize)
+    return gridSize ? <GridSize width={gridSize.width} height={gridSize.height} /> : null
+}
+
 /** Under the tune canvas: grid size, dice count and the black/white split. */
 export function DiceStatsStrip() {
-    const gridSize = useDerivedStore(state => state.gridSize)
     const totalCount = useDerivedStore(state => state.stats.totalCount)
     return (
         <div className="h-[60px] flex-shrink-0 flex items-center gap-7 px-6 border-t border-white/[0.06] text-sm text-white/60">
-            {gridSize && <GridSize width={gridSize.width} height={gridSize.height} />}
+            <CurrentGridSize />
             <span>
                 <b className="text-white font-semibold tabular-nums"><AnimatedCount value={totalCount} /></b> dice
             </span>

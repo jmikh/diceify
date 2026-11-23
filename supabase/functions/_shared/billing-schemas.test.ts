@@ -10,6 +10,13 @@ describe('CheckoutBody', () => {
     expect(CheckoutBody.safeParse({ plan: 'lifetime' }).success).toBe(false)
     expect(CheckoutBody.safeParse({}).success).toBe(false)
   })
+
+  it('takes an optional same-origin cancel path', () => {
+    expect(CheckoutBody.safeParse({ plan: 'creator', cancelPath: '/editor' }).success).toBe(true)
+    for (const bad of ['editor', '//evil.example', 'https://evil.example/x', '']) {
+      expect(CheckoutBody.safeParse({ plan: 'creator', cancelPath: bad }).success, bad).toBe(false)
+    }
+  })
 })
 
 describe('PortalBody', () => {

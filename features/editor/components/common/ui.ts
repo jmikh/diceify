@@ -24,4 +24,7 @@ export const panel = 'bg-[#0f0f12]/90 border border-white/[0.08] backdrop-blur-x
 
 export const popover = 'bg-[#0e0618]/[0.97] border border-white/10 backdrop-blur-xl shadow-[0_24px_60px_rgba(0,0,0,0.55)]'
 
+/** The desktop editor's width: the header and the canvas + inspector row share it, centred on a wide monitor. */
+export const desktopFrame = 'w-full max-w-[1680px] mx-auto'
+
 export const sectionLabel = 'text-[11px] font-semibold uppercase tracking-[0.12em] text-white/55'

@@ -14,7 +14,7 @@ the functions refuse an `sk_test_` key against a hosted `SUPABASE_URL`.
 | `STRIPE_SECRET_KEY` | Stripe dashboard → Developers → API keys, **test mode** (`sk_test_…`) |
 | `STRIPE_WEBHOOK_SECRET` | printed by `npm run stripe:listen` (`whsec_…`, new on every session — paste it in and restart `functions:serve`) |
 | `STRIPE_CREATOR_PRICE_ID`, `STRIPE_STUDIO_MONTHLY_PRICE_ID`, `STRIPE_STUDIO_YEARLY_PRICE_ID` | test-mode prices (one-time $19; $9/month; $36/year); the `billing` function refuses to boot without them |
-| `APP_URL` | `http://localhost:3000` — Checkout's `success_url` (`/account?checkout=success`), `cancel_url` (`/#pricing`) and the portal's `return_url` |
+| `APP_URL` | `http://localhost:3000` — Checkout's `success_url` (`/account?checkout=success`), `cancel_url` (the request's `cancelPath`, default `/#pricing`) and the portal's `return_url` |
 
 `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` are injected by the runtime; do not put them in the file.
 
@@ -48,7 +48,8 @@ Purchases start from the pricing cards (landing `#pricing`, the editor's upgrade
 creates the Stripe customer on first use (one per user, persisted before the session) and sends the browser to Checkout;
 Stripe returns to `/account?checkout=success`, which polls `GET /billing/sync` every 2 s (up to 10×) until the profile is on a
 paid plan ("Confirming your purchase…" → "You're all set!"; after 20 s: "Still processing — refresh in a minute"). Cancel returns
-to `/#pricing`.
+to `/editor` from the editor, else `/#pricing`. A signed-out price click (landing or editor) signs in first: the sign-in returns
+to `/editor?restored=true&upgrade=<plan>` and the editor starts checkout once it has booted (`features/billing/checkout.ts`).
 
 1. **Buy Creator** (4242) → `checkout.session.completed` → sync → `profiles.plan = 'creator'`, `plan_expires_at` = session
    `created` + 30 d; `/account` shows "Access until …". A second creator purchase later raises the expiry (monotonic), never lowers it.

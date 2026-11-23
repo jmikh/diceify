@@ -1,6 +1,7 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, Lock } from 'lucide-react'
+import { useEntitlements } from '@/features/account/useUser'
 import { useBlueprintDownload } from '@/features/editor/hooks/useBlueprintDownload'
 import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
 import { useDocumentStore } from '@/features/editor/store/useDocumentStore'
@@ -11,10 +12,11 @@ import OrientationControl from './controls/OrientationControl'
 import ParamSlider from './controls/ParamSlider'
 import { tunerSliders, type TunerSliderConfig } from './controls/sliderConfigs'
 
-/** One tuning slider bound to its dice param. */
+/** One tuning slider bound to its dice param; rows past the plan's design limit are marked Pro. */
 export function TunerSlider({ config, large = false }: { config: TunerSliderConfig; large?: boolean }) {
   const value = useDocumentStore(state => state.dice[config.key])
   const updateDice = useDocumentStore(state => state.updateDice)
+  const { designRowLimit } = useEntitlements()
   return (
     <ParamSlider
       large={large}
@@ -26,6 +28,7 @@ export function TunerSlider({ config, large = false }: { config: TunerSliderConf
       value={value}
       onChange={(next) => updateDice({ [config.key]: next })}
       formatValue={config.formatValue}
+      proAbove={config.key === 'numRows' ? designRowLimit : null}
     />
   )
 }
@@ -35,8 +38,8 @@ export function TunerSlider({ config, large = false }: { config: TunerSliderConf
  * orientation and the blueprint download. The controls are shared with the mobile toolbar (MobileTuneControls).
  */
 export default function TunerPanel() {
-  const { goNext, goBack } = useStepNavigation()
-  const downloadBlueprint = useBlueprintDownload()
+  const { goNext, goBack, nextLocked } = useStepNavigation()
+  const blueprint = useBlueprintDownload()
   const [rows, ...tone] = tunerSliders
 
   return (
@@ -51,7 +54,7 @@ export default function TunerPanel() {
           </button>
           <button onClick={goNext} className={`${primaryButton} h-12 flex-1 text-[15px]`}>
             Continue to Build
-            <ChevronRight size={18} />
+            {nextLocked ? <Lock size={16} /> : <ChevronRight size={18} />}
           </button>
         </>
       }
@@ -67,7 +70,7 @@ export default function TunerPanel() {
         <OrientationControl />
       </InspectorSection>
       <InspectorSection label="Export">
-        <InspectorToolButton icon={Download} label="Download blueprint" onClick={downloadBlueprint} />
+        <InspectorToolButton icon={Download} label="Download HD blueprint" onClick={blueprint.download} pro={blueprint.pro} />
       </InspectorSection>
     </Inspector>
   )

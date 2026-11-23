@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import Image from "next/image";
 import { useBuildProgress } from "@/features/editor/hooks/useBuildProgress";
 import { useEditorUiStore } from "@/features/editor/store/useEditorUiStore";
-import { BuildProgressBar } from "./BuildProgressBar";
+import { BuildProgressBar } from "@/components/BuildProgressBar";
 
 /**
  * Confirmation shown when leaving the build step with progress (opened by

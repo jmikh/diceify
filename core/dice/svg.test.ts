@@ -87,7 +87,7 @@ describe('renderWindowSvg', () => {
 
 describe('renderProgressSvg', () => {
   const dieCount = (svg: string) => (svg.match(/<svg x='/g) ?? []).length
-  const ghostCount = (svg: string) => (svg.match(/<g opacity='0.15'>/g) ?? []).length
+  const ghostCount = (svg: string) => (svg.match(/<g opacity='0.3'>/g) ?? []).length
 
   it('draws every die, the ones after countCompleted as faint ghosts', () => {
     for (let y = 0; y < grid.height; y++) {
@@ -111,7 +111,7 @@ describe('renderProgressSvg', () => {
   it('places the bottom-left die first (SVG row height-1)', () => {
     const svg = renderProgressSvg(grid, { x: 1, y: 0 }, { background: '#fff' })
     expect(svg).toContain("\n<svg x='0' y='1' width='1' height='1'")
-    expect(svg).toContain("<g opacity='0.15'><svg x='1' y='1' width='1' height='1'")
+    expect(svg).toContain("<g opacity='0.3'><svg x='1' y='1' width='1' height='1'")
     expect(svg).toContain('<rect width="3" height="2" fill="#fff" />')
   })
 

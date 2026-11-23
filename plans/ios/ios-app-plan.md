@@ -492,3 +492,6 @@ Claude: `ios/` skeleton, `.gitignore` additions (`ios/**/xcuserdata`, `DerivedDa
   version 1.0 driven by `project.yml`, `/privacy` + `/terms` for the app, 6.9" screenshots, listing text, App Privacy
   answers and review notes; Tune preview centred on tall screens. Next: merge + deploy the web, upload the build,
   the user's App Store Connect entries, submit.
+- **Step 7 review 1 (submitted 2026-10-21, answered 2026-10-26)**: 2.1 "Information Needed" (new developer account):
+  a screen recording on a physical device on the latest iOS + answers to 7 questions, in the reply and in the Notes
+  field. Answers in `ios-step-7.md` (App Review Information); the recording is the user's.

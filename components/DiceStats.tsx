@@ -1,6 +1,10 @@
+import type { DiceColor } from '@/core/dice'
 import AnimatedCount from './AnimatedCount'
 
-const swatchClass = 'w-3 h-3 rounded-[3px] border border-white/40 flex-shrink-0'
+/** A small square in a die colour. */
+export function ColorSwatch({ color, className = 'w-3 h-3' }: { color: DiceColor; className?: string }) {
+    return <span aria-hidden className={`${className} rounded-[3px] border border-white/40 flex-shrink-0 ${color === 'black' ? 'bg-black' : 'bg-white'}`} />
+}
 
 /** Black count · proportional bar · white count. */
 export function DiceColorBar({
@@ -16,7 +20,7 @@ export function DiceColorBar({
     return (
         <div className="flex items-center gap-2.5 text-[13px] text-white/75 tabular-nums">
             <span className="flex items-center gap-1.5">
-                <span aria-hidden className={`${swatchClass} bg-black`} />
+                <ColorSwatch color="black" />
                 <AnimatedCount value={blackCount} />
                 <span className="sr-only">black</span>
             </span>
@@ -31,7 +35,7 @@ export function DiceColorBar({
             <span className="flex items-center gap-1.5">
                 <AnimatedCount value={whiteCount} />
                 <span className="sr-only">white</span>
-                <span aria-hidden className={`${swatchClass} bg-white`} />
+                <ColorSwatch color="white" />
             </span>
         </div>
     )

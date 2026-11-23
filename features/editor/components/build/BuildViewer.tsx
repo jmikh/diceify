@@ -7,13 +7,12 @@ import { useBuildViewBox } from './useBuildViewBox'
 import { useBuildWindow } from './useBuildWindow'
 import { useBuildPinchZoom, useBuildZoomLevel } from './useBuildZoom'
 import { useElementSize } from '@/features/editor/hooks/useElementSize'
-import RunBadges from './RunBadges'
+import { DieHighlight, RunBadges, RunHighlight } from '@/components/BuildHighlight'
+import UnplacedDiceMask, { UNPLACED_MASK_URL } from './UnplacedDiceMask'
 
 interface BuildViewerProps {
     grid: DiceGrid
 }
-
-const HIGHLIGHT_TRANSITION = 'x 0.5s cubic-bezier(0.4, 0, 0.2, 1), y 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
 
 /** The zoomable dice viewer for the build step (+/- buttons: BuildZoomButtons). `grid` is never null: BuilderMain gates on it. */
 const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
@@ -106,28 +105,11 @@ const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
                             onMouseMove={handleSvgMouseMove}
                             onMouseLeave={handleSvgMouseLeave}
                         >
-                            {/* Render dice content */}
-                            <g dangerouslySetInnerHTML={{ __html: svgContent }} />
+                            {/* Render dice content; dice not placed yet are dimmed */}
+                            <UnplacedDiceMask current={current} cols={cols} rows={rows} />
+                            <g mask={UNPLACED_MASK_URL} dangerouslySetInnerHTML={{ __html: svgContent }} />
 
-                            {/* Rectangle over the run of identical dice (behind the highlight; same size as it for a run of one) */}
-                            {run && (
-                                <rect
-                                    x={run.start + 0.02}
-                                    y={currentSvgY + 0.02}
-                                    width={run.end - run.start + 1 - 0.04}
-                                    height={1 - 0.04}
-                                    fillOpacity="0.1"
-                                    strokeWidth="0.06"
-                                    strokeOpacity="1"
-                                    rx="0.1"
-                                    style={{
-                                        fill: 'var(--accent-blue)',
-                                        stroke: 'var(--accent-purple)',
-                                        transition: `${HIGHLIGHT_TRANSITION}, width 0.5s cubic-bezier(0.4, 0, 0.2, 1)`,
-                                        willChange: 'x, y, width'
-                                    }}
-                                />
-                            )}
+                            {run && <RunHighlight run={run} svgY={currentSvgY} />}
 
                             {/* Hover indicator - subtler version of the selection highlight */}
                             {hoverCell && !(hoverCell.x === currentX && hoverCell.svgY === currentSvgY) && (
@@ -144,23 +126,8 @@ const BuildViewer = memo(function BuildViewer({ grid }: BuildViewerProps) {
                                 />
                             )}
 
-                            {/* Animated highlight overlay (rendered on top) */}
-                            <rect
-                                x={currentX + 0.02}
-                                y={currentSvgY + 0.02}
-                                width={0.96}
-                                height={0.96}
-                                                                fillOpacity="0.2"
-                                strokeWidth="0.06"
-                                rx="0.1"
-                                style={{
-                                    fill: 'var(--pink)',
-                                    stroke: 'var(--pink)',
-                                    transition: HIGHLIGHT_TRANSITION,
-                                    filter: 'drop-shadow(0 0 2px rgb(var(--pink-rgb)/0.8))',
-                                    willChange: 'x, y'
-                                }}
-                            />
+                            {/* Current die, on top */}
+                            <DieHighlight x={currentX} svgY={currentSvgY} />
 
                             {run && <RunBadges run={run} current={current} rows={rows} />}
                         </svg>

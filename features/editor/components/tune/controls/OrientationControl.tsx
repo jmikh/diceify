@@ -29,7 +29,7 @@ export default function OrientationControl({ large = false }: OrientationControl
                         onClick={() => updateDice({ [option.paramKey]: !rotated })}
                         aria-pressed={rotated}
                         aria-label={`Rotate the ${option.face} faces 90°`}
-                        className={`${large ? 'h-14' : 'h-12'} flex items-center justify-center rounded-xl border transition-colors ${rotated
+                        className={`${large ? 'h-12' : 'h-10'} flex items-center justify-center rounded-xl border transition-colors ${rotated
                             ? 'border-accent-pink/60 bg-accent-pink/[0.14] text-white'
                             : 'border-white/[0.08] bg-white/[0.04] text-white/80 hover:bg-white/[0.08] hover:text-white'
                             }`}

@@ -8,7 +8,7 @@ private let DIE_SIZE = 100.0
 /// Progress preview: cream background, unbuilt dice drawn as faint ghosts of the final art.
 public enum ProgressStyle {
     public static let background = "#eae3d2"
-    public static let unbuiltOpacity = 0.15
+    public static let unbuiltOpacity = 0.3
 }
 
 private let SVG_XMLNS = "http://www.w3.org/2000/svg"

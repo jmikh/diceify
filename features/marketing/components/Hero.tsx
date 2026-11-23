@@ -1,14 +1,8 @@
 'use client'
 
-import { useId, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ImagePlus } from 'lucide-react'
-import { NO_CAPTURE_CLASS, track } from '@/lib/analytics'
-import { ACCEPT_ATTRIBUTE, ACCEPTED_FORMATS_LABEL, isAcceptedImage } from '@/lib/image/accept'
-import { stashPendingUpload } from '@/lib/pending-upload'
-import { DEFINITION } from '@/lib/schema'
-import type { DiceColor, DiceFace } from '@/core/dice'
+import { track } from '@/lib/analytics'
 import { DiceColorBar, GridSize } from '@/components/DiceStats'
 import DiceLens from './DiceLens'
 import DieFace from './DieFace'
@@ -47,13 +41,6 @@ const PORTRAITS = [
 
 const portraitImages = (id: string) => ({ dice: `/images/hero/${id}-dice.webp`, photo: `/images/hero/${id}-photo.webp` })
 
-const PROOF_DICE: { face: DiceFace; color: DiceColor }[] = [
-    { face: 6, color: 'black' },
-    { face: 3, color: 'black' },
-    { face: 4, color: 'white' },
-    { face: 1, color: 'white' },
-]
-
 export default function Hero() {
     return (
         <section className="hero">
@@ -63,9 +50,7 @@ export default function Hero() {
                     Photo-to-dice mosaic generator
                 </span>
                 <h1>Turn loved ones into <span className="highlight">dice art</span></h1>
-                <p className="!mb-4">Upload a photo, tune the contrast and detail, then follow our step-by-step guide to build a mosaic from standard dice.</p>
-                {/* The one-sentence definition answer engines can quote (repeated in the footer). */}
-                <p className="!text-base !text-[var(--text-dim)]">{DEFINITION}</p>
+                <p>Upload a photo, tune the contrast and detail, then follow our step-by-step guide to build a mosaic from standard dice.</p>
                 <div className="hero-buttons">
                     <div className="flex flex-col items-start gap-2">
                         <Link
@@ -87,109 +72,10 @@ export default function Hero() {
                         How dice art works →
                     </Link>
                 </div>
-                {/* Mobile: the drop zone right under the primary CTA (desktop shows it next to the demo) */}
-                <HeroUpload className="lg:hidden mt-6" />
-                <div className="hero-proof">
-                    <div className="hero-proof-dice">
-                        {PROOF_DICE.map(({ face, color }) => (
-                            <DieFace key={`${color}-${face}`} face={face} color={color} />
-                        ))}
-                    </div>
-                    <span>
-                        Built by a maker, for makers: dice portraits and gifts <strong>since 2020</strong>
-                    </span>
-                </div>
             </div>
 
-            <div className="flex flex-col gap-6">
-                <HeroPortraits />
-                <HeroUpload className="hidden lg:block" />
-            </div>
+            <HeroPortraits />
         </section>
-    )
-}
-
-
-/**
- * A real file input in the hero: the photo is parked (`lib/pending-upload.ts`) and the editor starts a project with
- * it on arrival, landing on the crop step. Keyboard: the (visually hidden) input is focusable and opens the picker;
- * the "Start creating" button stays as the other way in. Rendered twice (one per breakpoint), hence `useId`.
- */
-function HeroUpload({ className = '' }: { className?: string }) {
-    const router = useRouter()
-    const inputId = useId()
-    const [dragActive, setDragActive] = useState(false)
-    const [busy, setBusy] = useState(false)
-    const [message, setMessage] = useState<string | null>(null)
-
-    const takeFile = async (file: File | undefined, method: 'drop' | 'pick') => {
-        if (!file || busy) return
-        if (!isAcceptedImage(file)) {
-            setMessage(`That file is not a photo we can read. Please use a ${ACCEPTED_FORMATS_LABEL} file.`)
-            return
-        }
-        setBusy(true)
-        setMessage('Opening the editor with your photo…')
-        const stashed = await stashPendingUpload(file)
-        track('hero_upload', { file_type: file.type, file_size: file.size, method })
-        // Without storage the editor cannot receive the photo: it opens on its Start screen, where the picker is
-        if (!stashed) setMessage('Could not hold on to that photo. Please choose it again in the editor.')
-        router.push('/editor')
-    }
-
-    const onChange = (event: ChangeEvent<HTMLInputElement>) => {
-        void takeFile(event.target.files?.[0], 'pick')
-        event.target.value = ''
-    }
-
-    const onDragOver = (event: DragEvent<HTMLDivElement>) => {
-        event.preventDefault()
-        if (!dragActive) setDragActive(true)
-    }
-
-    const onDrop = (event: DragEvent<HTMLDivElement>) => {
-        event.preventDefault()
-        setDragActive(false)
-        void takeFile(event.dataTransfer.files[0], 'drop')
-    }
-
-    const border = dragActive
-        ? 'border-accent-pink bg-accent-pink/10'
-        : 'border-white/[0.16] bg-white/[0.025] hover:border-accent-pink/50 hover:bg-white/[0.04] focus-within:border-accent-pink'
-
-    return (
-        <div
-            onDragOver={onDragOver}
-            onDragLeave={() => setDragActive(false)}
-            onDrop={onDrop}
-            className={`rounded-[22px] border-2 border-dashed px-5 py-4 transition-colors ${border} ${busy ? 'cursor-progress' : ''} ${className}`}
-        >
-            <label htmlFor={inputId} className={`flex items-center gap-4 ${busy ? '' : 'cursor-pointer'}`}>
-                <span className="w-12 h-12 shrink-0 rounded-2xl bg-accent-pink/[0.12] text-accent-pink flex items-center justify-center" aria-hidden>
-                    <ImagePlus size={24} strokeWidth={1.8} />
-                </span>
-                <span className="flex flex-col gap-0.5 min-w-0">
-                    <span className="font-semibold text-[var(--text-primary)] leading-snug">
-                        {dragActive ? 'Drop it here' : busy ? 'Opening the editor…' : 'Drop a photo here or choose a file'}
-                    </span>
-                    <span className="text-sm text-[var(--text-muted)]">{ACCEPTED_FORMATS_LABEL}</span>
-                </span>
-                {/* Replay records a file input's value (the file name) unmasked */}
-                <input
-                    id={inputId}
-                    type="file"
-                    accept={ACCEPT_ATTRIBUTE}
-                    disabled={busy}
-                    onChange={onChange}
-                    className={`sr-only ${NO_CAPTURE_CLASS}`}
-                />
-            </label>
-            {/* Spans, not <p>: `.hero p` sets a display size and a 2.5rem margin */}
-            {/* Always in the DOM (a live region that appears with its first message may not be announced) */}
-            <span role="status" aria-live="polite" className={`block text-sm text-[var(--pink-light)] ${message ? 'mt-2' : ''}`}>
-                {message}
-            </span>
-        </div>
     )
 }
 

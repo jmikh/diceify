@@ -203,14 +203,10 @@ export default function AboutPage() {
               users can save unlimited projects.
             </p>
             <p>
-              The <strong>{PRICING.creator.name} Pass</strong> is a one-time $
-              {PRICING.creator.price} for {PRICING.creator.accessDays} days of
-              full access: the builder for every row and full-resolution SVG
-              blueprints. It does not renew.{" "}
-              <strong>{PRICING.studio.name}</strong> is the same access as a
-              subscription, ${PRICING.studio.monthlyPrice} a month or $
-              {PRICING.studio.yearlyPrice} a year, for people who make several
-              pieces. See the{" "}
+              <strong>{PRICING.studio.name}</strong> is full access as a
+              subscription: the builder for every row and full-resolution SVG
+              blueprints, ${PRICING.studio.monthlyPrice} a month or $
+              {PRICING.studio.yearlyPrice} a year. See the{" "}
               <Link href="/#pricing" className={linkClass}>
                 pricing
               </Link>

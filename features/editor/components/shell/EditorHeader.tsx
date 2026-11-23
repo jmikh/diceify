@@ -4,13 +4,15 @@ import Link from 'next/link'
 import Logo from '@/components/Logo'
 import ProjectSwitcher from '../project/ProjectSwitcher'
 import ShareButton from '../share/ShareButton'
+import { desktopFrame } from '../common/ui'
 import AccountControl from './AccountControl'
 import StepTabs from './StepTabs'
+import UpgradeControl from './UpgradeControl'
 
-/** Desktop header: logo · project switcher | step tabs | share · account. */
+/** Desktop header: logo · project switcher | step tabs | share · upgrade · account. */
 export default function EditorHeader() {
   return (
-    <header className="relative z-30 h-16 flex-shrink-0 flex items-center gap-4 pl-6 pr-5">
+    <header className={`relative z-30 h-16 flex-shrink-0 flex items-center gap-4 pl-6 pr-5 ${desktopFrame}`}>
       <div className="flex-1 basis-0 min-w-0 flex items-center gap-4">
         <Link href="/" className="flex-shrink-0 -ml-3 hover:opacity-80 transition-opacity">
           <Logo />
@@ -21,6 +23,7 @@ export default function EditorHeader() {
       <StepTabs />
       <div className="flex-1 basis-0 flex items-center justify-end gap-2">
         <ShareButton />
+        <UpgradeControl />
         <AccountControl />
       </div>
     </header>

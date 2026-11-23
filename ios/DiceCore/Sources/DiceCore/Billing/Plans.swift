@@ -37,7 +37,6 @@ public enum Pricing {
         public static let name = "Studio"
         public static let monthlyPrice = 9
         public static let yearlyPrice = 36
-        public static let description = "For artists who want to take their time or create multiple pieces."
     }
 
     public static let studioYearlyMonthlyEffective = Double(Studio.yearlyPrice) / 12

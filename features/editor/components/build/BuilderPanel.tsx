@@ -5,11 +5,11 @@ import { useStepNavigation } from '@/features/editor/hooks/useStepNavigation'
 import { useBuildProgress } from '@/features/editor/hooks/useBuildProgress'
 import { Inspector, InspectorSection, InspectorToolButton } from '../common/Inspector'
 import { ghostButton } from '../common/ui'
-import { DiceColorBar } from '../tune/DiceStats'
-import { BuildProgressBar, formatBuildPercent } from './BuildProgressBar'
+import { CurrentGridSize, DiceColorBar } from '../tune/DiceStats'
+import { BuildProgressBar, formatBuildPercent } from '@/components/BuildProgressBar'
 import { useBuildTools } from './BuildTools'
 
-/** Desktop inspector for the build step: progress, the black/white split and tools (navigation, row/col and zoom live in BuildControlBar). */
+/** Desktop inspector for the build step: progress, the grid size and black/white split, and tools (navigation, row/col and zoom live in BuildControlBar). */
 export default function BuilderPanel() {
     // Leaving with progress goes through the reset confirmation (mounted in the page)
     const { goBack } = useStepNavigation()
@@ -29,13 +29,16 @@ export default function BuilderPanel() {
             <BuildProgressSection />
 
             <InspectorSection label="Dice">
+                <span className="text-sm text-white/60 tabular-nums">
+                    <CurrentGridSize />
+                </span>
                 <DiceColorBar barClassName="flex-1" />
             </InspectorSection>
 
             <InspectorSection label="Tools">
                 <div className="flex flex-col gap-1.5">
                     {tools.map(tool => (
-                        <InspectorToolButton key={tool.key} icon={tool.icon} label={tool.label} onClick={tool.onSelect} />
+                        <InspectorToolButton key={tool.key} icon={tool.icon} label={tool.label} onClick={tool.onSelect} pro={tool.pro} />
                     ))}
                 </div>
             </InspectorSection>

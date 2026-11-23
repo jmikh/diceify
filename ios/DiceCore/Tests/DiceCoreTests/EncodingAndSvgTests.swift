@@ -74,7 +74,7 @@ private let grid = DiceGrid(width: 3, height: 2, rows: [
 
     @Test func progress() {
         let dieCount = { (svg: String) in svg.components(separatedBy: "<svg x='").count - 1 }
-        let ghostCount = { (svg: String) in svg.components(separatedBy: "<g opacity='0.15'>").count - 1 }
+        let ghostCount = { (svg: String) in svg.components(separatedBy: "<g opacity='0.3'>").count - 1 }
         for y in 0..<2 {
             for x in 0..<3 {
                 let p = GridPos(x: x, y: y)
@@ -86,7 +86,7 @@ private let grid = DiceGrid(width: 3, height: 2, rows: [
         let all = renderProgressSvg(grid, progress: .origin, showAll: true)
         #expect(dieCount(all) == 6 && ghostCount(all) == 0 && all.contains("<rect width=\"3\" height=\"2\" fill=\"#eae3d2\" />"))
         let first = renderProgressSvg(grid, progress: GridPos(x: 1, y: 0), background: "#fff")
-        #expect(first.contains("\n<svg x='0' y='1' width='1' height='1'") && first.contains("<g opacity='0.15'><svg x='1' y='1' width='1' height='1'"))
+        #expect(first.contains("\n<svg x='0' y='1' width='1' height='1'") && first.contains("<g opacity='0.3'><svg x='1' y='1' width='1' height='1'"))
         #expect(placedDiceCount(grid, progress: GridPos(x: 0, y: 2)) == 6)
     }
 

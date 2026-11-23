@@ -1,76 +1,55 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
-import { MoreHorizontal } from 'lucide-react'
 import { useBuildNavigation } from '@/features/editor/hooks/useBuildNavigation'
-import { useDismiss } from '@/features/editor/hooks/useDismiss'
+import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
 import BuildNavButtons from '../build/BuildNavButtons'
-import { BuildProgressBar, formatBuildPercent } from '../build/BuildProgressBar'
+import { formatBuildPercent } from '@/components/BuildProgressBar'
+import { LabeledValue } from '@/components/BuildPositionDisplay'
+import { ColorSwatch } from '@/components/DiceStats'
 import BuildPosition from '../build/BuildPosition'
 import { useBuildTools } from '../build/BuildTools'
-import { panel, popover } from '../common/ui'
+import ProBadge from '../common/ProBadge'
 import { MobileStepRow } from './MobileStepButtons'
 
-/** Mobile build toolbar: step back, then progress and the tools behind "more" in a card; the navigation buttons around the row/col below. */
+const stat = 'flex-auto min-w-0 px-1'
+const swatch = 'w-2.5 h-2.5'
+
+/** Mobile build toolbar: step back, the percentage built and the black/white counts (styled like the row/col), progress preview and blueprint in one card; the navigation buttons around the row/col below. Purchase dice is desktop only. */
 export default function MobileBuildControls() {
     const { percent } = useBuildNavigation()
+    const { blackCount, whiteCount } = useDerivedStore(state => state.stats)
+    const { tools, modal } = useBuildTools()
 
     return (
         <>
             <MobileStepRow>
-                <div className={`${panel} flex-1 min-w-0 rounded-[20px] px-4 flex items-center gap-3`}>
-                    <div className="flex-1 min-w-0 flex items-center gap-3 text-[13px] tabular-nums">
-                        <BuildProgressBar percent={percent} className="h-[5px]" />
-                        <span className="text-white/75">{formatBuildPercent(percent)}</span>
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                    <div className="flex-1 min-w-0 flex divide-x divide-white/[0.08]">
+                        <LabeledValue label="Built" value={formatBuildPercent(percent)} className={stat} />
+                        <LabeledValue label={<><ColorSwatch color="black" className={swatch} />Black</>} value={blackCount.toLocaleString()} className={stat} />
+                        <LabeledValue label={<><ColorSwatch color="white" className={swatch} />White</>} value={whiteCount.toLocaleString()} className={stat} />
                     </div>
-                    <BuildMoreMenu />
+                    {tools.filter(tool => tool.key !== 'purchase').map(tool => {
+                        const Icon = tool.icon
+                        return (
+                            <button
+                                key={tool.key}
+                                onClick={tool.onSelect}
+                                aria-label={tool.label}
+                                title={tool.label}
+                                className="relative w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[10px] border border-white/10 bg-white/5 text-white active:bg-white/10"
+                            >
+                                <Icon size={18} />
+                                {tool.pro && <ProBadge className="absolute -top-2 -right-1.5" />}
+                            </button>
+                        )
+                    })}
                 </div>
             </MobileStepRow>
             <BuildNavButtons className="flex gap-2" buttonClassName="h-14 flex-1 min-w-0">
                 <BuildPosition className="h-14" />
             </BuildNavButtons>
-        </>
-    )
-}
-
-/** "More": progress preview, blueprint — opens upwards. */
-function BuildMoreMenu() {
-    const { tools, modal } = useBuildTools()
-    const [open, setOpen] = useState(false)
-    const ref = useRef<HTMLDivElement>(null)
-    const close = useCallback(() => setOpen(false), [])
-    useDismiss(ref, open, close)
-
-    const itemClass = 'flex items-center gap-3 h-11 px-3 rounded-lg text-sm text-white/90 active:bg-white/10 text-left'
-
-    return (
-        <div ref={ref} className="relative">
-            <button
-                onClick={() => setOpen(o => !o)}
-                aria-label="More: progress, blueprint"
-                aria-expanded={open}
-                className="w-9 h-9 flex items-center justify-center rounded-[10px] border border-white/10 bg-white/5 text-white"
-            >
-                <MoreHorizontal size={18} />
-            </button>
-            {open && (
-                <div className={`absolute bottom-full right-0 mb-2 z-50 w-60 p-1.5 rounded-xl flex flex-col ${popover}`}>
-                    {tools.map(tool => {
-                        const Icon = tool.icon
-                        const select = () => {
-                            tool.onSelect()
-                            close()
-                        }
-                        return (
-                            <button key={tool.key} onClick={select} className={itemClass}>
-                                <Icon size={17} className="text-white/65" />
-                                <span className="flex-1">{tool.label}</span>
-                            </button>
-                        )
-                    })}
-                </div>
-            )}
             {modal}
-        </div>
+        </>
     )
 }

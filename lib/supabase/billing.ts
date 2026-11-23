@@ -35,9 +35,12 @@ export async function syncBilling(): Promise<BillingView> {
   return (await invoke<{ billing: BillingView }>('sync', { method: 'GET' })).billing
 }
 
-/** A Stripe Checkout URL for the plan; 409 `ALREADY_SUBSCRIBED` while any paid plan is active. */
-export function startCheckout(plan: CheckoutPlan): Promise<{ url: string }> {
-  return invoke('checkout', { method: 'POST', body: { plan } })
+/**
+ * A Stripe Checkout URL for the plan whose cancel returns to `cancelPath` (default: the homepage pricing section);
+ * 409 `ALREADY_SUBSCRIBED` while any paid plan is active.
+ */
+export function startCheckout(plan: CheckoutPlan, cancelPath?: string): Promise<{ url: string }> {
+  return invoke('checkout', { method: 'POST', body: { plan, cancelPath } })
 }
 
 /** A Stripe Customer Portal URL that returns to `returnPath`; 404 `NO_SUBSCRIPTION` without a Stripe customer. */

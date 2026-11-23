@@ -27,9 +27,6 @@ export default function GuestProjectMenu({ onClose }: { onClose: () => void }) {
             <SaveStatusLine long className="text-xs text-white/60" />
           </span>
         </div>
-        <p className="text-[13px] leading-relaxed text-white/70">
-          While you’re signed out, one project is kept in this browser. Sign in to save it to your account and open it on any device.
-        </p>
         <button
           onClick={() => {
             onClose()

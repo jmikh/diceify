@@ -27,7 +27,7 @@ import {
   viewToBillingState,
 } from '@/lib/supabase/billing'
 import PlanBadge from './PlanBadge'
-import { CreatorCard, StudioCard } from './PricingCards'
+import { StudioCard } from './PricingCards'
 import { formatBillingDate, planDisplayName } from './planCopy'
 
 const POLL_INTERVAL_MS = 2_000
@@ -88,7 +88,7 @@ function statusLine(ent: Entitlements): string {
     case 'creator':
       return `${ent.accessUntil ? `Access until ${formatBillingDate(ent.accessUntil)}` : 'Active pass'}${ent.source === 'apple' ? ' — bought in the Diceify app' : ''}.`
     default:
-      return 'Free plan — the builder works for the first rows; upgrade for unlimited building and SVG blueprints.'
+      return 'Free plan — black-only or white-only dice and the first builder rows; upgrade for mixed dice, unlimited building and HD blueprints.'
   }
 }
 
@@ -245,14 +245,7 @@ function UpgradeCards() {
     <section className="space-y-4">
       <h2 className="text-lg font-semibold text-white">Upgrade</h2>
       {notice && <p className="text-sm text-white/60">{notice}</p>}
-      <div className="grid sm:grid-cols-2 gap-4">
-        <CreatorCard
-          source="account_page"
-          onAuthRequired={() => undefined}
-          onAlreadyPro={() => setNotice('You already have an active plan.')}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-        />
+      <div className="sm:max-w-md">
         <StudioCard
           source="account_page"
           onAuthRequired={() => undefined}

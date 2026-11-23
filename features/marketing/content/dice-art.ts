@@ -32,8 +32,6 @@ export const SHADE_ORDER = SHADES_DARK_TO_LIGHT.map(({ color, face }) => `${colo
 // --- Plans, as the guide describes them --------------------------------------------------------------------------
 
 export const FREE_BUILDER_ROWS = PLAN_LIMITS.explorer.builderRowLimit ?? 0
-export const CREATOR_PRICE = PRICING.creator.price
-export const CREATOR_DAYS = PRICING.creator.accessDays
 export const STUDIO_MONTHLY = PRICING.studio.monthlyPrice
 export const STUDIO_YEARLY = PRICING.studio.yearlyPrice
 
@@ -50,7 +48,7 @@ export const ANSWERS = {
     whatToBuy: 'You need black and white 16 mm dice with pips (the generator tells you how many of each), a rigid board such as plywood or MDF cut to the finished size, glue, a straight edge, and a frame or hanging hardware that suits the weight.',
     howLong: 'A small 20×20 portrait (400 dice) takes 2–4 hours. A 40×40 piece (1,600 dice) takes roughly a full day of placing with the builder. The whole project can take far longer once you count testing photos, building a frame and gluing: Jeremy\'s two 1,645-dice portraits took 100+ hours each.',
     framing: 'Mount the dice on a rigid board, not on canvas or foam. If you want a frame, use a shadow box or a wooden edge at least as deep as the die plus the board. Hang from the board with a French cleat or D-rings rated for at least twice the piece\'s weight. Sealing is optional. Dust with a soft brush.',
-    whatYouGet: `Free: a full live preview, the exact black and white dice counts, a shareable link with a social card (after a free sign-in), and the first ${FREE_BUILDER_ROWS} rows of the step-by-step builder. Paid plans unlock unlimited builder rows and a full-resolution SVG blueprint: the Creator pass ($${CREATOR_PRICE} for ${CREATOR_DAYS} days) or Studio ($${STUDIO_MONTHLY}/month or $${STUDIO_YEARLY}/year). There is no PDF export today.`,
+    whatYouGet: `Free: a full live preview, the exact black and white dice counts, a shareable link with a social card (after a free sign-in), and the first ${FREE_BUILDER_ROWS} rows of the step-by-step builder. Studio ($${STUDIO_MONTHLY}/month or $${STUDIO_YEARLY}/year) unlocks unlimited builder rows and a full-resolution SVG blueprint. There is no PDF export today.`,
     buyBulk: 'Amazon, gaming supply stores, and educational supply stores all sell packs of 100–1,000. Get uniform 16 mm dice: they give the cleanest grid.',
     pixelArt: 'Both are grid-based. Pixel art uses colored squares (unlimited colors). Dice art uses six-sided dice (up to 12 shades) and has a physical, three-dimensional quality you can\'t get with flat media.',
     resolution: 'No. The generator averages a block of pixels into each die, so a low-resolution or slightly blurry photo works fine. What matters is the crop: one face filling the frame, with clear contrast between the subject and the background.',

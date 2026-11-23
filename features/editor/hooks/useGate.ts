@@ -9,12 +9,17 @@ import { useEditorUiStore } from '@/features/editor/store/useEditorUiStore'
 export type GateModal = 'limit' | 'proFeature'
 
 /** What a gate protects (the `feature` of the `paywall_shown` event). */
-export type GatedFeature = 'build_limit' | 'blueprint' | 'share' | 'upgrade'
+export type GatedFeature = 'build_limit' | 'build' | 'blueprint' | 'share' | 'upgrade'
 
 export interface GateOptions {
-  /** Copy for the sign-in modal shown to anonymous users (its default otherwise). */
+  /**
+   * What a blocked user lacks. A plan (default): `modal`, signed in or not — pricing comes first, and the upgrade
+   * modal asks for sign-in once a price is picked. An account (share): anonymous users get the sign-in modal.
+   */
+  requires?: 'plan' | 'account'
+  /** Account gates: copy for the sign-in modal (its default otherwise). */
   signInMessage?: string
-  /** Modal for signed-in users without the entitlement (default: the upgrade modal). */
+  /** Plan gates: the modal (default: the upgrade modal). */
   modal?: GateModal
 }
 
@@ -23,10 +28,10 @@ export type GateAction =
   | { kind: 'signIn'; message?: string }
   | { kind: 'modal'; modal: GateModal }
 
-/** Pure decision: allowed → proceed; anonymous → sign in; signed in → the limit/upgrade modal. */
+/** Pure decision: allowed → proceed; an account gate while anonymous → sign in; otherwise the limit/upgrade modal. */
 export function resolveGate(allowed: boolean, signedIn: boolean, options: GateOptions = {}): GateAction {
   if (allowed) return { kind: 'allow' }
-  if (!signedIn) return { kind: 'signIn', message: options.signInMessage }
+  if (options.requires === 'account' && !signedIn) return { kind: 'signIn', message: options.signInMessage }
   return { kind: 'modal', modal: options.modal ?? 'proFeature' }
 }
 

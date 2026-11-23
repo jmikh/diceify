@@ -37,6 +37,9 @@ export interface Entitlements {
   /** `null` = unlimited (never `Infinity`). */
   builderRowLimit: number | null
   hasSvgExport: boolean
+  hasMixedDice: boolean
+  /** `null` = unlimited (never `Infinity`). */
+  designRowLimit: number | null
   /** When paid access ends (creator expiry, or the studio period/cancel date); null for lifetime and explorer. */
   accessUntil: string | null
   cancelAt: string | null

@@ -96,7 +96,7 @@ export async function handleCheckout(req: Request, user: CallerUser): Promise<Re
   if ('response' in parsed) return parsed.response
   const found = await requireProfile(user.id)
   if ('response' in found) return found.response
-  const { plan } = parsed.body
+  const { plan, cancelPath } = parsed.body
 
   if (hasPaidAccess(found.profile, new Date())) {
     return error('ALREADY_SUBSCRIBED', 'You already have an active plan', 409)
@@ -112,7 +112,7 @@ export async function handleCheckout(req: Request, user: CallerUser): Promise<Re
     metadata,
     subscription_data: mode === 'subscription' ? { metadata } : undefined,
     success_url: `${APP_URL}/account?checkout=success`,
-    cancel_url: `${APP_URL}/#pricing`,
+    cancel_url: `${APP_URL}${cancelPath ?? '/#pricing'}`,
   })
   if (!session.url) throw new Error(`checkout session ${session.id} has no url`)
   console.log(`billing/checkout: ${user.id}: ${plan} → ${session.id}`)

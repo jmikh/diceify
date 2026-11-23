@@ -128,7 +128,6 @@ private struct StudioCard: View {
                         .font(.footnote).foregroundStyle(yearly ? Color.accentGreen : Color.textMuted)
                 }
             }
-            Text(Pricing.Studio.description).font(.footnote).foregroundStyle(Color.textMuted)
             FeatureList(features: PlanFeatures.studio, tint: .brandPinkLight)
             BuyButton(title: "Subscribe", plan: model.studioInterval, model: model)
                 .buttonStyle(.primary)

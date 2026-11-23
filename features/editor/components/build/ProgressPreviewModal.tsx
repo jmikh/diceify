@@ -124,7 +124,6 @@ export default function ProgressPreviewModal({ isOpen, onClose }: ProgressPrevie
                 <div
                     className="overflow-hidden"
                     style={{
-                        border: `2px solid var(--pink)`,
                         // Use CSS to calculate proper dimensions based on available space
                         width: aspectRatio >= 1
                             ? 'min(calc(100vw - 48px), calc((85vh) * ' + aspectRatio + '))'

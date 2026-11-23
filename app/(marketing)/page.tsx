@@ -5,6 +5,7 @@ import { pageGraph, webApplicationNode, websiteNode } from '@/lib/schema'
 import { DEFAULT_DESCRIPTION, pageMetadata } from '@/lib/seo'
 import Hero from '@/features/marketing/components/Hero'
 import DicePalette from '@/features/marketing/components/DicePalette'
+import BuilderShowcase from '@/features/marketing/components/BuilderShowcase'
 import Gallery from '@/features/marketing/components/Gallery'
 import BlogSection from '@/features/marketing/components/BlogSection'
 import Pricing from '@/features/marketing/components/Pricing'
@@ -35,6 +36,7 @@ export default function Home() {
         <main>
           <Hero />
           <DicePalette />
+          <BuilderShowcase />
           <Gallery />
           <BlogSection />
           <Suspense fallback={<div className="py-24" />}>

@@ -29,6 +29,7 @@ const config: Config = {
         'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'float': 'float 6s ease-in-out infinite',
         'glow': 'glow 2s ease-in-out infinite alternate',
+        'sheet-up': 'sheet-up 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
       },
       keyframes: {
         float: {
@@ -38,7 +39,12 @@ const config: Config = {
         glow: {
           '0%': { opacity: '0.5' },
           '100%': { opacity: '1' },
-        }
+        },
+        // A bottom drawer sliding up into view
+        'sheet-up': {
+          from: { transform: 'translateY(100%)' },
+          to: { transform: 'translateY(0)' },
+        },
       },
     },
   },

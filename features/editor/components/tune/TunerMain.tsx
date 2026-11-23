@@ -2,6 +2,8 @@
 
 import { Loader2 } from 'lucide-react'
 import DiceCanvas from './DiceCanvas'
+import DesignPaywall from './DesignPaywall'
+import HoldOriginal from './HoldOriginal'
 import { useDerivedStore } from '@/features/editor/store/useDerivedStore'
 
 export default function TunerMain() {
@@ -65,6 +67,8 @@ export default function TunerMain() {
             )}
 
             <DiceCanvas />
+            <DesignPaywall />
+            <HoldOriginal />
         </div>
     )
 }
