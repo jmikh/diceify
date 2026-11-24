@@ -41,12 +41,9 @@ struct CropView: View {
         .accessibilityLabel("Crop frame. Drag to move the photo, pinch to zoom.")
         .overlay(alignment: .bottomTrailing) {
             // Rotate lives on the canvas (like the build step's zoom buttons), not in the toolbar
-            Button { model.rotate90() } label: {
-                Image(systemName: "rotate.right").font(.body.weight(.semibold)).foregroundStyle(.white)
-                    .frame(width: 40, height: 40)
-                    .background(.ultraThinMaterial, in: Circle())
-            }
-            .padding(10)
+            Button { model.rotate90() } label: { Image(systemName: "rotate.right") }
+                .buttonStyle(.stage)
+                .padding(12)
             .accessibilityLabel("Rotate 90°")
         }
     }
@@ -142,9 +139,7 @@ private struct StencilOverlay: View {
     }
 }
 
-/// Crop controls (MobileCropControls): the aspect chips then Next, above Rotate 90°.
-/// Crop toolbar (MobileCropControls): the ratio tiles — the ratio's outline in a tile, the label beneath, styled
-/// like the tune tools.
+/// Crop controls (MobileCropControls): the aspect ratios as a segmented control; Rotate lives on the canvas.
 struct CropControls: View {
     @Bindable var model: EditorModel
 
@@ -152,30 +147,13 @@ struct CropControls: View {
     static let order: [AspectRatio] = [.sixteenNine, .fourThree, .square, .threeFour, .twoThree]
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(CropControls.order, id: \.self) { aspect in
-                let on = (model.crop?.aspectRatio ?? DEFAULT_ASPECT_RATIO) == aspect
-                Button { model.setAspectRatio(aspect) } label: {
-                    ToolTile(label: aspect.rawValue, on: on) { RatioIcon(ratio: aspect.ratio) }
+        StepRow(model: model) {
+            Picker("Aspect ratio", selection: Binding(get: { model.crop?.aspectRatio ?? DEFAULT_ASPECT_RATIO }, set: { model.setAspectRatio($0) })) {
+                ForEach(CropControls.order, id: \.self) { aspect in
+                    Text(aspect.rawValue).tag(aspect)
                 }
-                .accessibilityLabel("Aspect ratio \(aspect.rawValue)")
-                .accessibilityAddTraits(on ? .isSelected : [])
             }
+            .pickerStyle(.segmented)
         }
-        .frame(height: EditorLayout.tileRow)
-    }
-}
-
-/// The ratio as a rounded outline: the longer side is 20 pt (the web's 24-unit SVG rects at 2 px stroke).
-private struct RatioIcon: View {
-    let ratio: Double
-
-    var body: some View {
-        let w: CGFloat = ratio >= 1 ? 20 : 20 * ratio
-        let h: CGFloat = ratio >= 1 ? 20 / ratio : 20
-        RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-            .strokeBorder(lineWidth: 1.8)
-            .frame(width: w, height: h)
-            .frame(height: 20)
     }
 }

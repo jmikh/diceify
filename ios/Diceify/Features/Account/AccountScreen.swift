@@ -75,7 +75,7 @@ struct AccountScreen: View {
         return VStack(alignment: .leading, spacing: 10) {
             Text("CURRENT PLAN").font(.caption.weight(.semibold)).tracking(1).foregroundStyle(Color.textMuted)
             HStack(spacing: 10) {
-                Text(PlanCopy.displayName(ent.plan)).font(.display(24)).foregroundStyle(.white)
+                Text(PlanCopy.displayName(ent.plan)).font(.title2.bold()).foregroundStyle(.white)
                 Spacer()
                 Button {
                     Task {

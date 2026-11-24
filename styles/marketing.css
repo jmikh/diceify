@@ -205,12 +205,11 @@
   color: var(--text-muted);
 }
 
-/* Dice art with a lens onto the original photo (DiceLens). --lens-x/--lens-y are animated from JS; the values here
-   (the middle) hold until the pointer first moves. Dragging a finger moves the lens, so the frame doesn't pan the
+/* Dice art with a lens onto the original photo (DiceLens). The lens sits in the middle until the pointer first moves;
+   JS then moves it with `transform`, and the photo inside it the opposite way, so following the pointer never lays out
+   or repaints (both are their own compositor layers). Dragging a finger moves the lens, so the frame doesn't pan the
    page (pinch-zoom still works). */
 .dice-lens {
-  --lens-x: 50%;
-  --lens-y: 50%;
   --lens-r: 20cqw;
   position: relative;
   container-type: inline-size;
@@ -224,33 +223,45 @@
   -webkit-touch-callout: none;
 }
 
-/* The dice art sets the frame's size; the photo is laid exactly over it */
-.dice-lens-base,
-.dice-lens-reveal {
+/* The dice art sets the frame's size */
+.dice-lens-base {
   display: block;
   width: 100%;
   height: auto;
   pointer-events: none;
 }
 
-.dice-lens-reveal {
+/* The round window onto the photo, centred in the frame */
+.dice-lens-window {
   position: absolute;
-  inset: 0;
-  height: 100%;
-  clip-path: circle(var(--lens-r) at var(--lens-x) var(--lens-y));
-}
-
-.dice-lens-ring {
-  position: absolute;
-  left: var(--lens-x);
-  top: var(--lens-y);
+  left: calc(50% - var(--lens-r));
+  top: calc(50% - var(--lens-r));
   width: calc(var(--lens-r) * 2);
   aspect-ratio: 1;
-  translate: -50% -50%;
-  border: 2px solid var(--pink);
+  overflow: hidden;
   border-radius: 50%;
   box-shadow: 0 0 0 6px rgb(0 0 0 / 0.25), 0 0 40px var(--pink-glow);
   pointer-events: none;
+  will-change: transform;
+}
+
+/* The ring, over the photo */
+.dice-lens-window::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--pink);
+  border-radius: 50%;
+}
+
+/* The photo at the frame's size, laid exactly over the dice art (its `top` is set inline from the aspect ratio) */
+.dice-lens-reveal {
+  position: absolute;
+  left: calc(var(--lens-r) - 50cqw);
+  width: 100cqw;
+  max-width: none;
+  height: auto;
+  will-change: transform;
 }
 
 /* =============================================================================

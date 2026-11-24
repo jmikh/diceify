@@ -1,8 +1,10 @@
 import DiceCore
 import SwiftUI
 
-/// The editor shell (features/editor/components/mobile/MobileEditor.tsx): step control under the title, the stage,
-/// and the step's controls in the thumb zone. One `EditorModel` per open project.
+/// The editor shell (features/editor/components/mobile/MobileEditor.tsx in iOS clothes): the project name as the
+/// navigation title (tap → rename), share / upgrade in the toolbar, the stage edge to edge and the step's controls in
+/// the thumb zone between the step back / next chevrons (no step tabs on the phone, as on mobile web). One
+/// `EditorModel` per open project.
 struct EditorScreen: View {
     let projectId: UUID
     @Environment(AppSession.self) private var session
@@ -10,8 +12,6 @@ struct EditorScreen: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var model: EditorModel?
     @State private var failure: String?
-    @State private var renaming = false
-    @State private var newName = ""
     @State private var prompt: GatePrompt?
     @State private var shareFlow = ShareFlow()
     @State private var shareOpen = false
@@ -27,40 +27,26 @@ struct EditorScreen: View {
                 ProgressView()
             }
         }
-        .navigationTitle(model?.name ?? "Project")
+        .navigationTitle(titleBinding)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if let model {
-                ToolbarItem(placement: .principal) {
-                    Button {
-                        newName = model.name
-                        renaming = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(model.name).font(.headline).foregroundStyle(.white).lineLimit(1)
-                            Image(systemName: "chevron.down").font(.caption2).foregroundStyle(Color.textMuted)
-                        }
-                    }
-                }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     if model.step != .crop {
                         Button {
-                            if let p = session.gate(session.status == .authed, .share, signInMessage: "Sign in to share your dice art.") { prompt = p } else { shareOpen = true }
+                            if let p = session.gate(session.status == .authed, .share, requires: .account, signInMessage: "Sign in to share your dice art.") { prompt = p } else { shareOpen = true }
                         } label: { Image(systemName: "square.and.arrow.up") }
                         .disabled(model.grid == nil)
                         .accessibilityLabel("Share")
                     }
-                    SaveStatusView(status: model.saveStatus)
+                    // Upgrade, in the same spot on every step (UpgradeControl): hidden on a paid plan and while the
+                    // profile loads, so Pro users never see it flash
+                    if session.status == .anon || (session.status == .authed && !session.entitlements.isPro) {
+                        Button("Upgrade") { prompt = session.upgradePrompt(source: "editor_header") }
+                            .buttonStyle(.borderedProminent)
+                    }
                 }
             }
-        }
-        .alert("Rename project", isPresented: $renaming) {
-            TextField("Name", text: $newName)
-            Button("Save") {
-                let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmed.isEmpty, let model { model.name = trimmed; model.scheduleSave() }
-            }
-            Button("Cancel", role: .cancel) {}
         }
         .sheet(isPresented: $shareOpen) {
             if let model { ShareSheet(model: model, flow: shareFlow) }
@@ -112,6 +98,19 @@ struct EditorScreen: View {
             }
         }
     }
+
+    /// The system's title menu renames the project (an empty name is ignored).
+    private var titleBinding: Binding<String> {
+        Binding(
+            get: { model?.name ?? "Project" },
+            set: { value in
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard let model, !trimmed.isEmpty, trimmed != model.name else { return }
+                model.name = trimmed
+                model.scheduleSave()
+            }
+        )
+    }
 }
 
 #if DEBUG
@@ -140,38 +139,24 @@ struct SaveStatusView: View {
     }
 }
 
-/// Mobile layout constants (features/editor/components/mobile/rows.ts).
-enum EditorLayout {
-    static let mainRow: CGFloat = 64
-    static let toolRow: CGFloat = 56
-    /// Icon tile + label (the tune tools).
-    static let tileRow: CGFloat = 70
-    static let stageCorner: CGFloat = 22
-}
-
 private struct EditorBody: View {
     @Bindable var model: EditorModel
     @Binding var prompt: GatePrompt?
-    @Environment(AppSession.self) private var session
 
     var body: some View {
-        VStack(spacing: 10) {
-            // Step back · Crop/Tune/Build · next (the web's MobileStepRow buttons, moved up out of the thumb zone)
-            HStack(spacing: 8) {
-                StepBackButton(model: model).frame(width: 40, height: 40)
-                StepControl(model: model)
-                StepNextButton(model: model).frame(width: 40, height: 40)
-            }
+        VStack(spacing: 12) {
             Group {
                 switch model.step {
                 case .crop: CropView(model: model)
-                case .tune: TuneView(model: model)
+                case .tune: TuneView(model: model, prompt: $prompt)
                 case .build: BuildView(model: model, prompt: $prompt)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipShape(RoundedRectangle(cornerRadius: EditorLayout.stageCorner, style: .continuous))
-            .glassPanel(cornerRadius: EditorLayout.stageCorner)
+            // Save state over the stage's corner, not in the toolbar (which would overflow with share + upgrade)
+            .overlay(alignment: .topLeading) {
+                SaveStatusView(status: model.saveStatus).padding(12)
+            }
             Group {
                 switch model.step {
                 case .crop: CropControls(model: model)
@@ -179,9 +164,12 @@ private struct EditorBody: View {
                 case .build: BuildControls(model: model, prompt: $prompt)
                 }
             }
+            .padding(.horizontal, 16)
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 12)
+        .padding(.bottom, 8)
+        // The dice count under the title on tune and build (iOS 26 then lays the title out leading, which also keeps
+        // share + upgrade from collapsing into an overflow menu)
+        .navigationSubtitleIfAvailable(model.step == .crop ? nil : model.grid.map { "\(formatDiceCount($0.width * $0.height)) dice" })
         .alert("Start over?", isPresented: Binding(get: { model.pendingResetStep != nil }, set: { if !$0 { model.pendingResetStep = nil } })) {
             Button("Go back", role: .destructive) { model.confirmPendingStep() }
             Button("Stay", role: .cancel) { model.pendingResetStep = nil }
@@ -196,90 +184,46 @@ private struct EditorBody: View {
     }
 }
 
-/// Crop · Tune · Build (StepTabs / MobileTopBar): tabs the user may enter are tappable.
-struct StepControl: View {
+extension View {
+    /// iOS 26's navigation subtitle; nothing on earlier versions.
+    @ViewBuilder
+    func navigationSubtitleIfAvailable(_ text: String?) -> some View {
+        if #available(iOS 26, *), let text {
+            navigationSubtitle(text)
+        } else {
+            self
+        }
+    }
+}
+
+/// Mobile layout constants (rows.ts): the main row keeps one height on every step so the stage does not jump.
+enum EditorLayout {
+    static let controlRow: CGFloat = 64
+    /// Buttons inside the main row (step back / next, the build tools).
+    static let rowButton: CGFloat = 44
+}
+
+/// A step's main row (MobileStepRow): step back on the left, the step's control (`content`) filling the rest, step
+/// next on the right — the same buttons in the same places on every step. Nothing on the first / last step.
+struct StepRow<Content: View>: View {
     @Bindable var model: EditorModel
+    @ViewBuilder let content: Content
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(Steps.all, id: \.self) { step in
-                let on = model.step == step
-                Button {
-                    model.go(to: step)
-                } label: {
-                    Text(Steps.label(step))
-                        .font(.subheadline.weight(on ? .semibold : .medium))
-                        .foregroundStyle(on ? .white : Color.textSecondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                        .background(on ? Color.brandPink.opacity(0.18) : .clear, in: Capsule())
-                        .overlay(Capsule().strokeBorder(on ? Color.brandPink.opacity(0.6) : .clear, lineWidth: 1))
-                }
-                .disabled(!model.canGo(to: step))
-                .opacity(model.canGo(to: step) ? 1 : 0.4)
+        HStack(spacing: 8) {
+            if Steps.prev(model.step) != nil {
+                Button { model.goBack() } label: { Image(systemName: "chevron.left").font(.body.weight(.semibold)).frame(width: 20, height: EditorLayout.rowButton - 14) }
+                    .glassButton()
+                    .accessibilityLabel("Previous step")
+            }
+            content.frame(maxWidth: .infinity)
+            if let next = Steps.next(model.step) {
+                Button { model.goNext() } label: { Image(systemName: "chevron.right").font(.body.weight(.semibold)).frame(width: 20, height: EditorLayout.rowButton - 14) }
+                    .glassButton(prominent: true)
+                    .disabled(!model.canGoNext)
+                    .accessibilityLabel("Next: \(Steps.label(next))")
             }
         }
-        .padding(4)
-        .background(Color.white.opacity(0.04), in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.borderGlass, lineWidth: 1))
-    }
-}
-
-/// Step back / next buttons beside the step tabs (MobileStepButtons): nothing on the first / last step.
-struct StepBackButton: View {
-    @Bindable var model: EditorModel
-    var body: some View {
-        Button { model.goBack() } label: { Image(systemName: "chevron.left").font(.body.weight(.semibold)) }
-            .buttonStyle(RowButtonStyle())
-            .disabled(!model.canGoBack)
-            .opacity(Steps.prev(model.step) == nil ? 0 : 1)
-            .accessibilityLabel("Previous step")
-    }
-}
-
-struct StepNextButton: View {
-    @Bindable var model: EditorModel
-    var body: some View {
-        Button { model.goNext() } label: { Image(systemName: "chevron.right").font(.body.weight(.semibold)) }
-            .buttonStyle(RowButtonStyle(primary: true))
-            .disabled(!model.canGoNext)
-            .opacity(Steps.next(model.step) == nil ? 0 : 1)
-            .accessibilityLabel("Next step")
-    }
-}
-
-/// A tool in the bottom row (the web's mobile tool tabs): the icon in a rounded tile, the label beneath.
-struct ToolTile<Icon: View>: View {
-    let label: String
-    let on: Bool
-    @ViewBuilder let icon: Icon
-
-    var body: some View {
-        VStack(spacing: 6) {
-            icon
-                .foregroundStyle(on ? Color.brandPinkLight : Color.textSecondary)
-                .frame(width: 46, height: 46)
-                .background(on ? Color.brandPink.opacity(0.18) : Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(on ? Color.brandPink.opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1))
-            Text(label)
-                .font(.system(size: 12, weight: on ? .semibold : .medium))
-                .foregroundStyle(on ? .white : Color.textMuted)
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-/// A square-ish glass button for the control rows; `primary` = pink fill (the step's main action).
-struct RowButtonStyle: ButtonStyle {
-    var primary = false
-    @Environment(\.isEnabled) private var enabled
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(primary ? Color.brandPinkStrong : Color.white.opacity(configuration.isPressed ? 0.12 : 0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(primary ? .clear : Color.white.opacity(0.1), lineWidth: 1))
-            .opacity(enabled ? 1 : 0.3)
+        .frame(height: EditorLayout.controlRow)
     }
 }

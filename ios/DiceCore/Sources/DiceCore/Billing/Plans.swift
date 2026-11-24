@@ -9,13 +9,24 @@ public struct PlanLimits: Equatable, Sendable {
     /// Rows a user may build; nil = unlimited.
     public let builderRowLimit: Int?
     public let hasSvgExport: Bool
+    /// Black and white dice in one design (colour mode `both`).
+    public let hasMixedDice: Bool
+    /// Rows a design may have without the watermark; nil = unlimited.
+    public let designRowLimit: Int?
+
+    public init(builderRowLimit: Int?, hasSvgExport: Bool, hasMixedDice: Bool, designRowLimit: Int?) {
+        self.builderRowLimit = builderRowLimit
+        self.hasSvgExport = hasSvgExport
+        self.hasMixedDice = hasMixedDice
+        self.designRowLimit = designRowLimit
+    }
 }
 
 public let PLAN_LIMITS: [Plan: PlanLimits] = [
-    .explorer: PlanLimits(builderRowLimit: 5, hasSvgExport: false),
-    .creator: PlanLimits(builderRowLimit: nil, hasSvgExport: true),
-    .studio: PlanLimits(builderRowLimit: nil, hasSvgExport: true),
-    .lifetime: PlanLimits(builderRowLimit: nil, hasSvgExport: true),
+    .explorer: PlanLimits(builderRowLimit: 5, hasSvgExport: false, hasMixedDice: false, designRowLimit: nil),
+    .creator: PlanLimits(builderRowLimit: nil, hasSvgExport: true, hasMixedDice: true, designRowLimit: nil),
+    .studio: PlanLimits(builderRowLimit: nil, hasSvgExport: true, hasMixedDice: true, designRowLimit: nil),
+    .lifetime: PlanLimits(builderRowLimit: nil, hasSvgExport: true, hasMixedDice: true, designRowLimit: nil),
 ]
 
 /// What a user can buy (`CheckoutPlan`): the web's checkout route plans, the app's App Store products.

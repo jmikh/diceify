@@ -3,6 +3,7 @@
 Out-of-scope findings recorded by each step. Restructured in E3: **Open for the user** is the current list (one bullet per
 item, prefixed with the step that raised it); **Resolved** keeps one line per item that a later step closed, for the record.
 New findings go under "Open for the user"; when one is acted on, move it to "Resolved" with the step that did it.
+- iOS `PlanCopyTests.statusLines` (`ios/DiceifyTests/Step5Tests.swift`) expects "Jan 2, 2099" for `2099-01-02T00:00:00Z`, but `PlanCopy.date` formats in the device time zone, so it fails west of UTC (New York → "Jan 1"). Pre-existing; either pin the formatter to UTC (matches how the ISO date is meant) or build the expectation from the local zone. Found 2026-11-24.
 
 ## Open for the user
 
@@ -63,6 +64,11 @@ Editor redesign (Phase G):
 - G1: legacy-migrated projects show the placeholder thumbnail until opened once (the editor writes `preview.jpg` then). A backfill would need the dice pipeline in `migrate-from-prisma.ts`.
 - G2: marketing `.btn-primary` / `.nav-cta` and the editor modals still put white text on `#FF2D92` (≈ 3.5:1). `--pink-strong` / `accent-pink-strong` is available for them.
 - G2/G3: no browser pass was run (CLAUDE.md: no manual browser tests unless asked); sizes come from the design canvas. Worth one look at 1280×720, 1440×900 and a 390×844 phone.
+
+Landing page INP (GSC "INP > 200 ms, mobile", 2026-11-24):
+
+- `BuilderDemo` keeps ~30 % of the main thread busy (4× CPU) while on screen: each 800 ms step repaints the whole 378-die SVG for most of the step (dice opacity fades, the cursor's x/y glide under a drop-shadow, badges, progress-bar width, tap pulse); taps next to it measured ~90 ms vs ~30 ms with it hidden. A look-identical fix: dice in one SVG that changes once per step, the cursor plus the just-placed run fading in a small overlay SVG on its own layer. Not done: new component, restructures it.
+- No field attribution for INP: PostHog `capture_performance.web_vitals` is off and Sentry tracing is off (`tracesSampleRate: 0`), so only CrUX/GSC see INP, per URL group, with no element. Turning PostHog web vitals on gives per-page INP with the slow target.
 
 Operational notes (no action; kept because they explain non-obvious behaviour):
 

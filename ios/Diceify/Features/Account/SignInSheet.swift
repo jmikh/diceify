@@ -60,9 +60,12 @@ struct SignInSheet: View {
             }
             .disabled(busy)
             .padding(.horizontal, 24)
-            Text("By signing in you agree to our Terms of Service and Privacy Policy.")
+            Text("By signing in you agree to our [Terms of Service](https://diceify.art/terms) and [Privacy Policy](https://diceify.art/privacy).")
                 .font(.caption2)
                 .foregroundStyle(Color.textMuted)
+                .tint(Color.brandPinkLight)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
                 .padding(.top, 4)
             Spacer(minLength: 0)
         }

@@ -45,6 +45,15 @@ struct PaywallSheet: View {
         .background { PaywallGlows() }
         .presentationDetents([.large])
         .presentationBackground(Color.bgSecondary)
+        .sheet(isPresented: Binding(get: { model?.signInPlan != nil }, set: { if !$0 { model?.signInPlan = nil } })) {
+            SignInSheet(message: "Sign in to continue to checkout.")
+                .onDisappear {
+                    // Back from the sign-in a price click asked for: on to the purchase
+                    guard let model, let plan = model.signInPlan else { return }
+                    model.signInPlan = nil
+                    if session.status == .authed { Task { await model.buy(plan) } }
+                }
+        }
         .task {
             guard model == nil else { return }
             let model = PaywallModel(source: source ?? prompt.upgradeSource, store: session.store, account: session)
@@ -71,7 +80,7 @@ struct PaywallSheet: View {
                 .font(.display(28)).foregroundStyle(.white).multilineTextAlignment(.center)
             Text(prompt == .limit
                 ? "You've reached the Explorer plan limit of \(PLAN_LIMITS[.explorer]?.builderRowLimit ?? 5) rows. Upgrade to unlock unlimited building and create massive masterpieces!"
-                : "Unlock unlimited dice, SVG blueprints, and more.")
+                : "Unlock mixed dice, unlimited building and printable HD blueprints.")
                 .font(.subheadline).foregroundStyle(Color.textMuted).multilineTextAlignment(.center)
         }
         .padding(.horizontal, 12)
@@ -103,9 +112,9 @@ extension GatePrompt {
 
 // MARK: Cards
 
-/// PricingCards.tsx Studio `features` (the compact variant).
+/// PricingCards.tsx `PRO_FEATURES` + "Cancel anytime" (the Studio card).
 private enum PlanFeatures {
-    static var studio: [LocalizedStringKey] { ["**Unlimited** dice in Builder", "Full resolution SVG blueprints", "**Unlimited** projects in the cloud", "Cancel anytime"] }
+    static var studio: [LocalizedStringKey] { ["Mixed black & white dice, no watermark", "**Unlimited** rows in Builder Studio", "Printable HD blueprint download", "Cancel anytime"] }
 }
 
 private struct StudioCard: View {

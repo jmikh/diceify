@@ -23,7 +23,7 @@ extension Color {
 }
 
 extension Font {
-    /// Syne 700, the display face (Start title, paywall headline).
+    /// Syne 700, the display face: the paywall headline only; everything else is SF with Dynamic Type.
     static func display(_ size: CGFloat) -> Font { .custom("Syne-Bold", size: size) }
 }
 
@@ -51,33 +51,44 @@ extension View {
     func glassPanel(cornerRadius: CGFloat = 20) -> some View { modifier(GlassPanel(cornerRadius: cornerRadius)) }
 }
 
-/// `.btn-primary`: pink-strong fill, white label, capsule, a soft glow.
+/// `.btn-primary`: pink filled capsule, white label. iOS 26: tinted interactive Liquid Glass; earlier: a flat fill
+/// with a soft glow.
 struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let label = configuration.label
             .font(.body.weight(.semibold))
             .foregroundStyle(.white)
             .padding(.horizontal, 24)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity)
-            .background(Color.brandPinkStrong, in: Capsule())
-            .shadow(color: .brandPink.opacity(configuration.isPressed ? 0.1 : 0.3), radius: 18, y: 6)
-            .opacity(configuration.isPressed ? 0.85 : 1)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+        if #available(iOS 26, *) {
+            label.glassEffect(.regular.tint(Color.brandPinkStrong).interactive(), in: Capsule())
+        } else {
+            label
+                .background(Color.brandPinkStrong, in: Capsule())
+                .shadow(color: .brandPink.opacity(configuration.isPressed ? 0.1 : 0.3), radius: 18, y: 6)
+                .opacity(configuration.isPressed ? 0.85 : 1)
+                .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+        }
     }
 }
 
-/// `.btn-secondary`: glass capsule, muted label.
+/// `.btn-secondary`: clear glass capsule, muted label.
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let label = configuration.label
             .font(.body.weight(.medium))
             .foregroundStyle(Color.textSecondary)
             .padding(.horizontal, 20)
             .padding(.vertical, 13)
             .frame(maxWidth: .infinity)
-            .background(Color.white.opacity(configuration.isPressed ? 0.1 : 0.05), in: Capsule())
-            .overlay(Capsule().strokeBorder(Color.borderGlass, lineWidth: 1))
+        if #available(iOS 26, *) {
+            label.glassEffect(.regular.interactive(), in: Capsule())
+        } else {
+            label
+                .background(Color.white.opacity(configuration.isPressed ? 0.1 : 0.05), in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.borderGlass, lineWidth: 1))
+        }
     }
 }
 
@@ -87,6 +98,49 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
 
 extension ButtonStyle where Self == SecondaryButtonStyle {
     static var secondary: SecondaryButtonStyle { SecondaryButtonStyle() }
+}
+
+/// A round button floating over the stage (rotate, zoom): interactive glass on iOS 26, thin material before.
+struct StageButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        let label = configuration.label
+            .font(.body.weight(.semibold))
+            .foregroundStyle(.white)
+            .frame(width: 44, height: 44)
+        if #available(iOS 26, *) {
+            label.glassEffect(.regular.interactive(), in: Circle())
+        } else {
+            label
+                .background(.ultraThinMaterial, in: Circle())
+                .opacity(configuration.isPressed ? 0.7 : 1)
+        }
+    }
+}
+
+extension ButtonStyle where Self == StageButtonStyle {
+    static var stage: StageButtonStyle { StageButtonStyle() }
+}
+
+extension View {
+    /// The system glass button style on iOS 26 (prominent = tinted fill), bordered before.
+    @ViewBuilder
+    func glassButton(prominent: Bool = false) -> some View {
+        if #available(iOS 26, *) {
+            if prominent { buttonStyle(.glassProminent) } else { buttonStyle(.glass) }
+        } else {
+            if prominent { buttonStyle(.borderedProminent) } else { buttonStyle(.bordered) }
+        }
+    }
+
+    /// A floating glass pill (iOS 26) or a thin-material capsule for small read-outs over the stage.
+    @ViewBuilder
+    func glassPill() -> some View {
+        if #available(iOS 26, *) {
+            glassEffect(.regular, in: Capsule())
+        } else {
+            background(.ultraThinMaterial, in: Capsule())
+        }
+    }
 }
 
 /// The landing page's soft orbs, static: two blurred radial glows behind the Start screen only.
@@ -108,5 +162,22 @@ struct OrbsBackground: View {
             }
         }
         .ignoresSafeArea()
+    }
+}
+
+/// A small pink tag on a control the user's plan does not include (the design paywall; ProBadge.tsx).
+struct ProBadge: View {
+    var text: String = "PRO"
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 9, weight: .bold))
+            .tracking(0.7)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 3)
+            .background(Color.brandPinkStrong, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+            .shadow(color: .brandPink.opacity(0.45), radius: 5)
+            .accessibilityLabel("Pro feature")
     }
 }

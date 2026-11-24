@@ -26,7 +26,6 @@ const PRICING_HEADING = `Pricing: free or Studio from ${dollars(STUDIO_YEARLY_MO
 const FREE_FEATURES = [
     'Generate dice art from any photo',
     'Black-only or white-only dice',
-    'No watermark on single-colored dice art',
     `First ${PLAN_LIMITS.explorer.builderRowLimit} rows of dice in Builder Studio`,
     'Unlimited projects in the cloud',
 ]

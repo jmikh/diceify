@@ -28,11 +28,7 @@ struct BuildView: View {
             } else {
                 ProgressView()
             }
-            VStack(spacing: 6) {
-                zoomButton("plus", enabled: zoomLevel > BuildZoom.min) { zoomLevel = BuildZoom.clamp(zoomLevel - BuildZoom.step) }
-                zoomButton("minus", enabled: zoomLevel < BuildZoom.max) { zoomLevel = BuildZoom.clamp(zoomLevel + BuildZoom.step) }
-            }
-            .padding(10)
+            zoomButtons.padding(12)
         }
         .sensoryFeedback(.selection, trigger: model.buildProgress)
         .sensoryFeedback(.success, trigger: model.lastMilestones) { _, new in !new.isEmpty }
@@ -40,20 +36,27 @@ struct BuildView: View {
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
     }
 
-    private func zoomButton(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.body.weight(.semibold)).foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(.ultraThinMaterial, in: Circle())
+    /// Zoom in / out floating over the grid; on iOS 26 the two glass circles sit in one container so they blend.
+    @ViewBuilder
+    private var zoomButtons: some View {
+        let stack = VStack(spacing: 8) {
+            zoomButton("plus", enabled: zoomLevel > BuildZoom.min) { zoomLevel = BuildZoom.clamp(zoomLevel - BuildZoom.step) }
+            zoomButton("minus", enabled: zoomLevel < BuildZoom.max) { zoomLevel = BuildZoom.clamp(zoomLevel + BuildZoom.step) }
         }
-        .disabled(!enabled)
-        .opacity(enabled ? 1 : 0.35)
-        .accessibilityLabel(symbol == "plus" ? "Zoom in" : "Zoom out")
+        if #available(iOS 26, *) { GlassEffectContainer(spacing: 8) { stack } } else { stack }
+    }
+
+    private func zoomButton(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) { Image(systemName: symbol) }
+            .buttonStyle(.stage)
+            .disabled(!enabled)
+            .opacity(enabled ? 1 : 0.35)
+            .accessibilityLabel(symbol == "plus" ? "Zoom in" : "Zoom out")
     }
 
     func moveTo(_ target: GridPos?) {
         if model.move(to: target, rowLimit: session.entitlements.builderRowLimit) == .blocked {
-            prompt = session.gate(false, .buildLimit, signInMessage: "Sign in to keep building past the free rows.", blocked: .limit)
+            prompt = session.gate(false, .buildLimit, blocked: .limit)
         }
     }
 }
@@ -84,7 +87,7 @@ struct BuildViewer: View {
             let unit = geo.size.width / view.viewBox.w
             let svgY = Double(svgRow(current.y, height: grid.height))
             let frame = ViewerFrame(viewBoxX: view.viewBox.x, viewBoxY: view.viewBox.y, viewBoxW: view.viewBox.w, selX: Double(current.x), selY: svgY, runStart: Double(run?.start ?? current.x), runEnd: Double(run?.end ?? current.x))
-            BuildCanvas(grid: grid, frame: frame, size: geo.size, badges: run.flatMap { $0.end > $0.start ? (width: $0.end - $0.start + 1, left: $0.end - current.x + 1) : nil }, belowDie: current.y >= grid.height - 2)
+            BuildCanvas(grid: grid, frame: frame, current: current, size: geo.size, badges: run.flatMap { $0.end > $0.start ? (width: $0.end - $0.start + 1, left: $0.end - current.x + 1) : nil }, belowDie: current.y >= grid.height - 2)
                 .animation(Self.glide, value: frame)
                 .onChange(of: view.lastViewX) { _, new in lastViewX = new }
                 .onTapGesture { point in
@@ -117,10 +120,15 @@ struct ViewerFrame: VectorArithmetic, Equatable {
     var magnitudeSquared: Double { values.reduce(0) { $0 + $1 * $1 } }
 }
 
-/// One frame of the viewer; `frame` is its animatable data, so a move redraws every step of the glide.
+/// Opacity of the dice not placed yet (UnplacedDiceMask).
+private let unplacedOpacity = 0.35
+
+/// One frame of the viewer; `frame` is its animatable data, so a move redraws every step of the glide. Dice after
+/// `current` in build order are dimmed; placed dice and the current one stay at full opacity.
 private struct BuildCanvas: View, @preconcurrency Animatable {
     let grid: DiceGrid
     var frame: ViewerFrame
+    let current: GridPos
     let size: CGSize
     /// Over a run of more than one die: purple = run width, pink = dice left in it.
     let badges: (width: Int, left: Int)?
@@ -145,8 +153,11 @@ private struct BuildCanvas: View, @preconcurrency Animatable {
                     let y = gridRowFromSvg(svgY, height: grid.height)
                     for x in window.x0...window.x1 {
                         let origin = toScreen(Double(x), Double(svgY))
+                        let pos = GridPos(x: x, y: y)
+                        ctx.opacity = isCompleted(pos, progress: current) || pos == current ? 1 : unplacedOpacity
                         ctx.draw(Image(decorative: DiceRenderer.dieImage(grid.rows[y][x], size: px), scale: 1), in: CGRect(origin: origin, size: CGSize(width: unit, height: unit)))
                     }
+                    ctx.opacity = 1
                 }
             }
             // The run of identical dice (blue fill, purple stroke), then the selector (pink)
@@ -176,81 +187,76 @@ private struct BuildCanvas: View, @preconcurrency Animatable {
     }
 }
 
-/// Build controls (MobileBuildControls): progress · more, above the navigation around the row/col readout.
+/// Build controls (MobileBuildControls): in the main row the percentage built and the black/white counts (styled
+/// like the row/col), progress preview and the HD blueprint (Pro); the die navigation around the row/col readout in
+/// the bottom toolbar. Purchase dice is desktop only.
 struct BuildControls: View {
     @Bindable var model: EditorModel
     @Binding var prompt: GatePrompt?
     @Environment(AppSession.self) private var session
-    @Environment(\.openURL) private var openURL
     @State private var progressOpen = false
     @State private var blueprintURL: URL?
 
-    private static let purchaseDiceURL = URL(string: "https://www.amazon.com/s?k=black+and+white+bulk+dice")!
-
     var body: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 12) {
-                ProgressView(value: model.buildPercent, total: 100).tint(.brandPink)
-                Text(model.buildPercent >= 100 ? "Done" : String(format: "%.1f%%", model.buildPercent))
-                    .font(.system(size: 13)).foregroundStyle(Color.textSecondary).monospacedDigit()
-                Menu {
-                    Button { progressOpen = true } label: { Label("View progress", systemImage: "eye") }
-                    Button { exportBlueprint() } label: { Label("Download blueprint", systemImage: "square.and.arrow.down") }
-                    Button { openURL(Self.purchaseDiceURL) } label: { Label("Purchase dice", systemImage: "cart") }
-                } label: {
-                    Image(systemName: "ellipsis").font(.body.weight(.semibold)).foregroundStyle(.white)
-                        .frame(width: 40, height: 40)
-                        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.white.opacity(0.1), lineWidth: 1))
-                }
-                .accessibilityLabel("More: progress, blueprint, purchase dice")
-            }
-            .padding(.horizontal, 6)
-            .frame(height: EditorLayout.mainRow - 16)
+        StepRow(model: model) {
             HStack(spacing: 8) {
-                navButton("chevron.left.2", target: model.buildTargets.prevDiff, label: "Previous different die")
-                navButton("chevron.left", target: model.buildTargets.prev, label: "Previous die")
                 HStack(spacing: 0) {
-                    position("ROW", model.buildProgress.y + 1)
-                    Divider().background(Color.white.opacity(0.08))
-                    position("COL", model.buildProgress.x + 1)
+                    LabeledValue(label: "Built", value: model.buildPercent >= 100 ? "Done" : String(format: "%.1f%%", model.buildPercent))
+                    Divider().frame(height: 28)
+                    LabeledValue(label: "Black", value: formatDiceCount(model.stats.blackCount), swatch: .black)
+                    Divider().frame(height: 28)
+                    LabeledValue(label: "White", value: formatDiceCount(model.stats.whiteCount), swatch: .white)
                 }
-                .frame(maxHeight: .infinity)
-                .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
-                navButton("chevron.right", target: model.buildTargets.next, label: "Next die")
-                navButton("chevron.right.2", target: model.buildTargets.nextDiff, label: "Next different die", primary: true)
+                .frame(maxWidth: .infinity)
+                Button { progressOpen = true } label: { Image(systemName: "eye").frame(height: EditorLayout.rowButton - 14) }
+                    .glassButton()
+                    .accessibilityLabel("View progress")
+                Button { exportBlueprint() } label: { Image(systemName: "square.and.arrow.down").frame(height: EditorLayout.rowButton - 14) }
+                    .glassButton()
+                    .overlay(alignment: .topTrailing) {
+                        if !session.entitlements.hasSvgExport { ProBadge().offset(x: 6, y: -8) }
+                    }
+                    .accessibilityLabel("Download HD blueprint")
             }
-            .frame(height: EditorLayout.toolRow)
+        }
+        .toolbar {
+            // Four separate buttons around the readout (iOS 26 would otherwise merge neighbours into one capsule)
+            ToolbarItem(placement: .bottomBar) { navButton("chevron.left.2", target: model.buildTargets.prevDiff, label: "Previous different die") }
+            if #available(iOS 26, *) { ToolbarSpacer(.fixed, placement: .bottomBar) }
+            ToolbarItem(placement: .bottomBar) { navButton("chevron.left", target: model.buildTargets.prev, label: "Previous die") }
+            ToolbarItem(placement: .bottomBar) { Spacer() }
+            ToolbarItem(placement: .bottomBar) {
+                HStack(spacing: 16) {
+                    LabeledValue(label: "Row", value: "\(model.buildProgress.y + 1)")
+                    LabeledValue(label: "Col", value: "\(model.buildProgress.x + 1)")
+                }
+            }
+            ToolbarItem(placement: .bottomBar) { Spacer() }
+            ToolbarItem(placement: .bottomBar) { navButton("chevron.right", target: model.buildTargets.next, label: "Next die") }
+            if #available(iOS 26, *) { ToolbarSpacer(.fixed, placement: .bottomBar) }
+            ToolbarItem(placement: .bottomBar) { navButton("chevron.right.2", target: model.buildTargets.nextDiff, label: "Next different die", primary: true) }
         }
         .sheet(isPresented: $progressOpen) { ProgressPreviewSheet(model: model) }
         .sheet(item: $blueprintURL) { url in ActivityView(items: [url]) }
     }
 
+    @ViewBuilder
     private func navButton(_ symbol: String, target: GridPos?, label: String, primary: Bool = false) -> some View {
-        Button {
+        let button = Button {
             if model.move(to: target, rowLimit: session.entitlements.builderRowLimit) == .blocked {
-                prompt = session.gate(false, .buildLimit, signInMessage: "Sign in to keep building past the free rows.", blocked: .limit)
+                prompt = session.gate(false, .buildLimit, blocked: .limit)
             }
         } label: {
-            Image(systemName: symbol).font(.title3.weight(.semibold))
+            Image(systemName: symbol).font(.body.weight(.semibold))
         }
-        .buttonStyle(RowButtonStyle(primary: primary))
         .disabled(target == nil)
         .accessibilityLabel(label)
-    }
-
-    private func position(_ label: String, _ value: Int) -> some View {
-        VStack(spacing: 0) {
-            Text(label).font(.system(size: 10, weight: .semibold)).tracking(1.2).foregroundStyle(Color.textMuted)
-            Text("\(value)").font(.display(18)).foregroundStyle(.white).monospacedDigit()
-        }
-        .frame(minWidth: 56)
+        if primary { button.buttonStyle(.borderedProminent) } else { button }
     }
 
     /// The whole grid as an SVG file through the share sheet (the `hasSvgExport` entitlement).
     private func exportBlueprint() {
-        if let p = session.gate(session.entitlements.hasSvgExport, .blueprint, signInMessage: "Sign in to download the blueprint.") {
+        if let p = session.gate(session.entitlements.hasSvgExport, .blueprint) {
             prompt = p
             return
         }
@@ -266,6 +272,29 @@ struct BuildControls: View {
     }
 }
 
+/// A small uppercase label (with an optional die-colour swatch) over a bold number: the row/col and the build stats
+/// (components/BuildPositionDisplay.tsx `LabeledValue`).
+struct LabeledValue: View {
+    let label: String
+    let value: String
+    var swatch: Color?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 4) {
+                if let swatch {
+                    RoundedRectangle(cornerRadius: 2).fill(swatch).frame(width: 9, height: 9)
+                        .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(Color.white.opacity(0.4), lineWidth: 0.5))
+                }
+                Text(label.uppercased()).font(.caption2.weight(.semibold)).tracking(1).foregroundStyle(Color.textMuted)
+            }
+            Text(value).font(.headline).foregroundStyle(.white).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+    }
+}
+
 extension URL: @retroactive Identifiable {
     public var id: String { absoluteString }
 }
@@ -277,9 +306,11 @@ struct ActivityView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
-/// Progress preview (ProgressPreviewModal): placed dice solid, the rest ghosted; "Full" shows the finished art.
+/// Progress preview (ProgressPreviewModal): placed dice solid, the rest ghosted; "Full" shows the finished art. A
+/// design that uses settings the plan lacks is watermarked, as in the tune preview.
 struct ProgressPreviewSheet: View {
     @Bindable var model: EditorModel
+    @Environment(AppSession.self) private var session
     @State private var showAll = false
     @State private var image: CGImage?
 
@@ -292,11 +323,13 @@ struct ProgressPreviewSheet: View {
             }
             .pickerStyle(.segmented)
             .padding(.horizontal, 24)
-            if let image {
-                Image(decorative: image, scale: 1).resizable().interpolation(.high).scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.brandPink, lineWidth: 2))
-                    .padding(.horizontal, 16)
+            if let image, let grid = model.grid {
+                ZStack {
+                    Image(decorative: image, scale: 1).resizable().interpolation(.high).scaledToFit()
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    if !session.designLocks(for: model.dice).isEmpty { Watermark(grid: (grid.width, grid.height)) }
+                }
+                .padding(.horizontal, 16)
             } else {
                 ProgressView().frame(maxHeight: .infinity)
             }

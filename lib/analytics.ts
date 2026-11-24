@@ -118,11 +118,19 @@ export function initAnalytics(): void {
     : Promise.resolve(null)
 }
 
+/**
+ * Run SDK work in a task of its own, after the current one. Most events are tracked from click handlers: run inline,
+ * gtag and PostHog held back the frame that answers the tap (INP). Timeouts run in call order, so calls keep theirs.
+ */
+function later(fn: () => void): void {
+  window.setTimeout(fn, 0)
+}
+
 /** Run `use` once PostHog is up (started on demand, so an event fired before the root layout's effect still lands). */
 function withPosthog(use: (posthog: PostHog) => void): void {
   initAnalytics()
   // Every call chains on the one promise, so calls keep their order
-  void client?.then((posthog) => posthog && use(posthog))
+  later(() => void client?.then((posthog) => posthog && use(posthog)))
 }
 
 /** Set on every event so the iOS app's events (`platform: 'ios'`, same names) can be told apart. */
@@ -131,15 +139,17 @@ const PLATFORM = 'web'
 export function track<E extends AnalyticsEvent>(event: E, properties: AnalyticsEvents[E]): void {
   if (!inBrowser()) return
   const props = { platform: PLATFORM, ...properties }
-  sendGAEvent('event', event, props)
+  later(() => sendGAEvent('event', event, props))
   withPosthog((posthog) => posthog.capture(event, props))
 }
 
 /** The signed-in user: GA4 `user_id` (+ its `login` event) and PostHog `identify`, which links the anonymous history. */
 export function identifyUser(id: string): void {
   if (!inBrowser()) return
-  window.gtag?.('config', GA_MEASUREMENT_ID, { user_id: id })
-  sendGAEvent('event', 'login', { method: 'google', user_id: id })
+  later(() => {
+    window.gtag?.('config', GA_MEASUREMENT_ID, { user_id: id })
+    sendGAEvent('event', 'login', { method: 'google', user_id: id })
+  })
   withPosthog((posthog) => posthog.identify(id))
 }
 

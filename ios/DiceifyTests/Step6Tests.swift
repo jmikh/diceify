@@ -147,13 +147,15 @@ private func makeModel(store: FakeStore = FakeStore(), account: StubAccount = St
         #expect(model.notice == "Purchases are not allowed on this device." && account.syncCalls == 0)
     }
 
-    @Test func signedOutCannotBuy() async {
+    /// Pricing first: a signed-out price click asks for sign-in (the sheet then resumes the purchase), no store call.
+    @Test func signedOutPriceClickAsksForSignIn() async {
         let account = StubAccount()
         account.userId = nil
         let (model, store, _) = makeModel(account: account)
         await model.load()
         await model.buy(.studioMonthly)
-        #expect(store.purchases.isEmpty && model.notice == "Sign in to upgrade.")
+        #expect(store.purchases.isEmpty && model.signInPlan == .studioMonthly && model.notice == nil)
+        #expect(await model.restore() == false && model.notice == "Sign in to restore purchases.")
     }
 
     @Test func restore() async {

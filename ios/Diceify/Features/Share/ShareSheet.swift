@@ -70,7 +70,7 @@ struct ShareSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Capsule().fill(Color.white.opacity(0.2)).frame(width: 36, height: 5).frame(maxWidth: .infinity).padding(.top, 8)
-            Text("Share your dice art").font(.display(24)).foregroundStyle(.white)
+            Text("Share your dice art").font(.title2.bold()).foregroundStyle(.white)
             Text("Anyone with the link sees this image. Your photo stays private.")
                 .font(.subheadline).foregroundStyle(Color.textSecondary)
             card

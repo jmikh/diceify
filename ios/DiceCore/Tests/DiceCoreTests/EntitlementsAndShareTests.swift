@@ -8,8 +8,8 @@ private func iso(_ offsetSeconds: Double) -> String { isoString(NOW.addingTimeIn
 
 @Suite struct EntitlementsTests {
     @Test func limitsAndPricing() {
-        #expect(PLAN_LIMITS[.explorer] == PlanLimits(builderRowLimit: 5, hasSvgExport: false))
-        for plan in [Plan.creator, .studio, .lifetime] { #expect(PLAN_LIMITS[plan] == PlanLimits(builderRowLimit: nil, hasSvgExport: true)) }
+        #expect(PLAN_LIMITS[.explorer] == PlanLimits(builderRowLimit: 5, hasSvgExport: false, hasMixedDice: false, designRowLimit: nil))
+        for plan in [Plan.creator, .studio, .lifetime] { #expect(PLAN_LIMITS[plan] == PlanLimits(builderRowLimit: nil, hasSvgExport: true, hasMixedDice: true, designRowLimit: nil)) }
         #expect(Pricing.Creator.price == 19 && Pricing.Creator.accessDays == 30 && Pricing.Studio.monthlyPrice == 9 && Pricing.Studio.yearlyPrice == 36)
         #expect(Pricing.studioYearlyMonthlyEffective == 3 && Pricing.studioYearlySavingsPercent == 67)
     }
@@ -35,7 +35,7 @@ private func iso(_ offsetSeconds: Double) -> String { isoString(NOW.addingTimeIn
                             let studioLive = plan == .studio && status != nil && PRO_SUBSCRIPTION_STATUSES.contains(status!)
                             let expected: Plan = plan == .lifetime ? .lifetime : studioLive ? .studio : (plan == .creator && live ? .creator : .explorer)
                             let limits = PLAN_LIMITS[expected]!
-                            var want = Entitlements(plan: expected, isPro: expected != .explorer, builderRowLimit: limits.builderRowLimit, hasSvgExport: limits.hasSvgExport, accessUntil: nil, cancelAt: nil, renews: false, canManageBilling: hasCustomer, source: expected == .studio || expected == .creator ? .stripe : nil)
+                            var want = Entitlements(plan: expected, isPro: expected != .explorer, builderRowLimit: limits.builderRowLimit, hasSvgExport: limits.hasSvgExport, hasMixedDice: limits.hasMixedDice, designRowLimit: limits.designRowLimit, accessUntil: nil, cancelAt: nil, renews: false, canManageBilling: hasCustomer, source: expected == .studio || expected == .creator ? .stripe : nil)
                             if expected == .studio {
                                 want.accessUntil = cancelAt ?? periodEnd
                                 want.cancelAt = cancelAt
@@ -136,6 +136,33 @@ private func iso(_ offsetSeconds: Double) -> String { isoString(NOW.addingTimeIn
         for (cols, rows) in [(48, 48), (36, 48), (20, 120)] {
             let art = shareCardLayout(cols: cols, rows: rows).art
             #expect(art.y == 0 && art.height == ShareCard.height)
+        }
+    }
+}
+
+/// core/billing/design.test.ts
+@Suite struct DesignLocksTests {
+    @Test func explorerLocksOnlyMixedDice() {
+        let e = EXPLORER_ENTITLEMENTS
+        #expect(designLocks(hasMixedDice: e.hasMixedDice, designRowLimit: e.designRowLimit, colorMode: .both, numRows: 50) == [.mixedDice])
+        #expect(designLocks(hasMixedDice: e.hasMixedDice, designRowLimit: e.designRowLimit, colorMode: .both, numRows: 120) == [.mixedDice])
+        #expect(designLocks(hasMixedDice: e.hasMixedDice, designRowLimit: e.designRowLimit, colorMode: .black, numRows: 120) == [])
+        #expect(designLocks(hasMixedDice: e.hasMixedDice, designRowLimit: e.designRowLimit, colorMode: .white, numRows: 20) == [])
+        var dice = DiceParams.default
+        dice.colorMode = .both
+        #expect(designLocks(e, dice) == [.mixedDice])
+    }
+
+    @Test func rowsOverADesignRowLimit() {
+        #expect(designLocks(hasMixedDice: false, designRowLimit: 50, colorMode: .black, numRows: 50) == [])
+        #expect(designLocks(hasMixedDice: false, designRowLimit: 50, colorMode: .black, numRows: 51) == [.rows])
+        #expect(designLocks(hasMixedDice: false, designRowLimit: 50, colorMode: .both, numRows: 120) == [.mixedDice, .rows])
+    }
+
+    @Test func nothingOnAPaidPlan() {
+        for plan in Plan.allCases where plan != .explorer {
+            let l = PLAN_LIMITS[plan]!
+            #expect(designLocks(hasMixedDice: l.hasMixedDice, designRowLimit: l.designRowLimit, colorMode: .both, numRows: 120) == [])
         }
     }
 }

@@ -495,3 +495,23 @@ Claude: `ios/` skeleton, `.gitignore` additions (`ios/**/xcuserdata`, `DerivedDa
 - **Step 7 review 1 (submitted 2026-10-21, answered 2026-10-26)**: 2.1 "Information Needed" (new developer account):
   a screen recording on a physical device on the latest iOS + answers to 7 questions, in the reply and in the Notes
   field. Answers in `ios-step-7.md` (App Review Information); the recording is the user's.
+- **Native UI pass (2026-11-24)** — supersedes the chrome described in § 6 "Screens" (the palette and the stage/step
+  structure stand). Start: large navigation title "Projects", `+` toolbar menu (Photos / Camera), `ContentUnavailableView`
+  empty state instead of the hero card, Photos-style tiles without card panels. Editor: the project name is the
+  navigation title (system rename menu via a `Binding`), Crop · Tune · Build is a segmented `Picker`, Next is a
+  prominent toolbar button, the stage is edge to edge (no glass panel), the aspect ratios and tune tools are segmented
+  controls, colour mode a segmented `Picker`, rotate faces button `Toggle`s, Build's die navigation lives in the
+  bottom toolbar around the row/column readout (iOS 26 `ToolbarSpacer`s keep the four buttons apart) and the dice count
+  is the iOS 26 navigation subtitle. Syne stays on the paywall headline only; the sign-in legal line links to
+  /terms and /privacy. `ToolTile`, `RowButtonStyle`, `StepControl` and the step chevrons are gone.
+- **Web parity pass (2026-11-24)** — ports the web commits `a01170c`…`e085624` (free plan = watermark, mobile shell).
+  DiceCore: `PlanLimits`/`Entitlements` gain `hasMixedDice` + `designRowLimit`, `Billing/Design.swift` `designLocks`
+  (tests ported from `core/billing/design.test.ts`). App: `resolveGate` with `requires: .plan/.account` (a plan gate
+  opens the paywall signed out too; the paywall asks for sign-in once a price is picked, `PaywallModel.signInPlan`, and
+  resumes the purchase); no step tabs on the phone — step back/next chevrons flank the main control row (`StepRow`);
+  Share + Upgrade in the toolbar (`click_upgrade` source `editor_header`), save status over the stage; Tune: the
+  `Watermark` (Syne logo pills, brick layout, −28°) + "Remove watermark" (source `design_paywall`) while the design is
+  locked, hold-to-see-original eye button, PRO tags on Mixed and on Rows over a design limit, colour mode as toggle
+  buttons; Build: dice not yet placed at 35 % opacity, the main row = Built % · black · white + View progress +
+  Download HD blueprint (PRO tag; Purchase dice is desktop only), progress preview without the pink border and
+  watermarked when locked; paywall copy and feature list from `PRO_FEATURES`.

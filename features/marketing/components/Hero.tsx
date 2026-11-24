@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { track } from '@/lib/analytics'
 import { DiceColorBar, GridSize } from '@/components/DiceStats'
-import DiceLens from './DiceLens'
+import DiceLens, { loadLensImage } from './DiceLens'
 import DieFace from './DieFace'
 
 // Each portrait is `/images/hero/{id}-dice.webp` + `{id}-photo.webp`. A pair must share framing (the lens shows the
@@ -79,21 +79,36 @@ export default function Hero() {
     )
 }
 
+type Portrait = (typeof PORTRAITS)[number]
+
 /** The dice-lens portrait, with a toggle between example subjects. */
 function HeroPortraits() {
+    // The toggle answers a tap at once; the portrait switches when its two images are decoded, so the tap's frame
+    // never waits on a decode and the old photo never shows through the new dice.
+    const [selected, setSelected] = useState(PORTRAITS[0])
     const [portrait, setPortrait] = useState(PORTRAITS[0])
+    const latest = useRef(PORTRAITS[0])
     const preloaded = useRef(false)
 
-    // Fetch every portrait once the visitor reaches for the toggle, so a switch doesn't show the old photo
-    // through the new dice while the images load.
+    // Fetch every portrait once the visitor reaches for the toggle, so a switch rarely waits on the network.
     const preload = () => {
         if (preloaded.current) return
         preloaded.current = true
         for (const { id } of PORTRAITS) {
             const { dice, photo } = portraitImages(id)
-            new window.Image().src = dice
-            new window.Image().src = photo
+            loadLensImage(dice)
+            loadLensImage(photo)
         }
+    }
+
+    const choose = (next: Portrait) => {
+        setSelected(next)
+        latest.current = next
+        const { dice, photo } = portraitImages(next.id)
+        // A failed decode still switches (the frame then loads the images itself); a later tap wins.
+        void Promise.allSettled([loadLensImage(dice).decode(), loadLensImage(photo).decode()]).then(() => {
+            if (latest.current === next) setPortrait(next)
+        })
     }
 
     return (
@@ -106,7 +121,7 @@ function HeroPortraits() {
                 onFocus={preload}
             >
                 {PORTRAITS.map(p => (
-                    <button key={p.id} type="button" aria-pressed={p.id === portrait.id} onClick={() => setPortrait(p)}>
+                    <button key={p.id} type="button" aria-pressed={p.id === selected.id} onClick={() => choose(p)}>
                         {p.label}
                     </button>
                 ))}

@@ -50,6 +50,9 @@ public struct Entitlements: Equatable, Sendable {
     /// nil = unlimited.
     public var builderRowLimit: Int?
     public var hasSvgExport: Bool
+    public var hasMixedDice: Bool
+    /// nil = unlimited.
+    public var designRowLimit: Int?
     /// When paid access ends (creator expiry, or the studio period/cancel date); nil for lifetime and explorer.
     public var accessUntil: String?
     public var cancelAt: String?
@@ -63,7 +66,7 @@ public struct Entitlements: Equatable, Sendable {
 
 private func withLimits(_ plan: Plan, accessUntil: String?, cancelAt: String?, renews: Bool, canManageBilling: Bool, source: BillingSource?) -> Entitlements {
     let limits = PLAN_LIMITS[plan]!
-    return Entitlements(plan: plan, isPro: plan != .explorer, builderRowLimit: limits.builderRowLimit, hasSvgExport: limits.hasSvgExport, accessUntil: accessUntil, cancelAt: cancelAt, renews: renews, canManageBilling: canManageBilling, source: source)
+    return Entitlements(plan: plan, isPro: plan != .explorer, builderRowLimit: limits.builderRowLimit, hasSvgExport: limits.hasSvgExport, hasMixedDice: limits.hasMixedDice, designRowLimit: limits.designRowLimit, accessUntil: accessUntil, cancelAt: cancelAt, renews: renews, canManageBilling: canManageBilling, source: source)
 }
 
 /// Signed-out / unknown-profile default.

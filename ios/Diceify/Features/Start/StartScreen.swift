@@ -8,6 +8,7 @@ struct StartScreen: View {
     @Environment(ProjectsStore.self) private var projects
     @State private var signInOpen = false
     @State private var picked: PhotosPickerItem?
+    @State private var photosOpen = false
     @State private var importing = false
     @State private var cameraOpen = false
     @State private var openProject: UUID?
@@ -15,50 +16,47 @@ struct StartScreen: View {
     @State private var accountOpen = false
 
     private var userId: UUID? { session.status == .authed ? session.user?.id : nil }
+    private var hasCamera: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) }
 
     var body: some View {
         ZStack {
             OrbsBackground()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    Text(projects.items.isEmpty ? "Start a new project" : "Your projects")
-                        .font(.display(32))
-                        .foregroundStyle(.white)
-                        .padding(.top, 8)
-                    newProjectCard
-                    if session.status == .anon, projects.items.contains(where: \.isLocalOnly) {
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "info.circle")
-                            Text("A new photo replaces your draft on this phone. ")
-                                + Text("Sign in").foregroundStyle(Color.brandPinkLight).fontWeight(.medium)
-                                + Text(" first to keep it.")
+            if projects.items.isEmpty {
+                emptyState
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        if let error = projects.error {
+                            Label(error, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(.red)
                         }
-                        .font(.footnote)
-                        .foregroundStyle(Color.textSecondary)
-                        .onTapGesture { signInOpen = true }
-                    }
-                    HStack(spacing: 8) {
-                        Image(systemName: "lock")
-                        Text("The photo stays with its project. To use a different photo, start another project.")
-                    }
-                    .font(.footnote)
-                    .foregroundStyle(Color.textMuted)
-                    if let error = projects.error {
-                        Text(error).font(.footnote).foregroundStyle(.red)
-                    }
-                    if !projects.items.isEmpty {
                         ProjectGrid(items: projects.items, onOpen: { openProject = $0 }, onRename: { id, name in Task { await projects.rename(id, to: name, userId: userId) } }, onDelete: { id in Task { await projects.delete(id, userId: userId) } })
+                        if session.status == .anon, projects.items.contains(where: \.isLocalOnly) {
+                            draftNote
+                        }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 40)
             }
         }
-        .navigationTitle("Diceify")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Projects")
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { accountControl }
+            if #available(iOS 26, *) {
+                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    newProjectActions
+                } label: {
+                    if importing { ProgressView() } else { Image(systemName: "plus") }
+                }
+                .disabled(importing)
+                .accessibilityLabel("New project")
+            }
         }
+        .photosPicker(isPresented: $photosOpen, selection: $picked, matching: .images, photoLibrary: .shared())
         .sheet(isPresented: $signInOpen) { SignInSheet() }
         .fullScreenCover(isPresented: $cameraOpen) {
             CameraPicker { data in Task { await importPhoto(data) } }
@@ -117,31 +115,49 @@ struct StartScreen: View {
         }
     }
 
-    private var newProjectCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Turn any photo into dice art")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
-            Text("Pick a photo, crop it, tune the dice, then build it row by row.")
-                .font(.subheadline)
-                .foregroundStyle(Color.textSecondary)
-            PhotosPicker(selection: $picked, matching: .images, photoLibrary: .shared()) {
-                Label(importing ? "Importing…" : "Choose a photo", systemImage: "photo.on.rectangle")
-            }
-            .buttonStyle(.primary)
-            .disabled(importing)
-            if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                Button {
-                    cameraOpen = true
-                } label: {
-                    Label("Take a photo", systemImage: "camera")
-                }
-                .buttonStyle(.secondary)
-                .disabled(importing)
-            }
+    /// Photos / Camera: the `+` menu and the empty state's buttons.
+    @ViewBuilder
+    private var newProjectActions: some View {
+        Button { photosOpen = true } label: { Label("Choose a photo", systemImage: "photo.on.rectangle") }
+        if hasCamera {
+            Button { cameraOpen = true } label: { Label("Take a photo", systemImage: "camera") }
         }
-        .padding(20)
-        .glassPanel()
+    }
+
+    /// No projects yet: what the app does and how to start (the web's hero card).
+    private var emptyState: some View {
+        ContentUnavailableView {
+            Label("Turn any photo into dice art", systemImage: "dice")
+        } description: {
+            Text("Pick a photo, crop it, tune the dice, then build it row by row. The photo stays with its project; a different photo starts another one.")
+        } actions: {
+            VStack(spacing: 10) {
+                Button { photosOpen = true } label: { Label("Choose a photo", systemImage: "photo.on.rectangle") }
+                    .buttonStyle(.primary)
+                if hasCamera {
+                    Button { cameraOpen = true } label: { Label("Take a photo", systemImage: "camera") }
+                        .buttonStyle(.secondary)
+                }
+                if let error = projects.error {
+                    Text(error).font(.footnote).foregroundStyle(.red)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 8)
+        }
+        .disabled(importing)
+    }
+
+    private var draftNote: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "info.circle")
+            Text("A new photo replaces your draft on this phone. ")
+                + Text("Sign in").foregroundStyle(Color.brandPinkLight).fontWeight(.medium)
+                + Text(" first to keep it.")
+        }
+        .font(.footnote)
+        .foregroundStyle(Color.textSecondary)
+        .onTapGesture { signInOpen = true }
     }
 
     @ViewBuilder
@@ -170,7 +186,7 @@ struct StartScreen: View {
     }
 }
 
-/// 2-column cards: thumbnail, name, progress (features/editor/components/start/ProjectGrid.tsx).
+/// 2-column tiles: thumbnail, name, progress (features/editor/components/start/ProjectGrid.tsx).
 struct ProjectGrid: View {
     let items: [ProjectsStore.Item]
     let onOpen: (UUID) -> Void
@@ -181,7 +197,7 @@ struct ProjectGrid: View {
     @State private var deleting: ProjectsStore.Item?
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], alignment: .leading, spacing: 20) {
             ForEach(items) { item in
                 Button { onOpen(item.id) } label: { ProjectCard(item: item) }
                     .buttonStyle(.plain)
@@ -205,13 +221,14 @@ struct ProjectGrid: View {
     }
 }
 
+/// A Photos-style tile: the thumbnail, the name and a one-line status beneath, no card around it.
 struct ProjectCard: View {
     let item: ProjectsStore.Item
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             // A square well; the photo fills it without proposing its own size to the grid
-            Color.white.opacity(0.04)
+            Color.white.opacity(0.06)
                 .aspectRatio(1, contentMode: .fit)
                 .overlay {
                     if let url = item.previewURL {
@@ -226,24 +243,22 @@ struct ProjectCard: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             Text(item.name)
-                .font(.subheadline.weight(.semibold))
+                .font(.subheadline.weight(.medium))
                 .foregroundStyle(.white)
                 .lineLimit(1)
             HStack(spacing: 6) {
                 if item.totalDice > 0 {
-                    ProgressView(value: item.percent, total: 100).tint(.brandPink).frame(maxWidth: 60)
+                    ProgressView(value: item.percent, total: 100).frame(maxWidth: 56)
                     Text("\(Int(item.percent.rounded()))%").monospacedDigit()
                 } else {
                     Text("Not cropped yet")
                 }
                 Spacer()
-                if item.isLocalOnly { Image(systemName: "iphone").help("Only on this phone") }
+                if item.isLocalOnly { Image(systemName: "iphone").accessibilityLabel("Only on this phone") }
             }
             .font(.caption)
             .foregroundStyle(Color.textMuted)
         }
-        .padding(12)
-        .glassPanel(cornerRadius: 18)
     }
 }
 

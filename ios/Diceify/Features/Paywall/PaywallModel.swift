@@ -37,6 +37,8 @@ final class PaywallModel {
     private(set) var notice: String?
     /// The Studio interval on show (the web defaults to yearly).
     var studioInterval: CheckoutPlan = .studioYearly
+    /// A signed-out price click: the plan to buy once signed in (the sign-in sheet is open while set).
+    var signInPlan: CheckoutPlan?
     /// Between `billing/apple-sync` attempts (tests: zero).
     var retryDelay: Duration = .seconds(1)
 
@@ -84,7 +86,8 @@ final class PaywallModel {
         guard busy == nil else { return }
         Analytics.track(.clickUpgrade(source: source, planType: plan.rawValue))
         guard let userId = account.userId else {
-            notice = "Sign in to upgrade."
+            // Pricing first: sign in once a price is picked (ProFeatureModal)
+            signInPlan = plan
             return
         }
         // Any active paid plan already covers what a purchase offers (no stacking, as on the web)
@@ -115,7 +118,11 @@ final class PaywallModel {
     /// Restore this Apple ID's purchases onto the signed-in account. True when the account has a paid plan afterwards.
     @discardableResult
     func restore() async -> Bool {
-        guard busy == nil, let userId = account.userId else { return false }
+        guard busy == nil else { return false }
+        guard let userId = account.userId else {
+            notice = "Sign in to restore purchases."
+            return false
+        }
         busy = .restoring
         notice = nil
         defer { busy = nil }
